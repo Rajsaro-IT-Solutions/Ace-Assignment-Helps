@@ -38,9 +38,12 @@ $userRole = $currentUser['role'];
 
       <div class="topbar-user">
         <!-- Notification Bell Widget -->
-        <a href="/<?php echo strtolower($userRole); ?>/notifications.php" style="position:relative; color:var(--text-muted); font-size:1.15rem; margin-right:6px; display:inline-flex; align-items:center;" title="Notifications">
+        <?php $unreadNotifCount = function_exists('get_unread_notifications_count') ? get_unread_notifications_count($currentUser['id'], $userRole) : 0; ?>
+        <a href="/<?php echo strtolower($userRole); ?>/notifications.php" style="position:relative; color:var(--text-muted); font-size:1.15rem; margin-right:6px; display:inline-flex; align-items:center;" title="Notifications (<?php echo $unreadNotifCount; ?> unread)">
           <i class="fa-solid fa-bell"></i>
-          <span style="position:absolute; top:-4px; right:-6px; background:#ef4444; color:#fff; font-size:0.65rem; font-weight:800; border-radius:10px; padding:1px 5px; min-width:14px; text-align:center;">2</span>
+          <?php if ($unreadNotifCount > 0): ?>
+            <span style="position:absolute; top:-4px; right:-6px; background:#ef4444; color:#fff; font-size:0.65rem; font-weight:800; border-radius:10px; padding:1px 5px; min-width:14px; text-align:center; box-shadow:0 2px 4px rgba(239, 68, 68, 0.4);"><?php echo $unreadNotifCount; ?></span>
+          <?php endif; ?>
         </a>
 
         <a href="/" target="_blank" class="btn btn-outline btn-sm" style="margin-right:4px; display:inline-flex;">

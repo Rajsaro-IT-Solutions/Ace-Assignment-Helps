@@ -8,13 +8,14 @@ $action = $_REQUEST['action'] ?? '';
 
 switch ($action) {
     case 'price_calc':
-        $word_count = $_REQUEST['word_count'] ?? 250;
-        $deadline_hours = $_REQUEST['deadline_hours'] ?? 72;
+        $word_count = (int)($_REQUEST['word_count'] ?? 250);
+        $deadline_hours = (float)($_REQUEST['deadline_hours'] ?? 120);
         $academic_level = $_REQUEST['academic_level'] ?? 'Undergraduate';
         $subject = $_REQUEST['subject'] ?? 'General';
         $coupon_code = $_REQUEST['coupon_code'] ?? '';
+        $currency = strtoupper(trim($_REQUEST['currency'] ?? 'USD'));
 
-        $calc = calculate_assignment_price($word_count, $deadline_hours, $academic_level, $subject, $coupon_code);
+        $calc = calculate_assignment_price($word_count, $deadline_hours, $academic_level, $subject, $coupon_code, $currency);
         echo json_encode(['success' => true, 'data' => $calc]);
         exit;
 
@@ -25,7 +26,7 @@ switch ($action) {
         $title = trim($_POST['title'] ?? 'Untitled Assignment');
         $subject = trim($_POST['subject'] ?? 'Computer Science');
         $assignment_type = trim($_POST['assignment_type'] ?? 'Essay');
-        $deadline_hours = (int)($_POST['deadline_hours'] ?? 72);
+        $deadline_hours = (float)($_POST['deadline_hours'] ?? 120);
         $deadline_date = date('Y-m-d H:i:s', strtotime("+{$deadline_hours} hours"));
         $timezone = trim($_POST['timezone'] ?? 'EST (UTC-5)');
         $word_count = (int)($_POST['word_count'] ?? 1000);
@@ -35,10 +36,11 @@ switch ($action) {
         $language = trim($_POST['language'] ?? 'English (US)');
         $instructions = trim($_POST['instructions'] ?? '');
         $coupon_code = trim($_POST['discount_code'] ?? '');
+        $currency = strtoupper(trim($_POST['currency'] ?? 'USD'));
         $country = trim($_POST['country'] ?? ($user['country'] ?? 'United States'));
         $university = trim($_POST['university'] ?? 'Stanford University');
 
-        $calc = calculate_assignment_price($word_count, $deadline_hours, 'Undergraduate', $subject, $coupon_code);
+        $calc = calculate_assignment_price($word_count, $deadline_hours, 'Undergraduate', $subject, $coupon_code, $currency);
         $assignment_id = generate_assignment_id();
 
         $assignment_data = [
@@ -55,6 +57,7 @@ switch ($action) {
             'priority' => $priority,
             'language' => $language,
             'instructions' => $instructions,
+            'currency' => $currency,
             'price' => $calc['subtotal'],
             'discount_code' => $coupon_code,
             'final_price' => $calc['final_price'],
@@ -69,33 +72,62 @@ switch ($action) {
 
         DataStore::insert('assignments', $assignment_data);
 
-        // Handle uploaded file if present
-        if (isset($_FILES['assignment_file']) && $_FILES['assignment_file']['error'] === UPLOAD_ERR_OK) {
-            $fileName = basename($_FILES['assignment_file']['name']);
-            $targetDir = __DIR__ . '/assets/uploads/';
-            if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-            $targetPath = $targetDir . time() . '_' . $fileName;
-            if (move_uploaded_file($_FILES['assignment_file']['tmp_name'], $targetPath)) {
-                DataStore::insert('files', [
-                    'file_id' => 'FILE-' . rand(200, 999),
-                    'assignment_id' => $assignment_id,
-                    'file_name' => $fileName,
-                    'path' => 'assets/uploads/' . basename($targetPath),
-                    'file_type' => pathinfo($fileName, PATHINFO_EXTENSION),
-                    'uploaded_by' => 'Student',
-                    'upload_date' => date('Y-m-d H:i:s'),
-                    'is_internal' => false
-                ]);
-            }
+        // Handle uploaded files of ANY format (single or multiple)
+        if (!empty($_FILES)) {
+            handle_uploaded_files('assignment_files', $assignment_id, 'Student');
+            handle_uploaded_files('assignment_file', $assignment_id, 'Student');
+            handle_uploaded_files('files', $assignment_id, 'Student');
+            handle_uploaded_files('file', $assignment_id, 'Student');
         }
 
-        add_audit_log('Student', $student_id, 'Submit Assignment', "Created $assignment_id: $title");
+        add_audit_log('Student', $student_id, 'Submit Assignment', "Created $assignment_id: $title ($currency {$calc['final_price']})");
+        add_notification('Allocator', '', "New Assignment Received", "Assignment $assignment_id ($title) has been submitted and awaits allocation.", 'info', "/allocator/assignment-detail.php?id=$assignment_id");
 
         echo json_encode([
             'success' => true,
             'assignment_id' => $assignment_id,
+            'currency' => $currency,
+            'final_price' => $calc['final_price'],
             'message' => "Assignment $assignment_id submitted successfully!"
         ]);
+        exit;
+
+    case 'upload_assignment_file':
+        Auth::checkLoggedIn();
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        $is_internal = !empty($_POST['is_internal']);
+
+        if ($assignment_id) {
+            $inputKey = isset($_FILES['files']) ? 'files' : (isset($_FILES['file']) ? 'file' : (isset($_FILES['assignment_files']) ? 'assignment_files' : 'assignment_file'));
+            $uploaded = handle_uploaded_files($inputKey, $assignment_id, $user['name'] . ' (' . $user['role'] . ')', $is_internal);
+            if (!empty($uploaded)) {
+                add_audit_log($user['role'], $user['id'], 'Upload File', "Uploaded " . count($uploaded) . " file(s) to $assignment_id");
+                echo json_encode(['success' => true, 'message' => count($uploaded) . ' file(s) uploaded successfully!', 'files' => $uploaded]);
+                exit;
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No files were uploaded or an error occurred.']);
+                exit;
+            }
+        }
+        echo json_encode(['success' => false, 'message' => 'Assignment ID required.']);
+        exit;
+
+    case 'delete_assignment_file':
+        Auth::checkRole('Admin');
+        $user = Auth::currentUser();
+        $file_id = trim($_POST['file_id'] ?? '');
+        if ($file_id) {
+            $f = DataStore::findOne('files', 'file_id', $file_id);
+            if ($f && !empty($f['path']) && file_exists(__DIR__ . '/' . $f['path'])) {
+                @unlink(__DIR__ . '/' . $f['path']);
+            }
+            DataStore::delete('files', 'file_id', $file_id);
+            add_audit_log('Admin', $user['id'], 'Delete File', "Deleted file $file_id");
+            echo json_encode(['success' => true, 'message' => 'File deleted successfully.']);
+            exit;
+        }
+        echo json_encode(['success' => false, 'message' => 'File ID required.']);
         exit;
 
     case 'allocate_expert':
@@ -260,6 +292,12 @@ switch ($action) {
         $revision_instructions = trim($_POST['instructions'] ?? '');
 
         if ($assignment_id && !empty($revision_instructions)) {
+            $uploaded = [];
+            if (isset($_FILES['revision_files'])) {
+                $uploaded = handle_uploaded_files('revision_files', $assignment_id, $user['name'] . ' (Revision Request)', false);
+            }
+            $fileNote = !empty($uploaded) ? " [" . count($uploaded) . " file(s) attached]" : "";
+
             DataStore::update('assignments', 'assignment_id', $assignment_id, [
                 'status' => 'Revision Requested',
                 'updated_at' => date('Y-m-d H:i:s')
@@ -270,11 +308,12 @@ switch ($action) {
                 'user_id' => $user['id'],
                 'user_role' => 'Student',
                 'user_name' => $user['name'],
-                'message' => "Revision Request: " . $revision_instructions,
+                'message' => "Revision Request: " . $revision_instructions . $fileNote,
                 'visibility' => 'Internal',
                 'created_at' => date('Y-m-d H:i:s')
             ]);
-            add_audit_log('Student', $user['id'], 'Request Revision', "Requested revision for $assignment_id");
+            add_audit_log('Student', $user['id'], 'Request Revision', "Requested revision for $assignment_id$fileNote");
+            add_notification('Allocator', null, "Revision Requested: $assignment_id", "Student {$user['name']} requested revisions$fileNote", 'warning');
             echo json_encode(['success' => true, 'message' => 'Revision request submitted! Support and allocator team notified.']);
             exit;
         }

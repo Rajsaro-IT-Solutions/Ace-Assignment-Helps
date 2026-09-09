@@ -9,13 +9,16 @@ include __DIR__ . '/includes/header.php';
 
   <div class="feature-card" style="line-height:1.8; color:var(--text-main);">
     <h3 style="color:var(--primary); margin-bottom:0.8rem;">1. Academic Reference Purpose</h3>
-    <p>Solutions and model answers provided by AceAssignment experts are intended exclusively to serve as reference samples, model study guides, and research blueprints for students.</p>
+    <p>Solutions and model answers provided by AceAssignment experts are intended exclusively to serve as reference
+      samples, model study guides, and research blueprints for students.</p>
 
     <h3 style="color:var(--secondary); margin-top:1.5rem; margin-bottom:0.8rem;">2. Payment & Delivery Terms</h3>
-    <p>Orders are processed once payment is confirmed. Final solutions are uploaded to the student portal prior to the requested SLA deadline cutoff.</p>
+    <p>Orders are processed once payment is confirmed. Final solutions are uploaded to the student portal prior to the
+      requested SLA deadline cutoff.</p>
 
     <h3 style="color:var(--success); margin-top:1.5rem; margin-bottom:0.8rem;">3. Free Revisions</h3>
-    <p>Students are entitled to unlimited free revisions within 14 days of order delivery, provided the revision request conforms to the initial assignment prompt.</p>
+    <p>Students are entitled to unlimited free revisions within 10 days of order delivery, provided the revision request
+      conforms to the initial assignment prompt.</p>
   </div>
 </div>
 

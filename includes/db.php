@@ -191,7 +191,12 @@ class DataStore {
                 }
                 $params[] = $value;
 
-                $sql = "UPDATE `$collectionName` SET " . implode(", ", $setParts) . " WHERE `$key` = ?";
+                $sqlKey = $key;
+                if ($collectionName === 'notifications' && $key === 'id') {
+                    $sqlKey = 'notification_id';
+                }
+
+                $sql = "UPDATE `$collectionName` SET " . implode(", ", $setParts) . " WHERE `$sqlKey` = ?";
                 $stmt = $pdo->prepare($sql);
                 return $stmt->execute($params);
             } catch (Throwable $e) {
@@ -203,7 +208,9 @@ class DataStore {
         $data = self::getJsonData();
         if (isset($data[$collectionName])) {
             foreach ($data[$collectionName] as $idx => $item) {
-                if (isset($item[$key]) && (string)$item[$key] === (string)$value) {
+                if ((isset($item[$key]) && (string)$item[$key] === (string)$value) ||
+                    (isset($item['id']) && (string)$item['id'] === (string)$value) ||
+                    (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value)) {
                     $data[$collectionName][$idx] = array_merge($item, $updates);
                     self::saveJsonData($data);
                     return true;
@@ -217,7 +224,11 @@ class DataStore {
         $pdo = self::getPdo();
         if ($pdo) {
             try {
-                $stmt = $pdo->prepare("DELETE FROM `$collectionName` WHERE `$key` = ?");
+                $sqlKey = $key;
+                if ($collectionName === 'notifications' && $key === 'id') {
+                    $sqlKey = 'notification_id';
+                }
+                $stmt = $pdo->prepare("DELETE FROM `$collectionName` WHERE `$sqlKey` = ?");
                 return $stmt->execute([$value]);
             } catch (Throwable $e) {
                 self::$useJsonFallback = true;
@@ -228,7 +239,10 @@ class DataStore {
         $data = self::getJsonData();
         if (isset($data[$collectionName])) {
             $data[$collectionName] = array_values(array_filter($data[$collectionName], function($item) use ($key, $value) {
-                return !isset($item[$key]) || (string)$item[$key] !== (string)$value;
+                if (isset($item[$key]) && (string)$item[$key] === (string)$value) return false;
+                if (isset($item['id']) && (string)$item['id'] === (string)$value) return false;
+                if (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value) return false;
+                return true;
             }));
             self::saveJsonData($data);
             return true;

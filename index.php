@@ -2,6 +2,7 @@
 $pageTitle = "Ace Assignment Helps - #1 University Assignment Assistance (UK, USA, Ireland, Australia, Canada & India)";
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/helpers.php';
+$currentUser = Auth::currentUser();
 
 include __DIR__ . '/includes/header.php';
 ?>
@@ -89,9 +90,11 @@ include __DIR__ . '/includes/header.php';
           <div class="form-group">
             <label for="urgency">Deadline Urgency</label>
             <select id="urgency" class="form-control">
-              <option value="24">Urgent (24 Hours)</option>
+              <option value="24">Urgent (24 Hours / 1 Day)</option>
               <option value="48">Fast (2 Days)</option>
-              <option value="120" selected>Standard (5 Days)</option>
+              <option value="72">3 Days</option>
+              <option value="96">4 Days</option>
+              <option value="120" selected>Standard (5 Days - Base Rate)</option>
               <option value="240">Relaxed (10 Days)</option>
             </select>
           </div>
@@ -108,15 +111,30 @@ include __DIR__ . '/includes/header.php';
           </small>
         </div>
 
+        <!-- File Upload Accepting Any Format -->
+        <div class="form-group">
+          <label for="hero_files"><i class="fa-solid fa-cloud-arrow-up" style="color:var(--primary);"></i> Upload Assignment File(s) (Any Format)</label>
+          <div style="border: 2px dashed var(--portal-border); padding: 0.8rem 1rem; border-radius: var(--radius-sm); text-align: center; background: #f8fafc;">
+            <input type="file" id="hero_files" name="assignment_files[]" multiple class="form-control" style="font-size:0.85rem;">
+            <small style="color:var(--text-muted); font-size:0.75rem; display:block; margin-top:4px;">
+              Accepts <strong>ANY</strong> format: PDF, DOCX, ZIP, RAR, TXT, PY, IPYNB, XLS, PPTX, Images, etc.
+            </small>
+            <div id="hero_files_summary" style="margin-top:6px; font-size:0.8rem; color:var(--primary); font-weight:600;"></div>
+          </div>
+        </div>
+
         <div class="price-display-box">
           <div class="est-label">Estimated Total Price</div>
-          <div class="est-amount" id="final_calc_price">$144.00</div>
+          <div class="est-amount" id="final_calc_price">$17.60</div>
           <small style="color:var(--text-muted); display:block; margin-top:4px;">Includes Free Turnitin Plagiarism Report & Unlimited Revisions</small>
         </div>
 
-        <a href="/submit-assignment.php" class="btn btn-primary btn-lg" style="width:100%;">
-          Proceed to Order &rarr;
-        </a>
+        <button type="button" id="btnHeroProceed" class="btn btn-primary btn-lg" style="width:100%; cursor:pointer;">
+          <i class="fa-solid fa-paper-plane"></i> Proceed to Order &rarr;
+        </button>
+        <div style="text-align:center; margin-top:8px;">
+          <a href="/submit-assignment.php" id="heroFullOrderLink" style="color:var(--text-muted); font-size:0.8rem; text-decoration:none;">Or open full detailed order form &rarr;</a>
+        </div>
       </div>
     </div>
   </div>
@@ -258,6 +276,181 @@ include __DIR__ . '/includes/header.php';
   </div>
 </section>
 
+<!-- HERO QUICK ORDER MODAL -->
+<div id="heroQuickOrderModal" class="modal-overlay">
+  <div class="modal-box" style="padding:2rem; max-width:540px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+      <h3 style="margin:0; color:var(--text-main); font-size:1.3rem;">
+        <i class="fa-solid fa-file-circle-check" style="color:var(--primary);"></i> Complete Your Assignment Order
+      </h3>
+      <button type="button" onclick="closeModal('heroQuickOrderModal')" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+    </div>
+
+    <!-- Order Summary Card -->
+    <div style="background:rgba(99, 102, 241, 0.08); border:1px solid var(--border-glow); border-radius:var(--radius-sm); padding:1rem; margin-bottom:1.2rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:0.8rem; color:var(--text-muted);">Estimated Total Investment:</span>
+          <div style="font-size:1.7rem; font-weight:800; color:var(--secondary);" id="modalSummaryPrice">$17.60</div>
+          <small id="modalSummaryDetails" style="color:var(--text-muted); font-size:0.82rem;">2,000 Words &bull; 5 Days</small>
+        </div>
+        <div id="modalFileBadge" style="text-align:right;">
+          <span class="badge badge-info"><i class="fa-solid fa-paperclip"></i> No files</span>
+        </div>
+      </div>
+    </div>
+
+    <form id="heroQuickSubmitForm">
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" id="heroQuickName" class="form-control" required placeholder="e.g. Alex Morgan" value="<?php echo htmlspecialchars($currentUser['name'] ?? ''); ?>">
+      </div>
+
+      <div class="grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <div class="form-group">
+          <label>University Email *</label>
+          <input type="email" id="heroQuickEmail" class="form-control" required placeholder="alex@university.edu" value="<?php echo htmlspecialchars($currentUser['email'] ?? ''); ?>">
+        </div>
+        <div class="form-group">
+          <label>WhatsApp / Phone *</label>
+          <input type="tel" id="heroQuickPhone" class="form-control" required placeholder="+1 (555) 000-0000" value="<?php echo htmlspecialchars($currentUser['phone'] ?? ''); ?>">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Assignment Title / Topic *</label>
+        <input type="text" id="heroQuickTitle" class="form-control" required placeholder="e.g. Business Strategy Case Study Analysis">
+      </div>
+
+      <div class="form-group">
+        <label>Instructions & Guidelines (Optional)</label>
+        <textarea id="heroQuickInstructions" class="form-control" rows="2" placeholder="Paste prompt guidelines, rubrics, or formatting rules..."></textarea>
+      </div>
+
+      <div id="heroQuickMsg" style="margin-bottom:1rem;"></div>
+
+      <div style="display:flex; gap:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;"><i class="fa-solid fa-circle-check"></i> Submit Order Now</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('heroQuickOrderModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script src="/assets/js/main.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const heroFileInput = document.getElementById('hero_files');
+  const heroFileSummary = document.getElementById('hero_files_summary');
+  const btnHeroProceed = document.getElementById('btnHeroProceed');
+  const heroFullOrderLink = document.getElementById('heroFullOrderLink');
+  const quickForm = document.getElementById('heroQuickSubmitForm');
+  const quickMsg = document.getElementById('heroQuickMsg');
+
+  const countrySel = document.getElementById('country_curr_select');
+  const levelSel = document.getElementById('acad_level');
+  const wordSel = document.getElementById('word_count');
+  const urgencySel = document.getElementById('urgency');
+  const couponInp = document.getElementById('coupon_input');
+  const finalPrice = document.getElementById('final_calc_price');
+
+  // Track and display selected files
+  if (heroFileInput) {
+    heroFileInput.addEventListener('change', () => {
+      if (heroFileInput.files.length > 0) {
+        const fileNames = Array.from(heroFileInput.files).map(f => f.name).join(', ');
+        heroFileSummary.innerHTML = `<i class="fa-solid fa-check-circle" style="color:var(--success);"></i> ${heroFileInput.files.length} file(s) selected: <span style="color:var(--text-main); font-weight:normal;">${fileNames}</span>`;
+      } else {
+        heroFileSummary.innerHTML = '';
+      }
+    });
+  }
+
+  // Update full order link dynamically with chosen parameters
+  function updateFullOrderLink() {
+    if (heroFullOrderLink) {
+      const c = countrySel ? countrySel.value : 'USD';
+      const w = wordSel ? wordSel.value : '2000';
+      const d = urgencySel ? urgencySel.value : '120';
+      const cp = couponInp ? couponInp.value.trim() : 'ACE20';
+      heroFullOrderLink.href = `/submit-assignment.php?currency=${c}&words=${w}&deadline=${d}&coupon=${encodeURIComponent(cp)}`;
+    }
+  }
+
+  [countrySel, levelSel, wordSel, urgencySel, couponInp].forEach(el => {
+    if (el) el.addEventListener('change', updateFullOrderLink);
+  });
+  updateFullOrderLink();
+
+  // Open Quick Order Modal
+  if (btnHeroProceed) {
+    btnHeroProceed.addEventListener('click', () => {
+      document.getElementById('modalSummaryPrice').textContent = finalPrice.textContent;
+      const words = wordSel ? wordSel.value : '2000';
+      const days = (parseFloat(urgencySel ? urgencySel.value : 120) / 24).toFixed(0);
+      document.getElementById('modalSummaryDetails').textContent = `${words} Words \u2022 ${days} Days (${levelSel ? levelSel.value : ''})`;
+
+      const badge = document.getElementById('modalFileBadge');
+      if (heroFileInput && heroFileInput.files.length > 0) {
+        badge.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-paperclip"></i> ${heroFileInput.files.length} file(s) attached</span>`;
+      } else {
+        badge.innerHTML = `<span class="badge badge-info"><i class="fa-solid fa-paperclip"></i> No files</span>`;
+      }
+
+      openModal('heroQuickOrderModal');
+    });
+  }
+
+  // Quick Order Modal submission
+  if (quickForm) {
+    quickForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      quickMsg.innerHTML = '<div class="badge badge-info" style="display:block; padding:0.6rem;"><i class="fa-solid fa-spinner fa-spin"></i> Submitting order and uploading files...</div>';
+
+      const fd = new FormData();
+      fd.append('name', document.getElementById('heroQuickName').value);
+      fd.append('email', document.getElementById('heroQuickEmail').value);
+      fd.append('phone', document.getElementById('heroQuickPhone').value);
+      fd.append('title', document.getElementById('heroQuickTitle').value);
+      fd.append('instructions', document.getElementById('heroQuickInstructions').value || 'Submitted via Homepage Quick Order.');
+      fd.append('currency', countrySel ? countrySel.value : 'USD');
+      fd.append('country', countrySel ? countrySel.options[countrySel.selectedIndex].text : 'United States');
+      fd.append('academic_level', levelSel ? levelSel.value : 'postgraduate');
+      fd.append('word_count', wordSel ? wordSel.value : '2000');
+      fd.append('deadline_hours', urgencySel ? urgencySel.value : '120');
+      fd.append('discount_code', couponInp ? couponInp.value.trim() : 'ACE20');
+      fd.append('subject', 'General');
+      fd.append('assignment_type', 'Essay');
+
+      // Append all selected files
+      if (heroFileInput && heroFileInput.files.length > 0) {
+        for (let i = 0; i < heroFileInput.files.length; i++) {
+          fd.append('assignment_files[]', heroFileInput.files[i]);
+        }
+      }
+
+      fetch('/api.php?action=submit_assignment', {
+        method: 'POST',
+        body: fd
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          quickMsg.innerHTML = `<div class="badge badge-success" style="display:block; padding:0.8rem;"><i class="fa-solid fa-circle-check"></i> ${data.message} Redirecting to your portal...</div>`;
+          setTimeout(() => {
+            window.location.href = '/student/assignments.php';
+          }, 1200);
+        } else {
+          quickMsg.innerHTML = `<div class="badge badge-danger" style="display:block; padding:0.6rem;">${data.message || 'Submission error'}</div>`;
+        }
+      })
+      .catch(err => {
+        quickMsg.innerHTML = `<div class="badge badge-danger" style="display:block; padding:0.6rem;">An error occurred during submission.</div>`;
+      });
+    });
+  }
+});
+</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

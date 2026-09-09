@@ -41,36 +41,34 @@ function initHeroCalculator() {
 
   if (!priceDisplay) return;
 
-  // Currency Symbols & Conversion Rates relative to USD ($)
-  const currencyRates = {
-    'USD': { symbol: '$', rate: 1.0 },
-    'GBP': { symbol: '£', rate: 0.79 },
-    'EUR': { symbol: '€', rate: 0.92 },
-    'AUD': { symbol: 'A$', rate: 1.52 },
-    'CAD': { symbol: 'C$', rate: 1.36 },
-    'INR': { symbol: '₹', rate: 83.5 }
+  // Currency pricing configuration matching table:
+  // 3+ days: base rate ($0.011 / ₹1.00)
+  // 2 days (48h): $0.016 / ₹1.50
+  // 1 day (24h or less): $0.021 / ₹2.00
+  const currencyConfigs = {
+    'USD': { symbol: '$', rate_3plus: 0.0110, rate_2days: 0.0160, rate_1day: 0.0210, decimals: 2 },
+    'INR': { symbol: '₹', rate_3plus: 1.0000, rate_2days: 1.5000, rate_1day: 2.0000, decimals: 0 },
+    'GBP': { symbol: '£', rate_3plus: 0.0087, rate_2days: 0.0126, rate_1day: 0.0166, decimals: 2 },
+    'EUR': { symbol: '€', rate_3plus: 0.0100, rate_2days: 0.0145, rate_1day: 0.0191, decimals: 2 },
+    'AUD': { symbol: 'A$', rate_3plus: 0.0170, rate_2days: 0.0247, rate_1day: 0.0325, decimals: 2 },
+    'CAD': { symbol: 'C$', rate_3plus: 0.0150, rate_2days: 0.0218, rate_1day: 0.0286, decimals: 2 }
   };
 
   function updatePrice() {
     const words = parseInt(wordSel ? wordSel.value : 2000) || 2000;
-    const pages = Math.ceil(words / 250);
     const urgencyHours = parseInt(urgencySel ? urgencySel.value : 120) || 120;
-    const level = levelSel ? levelSel.value : 'postgraduate';
     const currKey = countrySel ? countrySel.value : 'USD';
     const code = couponInp ? couponInp.value.trim().toUpperCase() : 'ACE20';
 
-    let basePerPageUSD = 15.0;
+    const cfg = currencyConfigs[currKey] || currencyConfigs['USD'];
+    let effectiveRate = cfg.rate_3plus;
+    if (urgencyHours <= 24) {
+      effectiveRate = cfg.rate_1day;
+    } else if (urgencyHours <= 48) {
+      effectiveRate = cfg.rate_2days;
+    }
 
-    let levelMult = 1.0;
-    if (level === 'postgraduate') levelMult = 1.3;
-    if (level === 'doctorate') levelMult = 1.6;
-
-    let urgencyMult = 1.0;
-    if (urgencyHours <= 24) urgencyMult = 1.8;
-    else if (urgencyHours <= 48) urgencyMult = 1.4;
-    else if (urgencyHours <= 120) urgencyMult = 1.1;
-
-    let subtotalUSD = pages * basePerPageUSD * levelMult * urgencyMult;
+    let subtotal = words * effectiveRate;
 
     let discount = 0;
     if (code === 'ACE20') {
@@ -91,14 +89,14 @@ function initHeroCalculator() {
       }
     }
 
-    let finalUSD = subtotalUSD * (1 - discount);
-    const currObj = currencyRates[currKey] || currencyRates['USD'];
-    let localPrice = finalUSD * currObj.rate;
+    let finalPrice = subtotal * (1 - discount);
+    const minPrice = (currKey === 'INR') ? 100 : 1;
+    finalPrice = Math.max(minPrice, finalPrice);
 
-    if (currKey === 'INR') {
-      priceDisplay.textContent = currObj.symbol + Math.round(localPrice).toLocaleString('en-IN');
+    if (cfg.decimals === 0) {
+      priceDisplay.textContent = cfg.symbol + Math.round(finalPrice).toLocaleString('en-IN');
     } else {
-      priceDisplay.textContent = currObj.symbol + localPrice.toFixed(2);
+      priceDisplay.textContent = cfg.symbol + finalPrice.toFixed(2);
     }
   }
 

@@ -51,61 +51,147 @@ function get_sla_status($deadline_str) {
     }
 }
 
-function calculate_assignment_price($word_count, $deadline_hours, $academic_level = 'Undergraduate', $subject = 'General', $coupon_code = '') {
+function calculate_assignment_price($word_count, $deadline_hours, $academic_level = 'Undergraduate', $subject = 'General', $coupon_code = '', $currency = 'USD') {
     $word_count = max(250, (int)$word_count);
     $pages = ceil($word_count / 250);
+    $deadline_hours = max(1, (float)$deadline_hours);
+    $currency = strtoupper(trim($currency ?: 'USD'));
 
-    // Base rate per page ($15/page baseline)
-    $base_per_page = 15.0;
-
-    // Academic level multiplier
-    $level_multipliers = [
-        'High School' => 0.85,
-        'Undergraduate' => 1.0,
-        'Master\'s' => 1.35,
-        'PhD' => 1.75
+    // Exact tiered rate schedule:
+    // 3+ Days (72h+, 4 days, 5+ days): USD $0.011 / INR ₹1.00 per word
+    // 2 Days (48 Hours): USD $0.016 / INR ₹1.50 per word
+    // 1 Day (24 Hours urgent or less): USD $0.021 / INR ₹2.00 per word
+    $currencyConfigs = [
+        'USD' => ['symbol' => '$', 'rate_3plus' => 0.0110, 'rate_2days' => 0.0160, 'rate_1day' => 0.0210, 'decimals' => 2],
+        'INR' => ['symbol' => '₹', 'rate_3plus' => 1.0000, 'rate_2days' => 1.5000, 'rate_1day' => 2.0000, 'decimals' => 0],
+        'GBP' => ['symbol' => '£', 'rate_3plus' => 0.0087, 'rate_2days' => 0.0126, 'rate_1day' => 0.0166, 'decimals' => 2],
+        'EUR' => ['symbol' => '€', 'rate_3plus' => 0.0100, 'rate_2days' => 0.0145, 'rate_1day' => 0.0191, 'decimals' => 2],
+        'AUD' => ['symbol' => 'A$', 'rate_3plus' => 0.0170, 'rate_2days' => 0.0247, 'rate_1day' => 0.0325, 'decimals' => 2],
+        'CAD' => ['symbol' => 'C$', 'rate_3plus' => 0.0150, 'rate_2days' => 0.0218, 'rate_1day' => 0.0286, 'decimals' => 2],
     ];
-    $level_mult = $level_multipliers[$academic_level] ?? 1.0;
 
-    // Deadline urgency multiplier
-    $urgency_mult = 1.0;
-    if ($deadline_hours <= 12) {
-        $urgency_mult = 2.2;
-    } elseif ($deadline_hours <= 24) {
-        $urgency_mult = 1.8;
-    } elseif ($deadline_hours <= 48) {
-        $urgency_mult = 1.4;
-    } elseif ($deadline_hours <= 72) {
-        $urgency_mult = 1.2;
+    $config = $currencyConfigs[$currency] ?? $currencyConfigs['USD'];
+
+    if ($deadline_hours <= 24.0) {
+        $effective_rate_per_word = $config['rate_1day'];
+    } elseif ($deadline_hours <= 48.0) {
+        $effective_rate_per_word = $config['rate_2days'];
+    } else {
+        $effective_rate_per_word = $config['rate_3plus'];
     }
 
-    // Subject complexity boost
-    $complex_subjects = ['Computer Science', 'Programming', 'Engineering', 'Medical Sciences', 'Finance', 'Law & Legal Studies'];
-    $subject_mult = in_array($subject, $complex_subjects) ? 1.15 : 1.0;
-
-    $subtotal = round($pages * $base_per_page * $level_mult * $urgency_mult * $subject_mult, 2);
+    $base_rate = $config['rate_3plus'];
+    $urgency_rate = max(0.0, $effective_rate_per_word - $base_rate);
+    $subtotal = round($word_count * $effective_rate_per_word, 2);
 
     $discount_amount = 0.0;
     $discount_percent = 0;
 
     if (!empty($coupon_code)) {
         $coupon = DataStore::findOne('coupons', 'code', strtoupper(trim($coupon_code)));
-        if ($coupon && $coupon['status'] === 'Active') {
+        if ($coupon && ($coupon['status'] ?? 'Active') === 'Active') {
             $discount_percent = (float)$coupon['discount_percent'];
             $discount_amount = round(($subtotal * $discount_percent) / 100, 2);
         }
     }
 
-    $final_price = round(max(10.0, $subtotal - $discount_amount), 2);
+    $min_price = ($currency === 'INR') ? 100.0 : 1.0;
+    $final_price = round(max($min_price, $subtotal - $discount_amount), 2);
 
     return [
         'word_count' => $word_count,
         'pages' => $pages,
+        'deadline_hours' => $deadline_hours,
+        'currency' => $currency,
+        'currency_symbol' => $config['symbol'],
+        'base_rate_per_word' => $base_rate,
+        'urgency_rate_per_word' => $urgency_rate,
+        'effective_rate_per_word' => $effective_rate_per_word,
         'subtotal' => $subtotal,
         'discount_percent' => $discount_percent,
         'discount_amount' => $discount_amount,
         'final_price' => $final_price
     ];
+}
+
+function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Student', $isInternal = false) {
+    $uploadedRecords = [];
+
+    // Find all matching keys in $_FILES (exact match, array bracketed, or indexed keys)
+    $matchingKeys = [];
+    if (isset($_FILES[$fileInputName])) {
+        $matchingKeys[] = $fileInputName;
+    }
+    foreach (array_keys($_FILES) as $k) {
+        if ($k !== $fileInputName && strpos($k, $fileInputName) === 0) {
+            $matchingKeys[] = $k;
+        }
+    }
+
+    if (empty($matchingKeys)) {
+        return $uploadedRecords;
+    }
+
+    $targetDir = __DIR__ . '/../assets/uploads/';
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0777, true);
+    }
+
+    // Normalize files into array of files (supports single, multiple, and indexed)
+    $fileList = [];
+    foreach ($matchingKeys as $key) {
+        $files = $_FILES[$key];
+        if (is_array($files['name'])) {
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK && !empty($files['name'][$i])) {
+                    $fileList[] = [
+                        'name' => $files['name'][$i],
+                        'tmp_name' => $files['tmp_name'][$i],
+                        'error' => $files['error'][$i],
+                        'size' => $files['size'][$i]
+                    ];
+                }
+            }
+        } else {
+            if ($files['error'] === UPLOAD_ERR_OK && !empty($files['name'])) {
+                $fileList[] = [
+                    'name' => $files['name'],
+                    'tmp_name' => $files['tmp_name'],
+                    'error' => $files['error'],
+                    'size' => $files['size']
+                ];
+            }
+        }
+    }
+
+    foreach ($fileList as $f) {
+        $origName = basename($f['name']);
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        $safePrefix = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($origName, PATHINFO_FILENAME));
+        $uniqueName = time() . '_' . rand(100, 999) . '_' . $safePrefix . ($ext ? '.' . $ext : '');
+        $targetPath = $targetDir . $uniqueName;
+
+        $moved = is_uploaded_file($f['tmp_name']) ? @move_uploaded_file($f['tmp_name'], $targetPath) : (@copy($f['tmp_name'], $targetPath) || @move_uploaded_file($f['tmp_name'], $targetPath));
+
+        if ($moved) {
+            $allFiles = DataStore::getCollection('files');
+            $fileId = 'FILE-' . (count($allFiles) + rand(500, 999));
+            $rec = [
+                'file_id' => $fileId,
+                'assignment_id' => $assignmentId,
+                'file_name' => $origName,
+                'path' => 'assets/uploads/' . $uniqueName,
+                'file_type' => $ext ?: 'file',
+                'uploaded_by' => $uploadedBy,
+                'upload_date' => date('Y-m-d H:i:s'),
+                'is_internal' => (bool)$isInternal
+            ];
+            DataStore::insert('files', $rec);
+            $uploadedRecords[] = $rec;
+        }
+    }
+
+    return $uploadedRecords;
 }
 
 function generate_assignment_id() {
@@ -161,4 +247,74 @@ function get_status_badge_class($status) {
         default:
             return 'badge-secondary';
     }
+}
+
+function add_notification($user_role, $user_id, $title, $message, $type = 'info', $link = '') {
+    $notifs = DataStore::getCollection('notifications');
+    $notif_id = 'NTF-' . (count($notifs) + 1);
+    return DataStore::insert('notifications', [
+        'id' => $notif_id,
+        'user_id' => $user_id ?: '',
+        'user_role' => $user_role ?: 'All',
+        'title' => $title,
+        'message' => $message,
+        'is_read' => false,
+        'created_at' => date('Y-m-d H:i:s')
+    ]);
+}
+
+function get_user_notifications($user_id, $user_role) {
+    $all = DataStore::getCollection('notifications');
+    $filtered = array_filter($all, function($n) use ($user_id, $user_role) {
+        $targetRole = $n['user_role'] ?? '';
+        $targetUser = $n['user_id'] ?? '';
+
+        // If specifically targeted to user_id
+        if (!empty($targetUser)) {
+            return ($targetUser === $user_id);
+        }
+
+        // Target to role or broadcast 'All'
+        if ($targetRole === 'All') return true;
+        if ($targetRole === $user_role) return true;
+        if ($user_role === 'Admin') return true; // Admins can monitor alerts
+
+        return false;
+    });
+
+    // Sort descending by created_at or id
+    usort($filtered, function($a, $b) {
+        return strtotime($b['created_at'] ?? '0') - strtotime($a['created_at'] ?? '0');
+    });
+
+    return array_values($filtered);
+}
+
+function get_unread_notifications_count($user_id, $user_role) {
+    $notifs = get_user_notifications($user_id, $user_role);
+    $count = 0;
+    foreach ($notifs as $n) {
+        if (empty($n['is_read'])) {
+            $count++;
+        }
+    }
+    return $count;
+}
+
+function mark_notification_read($notif_id) {
+    return DataStore::update('notifications', 'id', $notif_id, ['is_read' => true]);
+}
+
+function mark_all_notifications_read($user_id, $user_role) {
+    $notifs = get_user_notifications($user_id, $user_role);
+    foreach ($notifs as $n) {
+        if (empty($n['is_read']) && isset($n['id'])) {
+            DataStore::update('notifications', 'id', $n['id'], ['is_read' => true]);
+        }
+    }
+    return true;
+}
+
+function delete_notification($notif_id) {
+    return DataStore::delete('notifications', 'id', $notif_id);
 }

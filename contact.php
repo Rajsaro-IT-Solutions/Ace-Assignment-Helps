@@ -1,10 +1,25 @@
 <?php
 $pageTitle = "Contact Us";
+require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/helpers.php';
 include __DIR__ . '/includes/header.php';
 $sentMsg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $sentMsg = "Thank you! Your message has been received. Our support team will reply within 15 minutes.";
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $subject = trim($_POST['subject'] ?? 'Website Inquiry');
+    $msg = trim($_POST['message'] ?? '');
+
+    $uploaded = [];
+    if (isset($_FILES['contact_files'])) {
+        $uploaded = handle_uploaded_files('contact_files', 'INQ-' . time(), $name . ' (' . $email . ')', false);
+    }
+
+    $fileNote = !empty($uploaded) ? " (" . count($uploaded) . " file(s) attached)" : "";
+    add_notification('Admin', null, "New Inquiry: $subject", "From: $name ($email)$fileNote\nMessage: $msg", 'info');
+
+    $sentMsg = "Thank you! Your message" . (!empty($uploaded) ? " and " . count($uploaded) . " file(s)" : "") . " have been received. Our support team will reply within 15 minutes.";
 }
 ?>
 
@@ -45,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <i class="fa-solid fa-circle-check"></i> <?php echo htmlspecialchars($sentMsg); ?>
         </div>
       <?php endif; ?>
-      <form method="POST">
+      <form method="POST" enctype="multipart/form-data">
         <div class="form-group">
           <label>Your Name *</label>
           <input type="text" name="name" class="form-control" required placeholder="John Doe">
@@ -60,9 +75,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="form-group">
           <label>Message *</label>
-          <textarea name="message" class="form-control" rows="4" required placeholder="Write your question here..."></textarea>
+          <textarea name="message" class="form-control" rows="3" required placeholder="Write your question here..."></textarea>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
+        <div class="form-group">
+          <label><i class="fa-solid fa-cloud-arrow-up"></i> Attach Document / Assignment Brief (Any Format)</label>
+          <input type="file" name="contact_files[]" multiple class="form-control">
+          <small style="color:var(--text-muted); font-size:0.8rem; display:block; margin-top:4px;">
+            Accepts <strong>ANY</strong> format: PDF, DOCX, ZIP, RAR, TXT, PY, IPYNB, XLS, PPTX, Images, etc.
+          </small>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
       </form>
     </div>
   </div>

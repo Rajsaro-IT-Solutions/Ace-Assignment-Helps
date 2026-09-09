@@ -3,7 +3,7 @@ $pageTitle = "Student & Staff Portal Login";
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/helpers.php';
 
-$error = '';
+$error = $_GET['msg'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
@@ -12,7 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($email) || empty($password)) {
         $error = "Please enter both email and password.";
     } else {
-        if (Auth::login($email, $password)) {
+        $loginResult = Auth::login($email, $password);
+        if ($loginResult === true) {
             $user = Auth::currentUser();
             add_audit_log($user['role'], $user['id'], 'User Login', 'Logged into portal');
             if ($user['role'] === 'Admin') {
@@ -23,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: /student/index.php');
             }
             exit;
+        } elseif ($loginResult === 'blocked') {
+            $error = "Access Denied: This account has been blocked by an administrator. Please contact support.";
         } else {
             $error = "Invalid email address or password. Please try again.";
         }

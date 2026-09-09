@@ -94,6 +94,75 @@ $files = DataStore::filter('files', function($f) use ($id) {
       </form>
     </div>
 
+    <!-- Student Requirements / Prompt -->
+    <div class="table-card" style="padding:1.5rem;">
+      <h3 style="font-size:1.1rem; margin-bottom:0.8rem; color:var(--text-main);"><i class="fa-solid fa-file-lines" style="color:var(--secondary);"></i> Assignment Requirements</h3>
+      <p style="color:var(--text-main); white-space:pre-line; line-height:1.6; font-size:0.92rem;">
+        <?php echo htmlspecialchars($asm['instructions'] ?? 'No special instructions provided.'); ?>
+      </p>
+    </div>
+
+    <!-- Uploaded Files List -->
+    <div class="table-card" style="padding:1.5rem;">
+      <h3 style="font-size:1.1rem; margin-bottom:1rem; color:var(--text-main);"><i class="fa-solid fa-paperclip" style="color:var(--success);"></i> Attached Files & Materials</h3>
+      <?php if (empty($files)): ?>
+        <p style="color:var(--text-muted); font-size:0.9rem;">No files uploaded yet for this assignment.</p>
+      <?php else: ?>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <?php foreach ($files as $file): 
+            $ext = strtolower($file['file_type'] ?? '');
+            $icon = 'fa-file';
+            if (in_array($ext, ['pdf'])) $icon = 'fa-file-pdf';
+            elseif (in_array($ext, ['doc', 'docx'])) $icon = 'fa-file-word';
+            elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $icon = 'fa-file-excel';
+            elseif (in_array($ext, ['ppt', 'pptx'])) $icon = 'fa-file-powerpoint';
+            elseif (in_array($ext, ['zip', 'rar', 'tar', 'gz', '7z'])) $icon = 'fa-file-zipper';
+            elseif (in_array($ext, ['py', 'java', 'cpp', 'c', 'js', 'html', 'css', 'sql', 'php', 'ipynb'])) $icon = 'fa-file-code';
+            elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) $icon = 'fa-file-image';
+            $isInternal = !empty($file['is_internal']);
+          ?>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid var(--portal-border); padding:0.8rem 1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
+              <div>
+                <i class="fa-solid <?php echo $icon; ?>" style="color:var(--primary); margin-right:8px; font-size:1.1rem;"></i>
+                <strong style="color:var(--text-main);"><?php echo htmlspecialchars($file['file_name']); ?></strong>
+                <?php if ($isInternal): ?>
+                  <span class="badge badge-warning" style="font-size:0.7rem; margin-left:6px;">Staff Only</span>
+                <?php else: ?>
+                  <span class="badge badge-success" style="font-size:0.7rem; margin-left:6px;">Student Visible</span>
+                <?php endif; ?>
+                <small style="color:var(--text-muted); display:block; margin-top:2px;">Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?></small>
+              </div>
+              <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-outline btn-sm">
+                <i class="fa-solid fa-download"></i> Download
+              </a>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+
+    <!-- Upload Files Section (Accepts Any Format) -->
+    <div class="table-card" style="padding:1.5rem;">
+      <h3 style="font-size:1.1rem; margin-bottom:0.4rem; color:var(--text-main);"><i class="fa-solid fa-cloud-arrow-up" style="color:var(--primary);"></i> Upload Assignment Files / Drafts / Solutions</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+        Upload expert work, drafts, QA checks, or final deliverables in <strong>ANY format</strong> (PDF, DOCX, ZIP, RAR, TXT, PY, IPYNB, XLS, PPTX, images, etc.).
+      </p>
+      <form id="allocatorUploadForm" enctype="multipart/form-data">
+        <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($asm['assignment_id']); ?>">
+        <div style="margin-bottom:0.8rem;">
+          <input type="file" name="assignment_files[]" multiple class="form-control" required>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:var(--text-muted); margin:0; cursor:pointer;">
+            <input type="checkbox" name="is_internal" value="1">
+            <span>Mark as Staff Internal File (Hidden from student)</span>
+          </label>
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Files</button>
+        </div>
+        <div id="allocUploadMsg" style="margin-top:0.8rem;"></div>
+      </form>
+    </div>
+
     <!-- Internal Notes Thread -->
     <div class="table-card" style="padding:1.5rem;">
       <h3 style="font-size:1.1rem; margin-bottom:1rem; color:var(--text-main);"><i class="fa-solid fa-lock" style="color:var(--warning);"></i> Internal Notes Thread (Hidden From Student)</h3>
@@ -149,6 +218,32 @@ document.getElementById('allocateForm').addEventListener('submit', (e) => {
     }
   });
 });
+
+const allocUploadForm = document.getElementById('allocatorUploadForm');
+if (allocUploadForm) {
+  allocUploadForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('allocUploadMsg');
+    msg.innerHTML = '<div class="badge badge-info"><i class="fa-solid fa-spinner fa-spin"></i> Uploading files...</div>';
+
+    fetch('/api.php?action=upload_assignment_file', {
+      method: 'POST',
+      body: new FormData(allocUploadForm)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        msg.innerHTML = `<div class="badge badge-success">${data.message}</div>`;
+        setTimeout(() => { window.location.reload(); }, 1000);
+      } else {
+        msg.innerHTML = `<div class="badge badge-danger">${data.message || 'Upload failed'}</div>`;
+      }
+    })
+    .catch(err => {
+      msg.innerHTML = `<div class="badge badge-danger">An error occurred during upload.</div>`;
+    });
+  });
+}
 </script>
 
 <script src="/assets/js/portal.js"></script>

@@ -1,516 +1,668 @@
 {
-  "students": [
-    {
-      "student_id": "STU-1001",
-      "name": "Sarah Jenkins",
-      "email": "sarah.jenkins@stanford.edu",
-      "phone": "+1 (555) 234-5678",
-      "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.RAWefReD2",
-      "country": "United States",
-      "university": "Stanford University",
-      "course": "Computer Science",
-      "status": "Active",
-      "created_at": "2026-08-15 10:30:00"
-    },
-    {
-      "student_id": "STU-1002",
-      "name": "Liam Hemsworth",
-      "email": "liam.h@oxford.ac.uk",
-      "phone": "+44 7911 123456",
-      "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.RAWefReD2",
-      "country": "United Kingdom",
-      "university": "University of Oxford",
-      "course": "Business Management",
-      "status": "Active",
-      "created_at": "2026-08-20 14:15:00"
-    },
-    {
-      "student_id": "STU-1003",
-      "name": "Aarav Sharma",
-      "email": "aarav.sharma@sydney.edu.au",
-      "phone": "+61 412 345 678",
-      "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.RAWefReD2",
-      "country": "Australia",
-      "university": "University of Sydney",
-      "course": "Nursing & Healthcare",
-      "status": "Active",
-      "created_at": "2026-08-28 09:00:00"
-    }
-  ],
-  "allocators": [
-    {
-      "allocator_id": "ALL-501",
-      "name": "David Vance",
-      "email": "allocator@aceassign.com",
-      "phone": "+1 (555) 987-6543",
-      "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.RAWefReD2",
-      "status": "Active",
-      "performance_score": 98.4
-    },
-    {
-      "allocator_id": "ALL-502",
-      "name": "Emma Watson",
-      "email": "emma.allocator@aceassign.com",
-      "phone": "+1 (555) 444-3322",
-      "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.RAWefReD2",
-      "status": "Active",
-      "performance_score": 96.1
-    }
-  ],
-  "admins": [
-    {
-      "admin_id": "ADM-001",
-      "name": "System Director Admin",
-      "email": "admin@aceassign.com",
-      "phone": "+1 (800) 555-ACE1",
-      "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.RAWefReD2",
-      "status": "Active"
-    }
-  ],
-  "experts": [
-    {
-      "expert_id": "EXP-301",
-      "name": "Dr. Robert Vance (PhD)",
-      "email": "robert.vance@experts.com",
-      "phone": "+1 555 888 1111",
-      "subjects": ["Computer Science", "Artificial Intelligence", "Python"],
-      "rating": 4.9,
-      "completed_count": 142,
-      "status": "Available"
-    },
-    {
-      "expert_id": "EXP-302",
-      "name": "Prof. Elena Rostova",
-      "email": "elena.rostova@experts.com",
-      "phone": "+44 7700 900123",
-      "subjects": ["Business Management", "Finance", "Economics"],
-      "rating": 4.85,
-      "completed_count": 98,
-      "status": "Available"
-    },
-    {
-      "expert_id": "EXP-303",
-      "name": "Dr. Michael Zhang",
-      "email": "michael.zhang@experts.com",
-      "phone": "+61 400 123 999",
-      "subjects": ["Nursing & Healthcare", "Biology", "Medical Sciences"],
-      "rating": 4.95,
-      "completed_count": 210,
-      "status": "Busy"
-    },
-    {
-      "expert_id": "EXP-304",
-      "name": "Clara Higgins (LLM)",
-      "email": "clara.h@experts.com",
-      "phone": "+1 555 333 4444",
-      "subjects": ["Law & Legal Studies", "Corporate Governance"],
-      "rating": 4.78,
-      "completed_count": 76,
-      "status": "Available"
-    }
-  ],
-  "assignments": [
-    {
-      "assignment_id": "ACE-2026-000101",
-      "student_id": "STU-1001",
-      "title": "Machine Learning Model Optimization Paper",
-      "subject": "Computer Science",
-      "assignment_type": "Research Paper",
-      "deadline": "2026-09-06 18:00:00",
-      "timezone": "EST (UTC-5)",
-      "word_count": 2500,
-      "pages": 10,
-      "reference_style": "IEEE",
-      "priority": "High",
-      "language": "English (US)",
-      "instructions": "Develop a hyperparameter tuning evaluation matrix for Random Forest and XGBoost algorithms using Python scikit-learn.",
-      "price": 180.00,
-      "discount_code": "ACE20",
-      "final_price": 144.00,
-      "status": "In Progress",
-      "allocator_id": "ALL-501",
-      "expert_id": "EXP-301",
-      "country": "United States",
-      "university": "Stanford University",
-      "created_at": "2026-09-01 12:00:00",
-      "updated_at": "2026-09-02 10:15:00"
-    },
-    {
-      "assignment_id": "ACE-2026-000102",
-      "student_id": "STU-1002",
-      "title": "Global Supply Chain Disruptions Case Study",
-      "subject": "Business Management",
-      "assignment_type": "Case Study",
-      "deadline": "2026-09-05 12:00:00",
-      "timezone": "GMT (UTC+0)",
-      "word_count": 1800,
-      "pages": 7,
-      "reference_style": "Harvard",
-      "priority": "Urgent",
-      "language": "English (UK)",
-      "instructions": "Analyze post-2024 maritime logistics bottlenecks in EU ports and recommend mitigation strategies.",
-      "price": 140.00,
-      "discount_code": "",
-      "final_price": 140.00,
-      "status": "Quality Check",
-      "allocator_id": "ALL-501",
-      "expert_id": "EXP-302",
-      "country": "United Kingdom",
-      "university": "University of Oxford",
-      "created_at": "2026-09-02 14:30:00",
-      "updated_at": "2026-09-04 08:20:00"
-    },
-    {
-      "assignment_id": "ACE-2026-000103",
-      "student_id": "STU-1003",
-      "title": "Patient Care Plan & Clinical Risk Assessment",
-      "subject": "Nursing & Healthcare",
-      "assignment_type": "Coursework",
-      "deadline": "2026-09-08 23:59:00",
-      "timezone": "AEST (UTC+10)",
-      "word_count": 3000,
-      "pages": 12,
-      "reference_style": "APA 7th",
-      "priority": "Normal",
-      "language": "English (UK)",
-      "instructions": "Formulate a comprehensive care pathway for acute respiratory distress syndrome in geriatric patients.",
-      "price": 210.00,
-      "discount_code": "FIRST15",
-      "final_price": 178.50,
-      "status": "Waiting for Payment",
-      "allocator_id": "",
-      "expert_id": "",
-      "country": "Australia",
-      "university": "University of Sydney",
-      "created_at": "2026-09-03 16:45:00",
-      "updated_at": "2026-09-03 16:45:00"
-    },
-    {
-      "assignment_id": "ACE-2026-000104",
-      "student_id": "STU-1001",
-      "title": "Database Schema Design & SQL Queries",
-      "subject": "Computer Science",
-      "assignment_type": "Programming / Code",
-      "deadline": "2026-09-10 17:00:00",
-      "timezone": "EST (UTC-5)",
-      "word_count": 1000,
-      "pages": 4,
-      "reference_style": "None",
-      "priority": "Normal",
-      "language": "English (US)",
-      "instructions": "Design ER diagram and write normalized SQL DDL and DML scripts for an e-commerce platform.",
-      "price": 120.00,
-      "discount_code": "",
-      "final_price": 120.00,
-      "status": "Completed",
-      "allocator_id": "ALL-502",
-      "expert_id": "EXP-301",
-      "country": "United States",
-      "university": "Stanford University",
-      "created_at": "2026-08-25 09:10:00",
-      "updated_at": "2026-08-30 11:00:00"
-    },
-    {
-      "assignment_id": "ACE-2026-000105",
-      "student_id": "STU-1002",
-      "title": "International Trade Law & Tariff Regulation",
-      "subject": "Law & Legal Studies",
-      "assignment_type": "Essay",
-      "deadline": "2026-09-04 20:00:00",
-      "timezone": "GMT (UTC+0)",
-      "word_count": 2000,
-      "pages": 8,
-      "reference_style": "OSCOLA",
-      "priority": "Urgent",
-      "language": "English (UK)",
-      "instructions": "Critique recent WTO dispute settlement decisions regarding digital tariffs.",
-      "price": 160.00,
-      "discount_code": "",
-      "final_price": 160.00,
-      "status": "Pending Review",
-      "allocator_id": "",
-      "expert_id": "",
-      "country": "United Kingdom",
-      "university": "University of Oxford",
-      "created_at": "2026-09-04 07:30:00",
-      "updated_at": "2026-09-04 07:30:00"
-    }
-  ],
-  "files": [
-    {
-      "file_id": "FILE-101",
-      "assignment_id": "ACE-2026-000101",
-      "file_name": "ML_Assignment_Prompt_2026.pdf",
-      "path": "assets/uploads/ML_Assignment_Prompt_2026.pdf",
-      "file_type": "pdf",
-      "uploaded_by": "Student",
-      "upload_date": "2026-09-01 12:05:00",
-      "is_internal": false
-    },
-    {
-      "file_id": "FILE-102",
-      "assignment_id": "ACE-2026-000101",
-      "file_name": "Dataset_Scikit_Sample.csv",
-      "path": "assets/uploads/Dataset_Scikit_Sample.csv",
-      "file_type": "csv",
-      "uploaded_by": "Student",
-      "upload_date": "2026-09-01 12:05:00",
-      "is_internal": false
-    },
-    {
-      "file_id": "FILE-103",
-      "assignment_id": "ACE-2026-000101",
-      "file_name": "Internal_Outline_Verification.docx",
-      "path": "assets/uploads/Internal_Outline_Verification.docx",
-      "file_type": "docx",
-      "uploaded_by": "Allocator",
-      "upload_date": "2026-09-01 14:00:00",
-      "is_internal": true
-    },
-    {
-      "file_id": "FILE-104",
-      "assignment_id": "ACE-2026-000104",
-      "file_name": "Final_Database_Schema_Solution.pdf",
-      "path": "assets/uploads/Final_Database_Schema_Solution.pdf",
-      "file_type": "pdf",
-      "uploaded_by": "Expert",
-      "upload_date": "2026-08-30 10:45:00",
-      "is_internal": false
-    }
-  ],
-  "payments": [
-    {
-      "payment_id": "PAY-8801",
-      "assignment_id": "ACE-2026-000101",
-      "student_id": "STU-1001",
-      "amount": 144.00,
-      "currency": "USD",
-      "status": "Paid",
-      "payment_method": "Stripe Credit Card",
-      "transaction_id": "ch_3M00192837192837",
-      "payment_date": "2026-09-01 12:15:00"
-    },
-    {
-      "payment_id": "PAY-8802",
-      "assignment_id": "ACE-2026-000102",
-      "student_id": "STU-1002",
-      "amount": 140.00,
-      "currency": "GBP",
-      "status": "Paid",
-      "payment_method": "Razorpay NetBanking",
-      "transaction_id": "pay_Kx9281729384",
-      "payment_date": "2026-09-02 14:35:00"
-    },
-    {
-      "payment_id": "PAY-8803",
-      "assignment_id": "ACE-2026-000104",
-      "student_id": "STU-1001",
-      "amount": 120.00,
-      "currency": "USD",
-      "status": "Paid",
-      "payment_method": "PayPal",
-      "transaction_id": "PP-99201948201",
-      "payment_date": "2026-08-25 09:20:00"
-    }
-  ],
-  "allocation": [
-    {
-      "allocation_id": "ALC-901",
-      "assignment_id": "ACE-2026-000101",
-      "expert_id": "EXP-301",
-      "allocator_id": "ALL-501",
-      "allocated_date": "2026-09-01 14:30:00",
-      "deadline": "2026-09-06 12:00:00",
-      "status": "Active"
-    },
-    {
-      "allocation_id": "ALC-902",
-      "assignment_id": "ACE-2026-000102",
-      "expert_id": "EXP-302",
-      "allocator_id": "ALL-501",
-      "allocated_date": "2026-09-02 15:00:00",
-      "deadline": "2026-09-05 09:00:00",
-      "status": "Active"
-    }
-  ],
-  "notes": [
-    {
-      "note_id": "NOTE-1",
-      "assignment_id": "ACE-2026-000101",
-      "user_id": "ALL-501",
-      "user_role": "Allocator",
-      "user_name": "David Vance",
-      "message": "Assigned to Dr. Robert Vance. Strict IEEE formatting requirement verified.",
-      "visibility": "Internal",
-      "created_at": "2026-09-01 14:32:00"
-    },
-    {
-      "note_id": "NOTE-2",
-      "assignment_id": "ACE-2026-000102",
-      "user_id": "EXP-302",
-      "user_role": "Expert",
-      "user_name": "Prof. Elena Rostova",
-      "message": "Draft completed. Submitted for Quality Check review.",
-      "visibility": "Internal",
-      "created_at": "2026-09-04 08:15:00"
-    }
-  ],
-  "notifications": [
-    {
-      "id": "NTF-1",
-      "user_id": "STU-1001",
-      "user_role": "Student",
-      "title": "Assignment Status Update",
-      "message": "Your assignment ACE-2026-000101 is now In Progress by Expert Dr. Robert Vance.",
-      "is_read": false,
-      "created_at": "2026-09-01 14:30:00"
-    },
-    {
-      "id": "NTF-2",
-      "user_id": "ALL-501",
-      "user_role": "Allocator",
-      "title": "New Assignment Received",
-      "message": "Assignment ACE-2026-000105 requires allocation.",
-      "is_read": false,
-      "created_at": "2026-09-04 07:30:00"
-    }
-  ],
-  "coupons": [
-    {
-      "coupon_id": "CPN-1",
-      "code": "ACE20",
-      "discount_percent": 20,
-      "max_uses": 100,
-      "current_uses": 24,
-      "expires_at": "2026-12-31",
-      "status": "Active"
-    },
-    {
-      "coupon_id": "CPN-2",
-      "code": "FIRST15",
-      "discount_percent": 15,
-      "max_uses": 500,
-      "current_uses": 112,
-      "expires_at": "2026-12-31",
-      "status": "Active"
-    },
-    {
-      "coupon_id": "CPN-3",
-      "code": "SUPER30",
-      "discount_percent": 30,
-      "max_uses": 50,
-      "current_uses": 50,
-      "expires_at": "2026-08-31",
-      "status": "Expired"
-    }
-  ],
-  "blogs": [
-    {
-      "id": 1,
-      "title": "10 Master Strategies for Structuring a Top-Grade University Dissertation",
-      "excerpt": "Discover how leading researchers organize literature reviews, methodology sections, and empirical findings for maximum academic impact.",
-      "category": "Academic Writing",
-      "author": "Dr. Robert Vance",
-      "published_at": "2026-08-20",
-      "image": "blog-dissertation.jpg"
-    },
-    {
-      "id": 2,
-      "title": "Demystifying Scikit-Learn Hyperparameter Tuning in Machine Learning",
-      "excerpt": "A practical guide to cross-validation, grid search, and Bayesian optimization in Python.",
-      "category": "Computer Science",
-      "author": "Dr. Michael Zhang",
-      "published_at": "2026-08-25",
-      "image": "blog-ml.jpg"
-    },
-    {
-      "id": 3,
-      "title": "Mastering OSCOLA & APA 7th Referencing Standards Without Headaches",
-      "excerpt": "Avoid plagiarism flags and citation errors with our comprehensive referencing quick-reference chart.",
-      "category": "Study Tips",
-      "author": "Clara Higgins",
-      "published_at": "2026-09-01",
-      "image": "blog-referencing.jpg"
-    }
-  ],
-  "support_tickets": [
-    {
-      "ticket_id": "TCK-401",
-      "student_id": "STU-1001",
-      "assignment_id": "ACE-2026-000101",
-      "subject": "Request for additional dataset integration",
-      "message": "Hi, I just uploaded an updated CSV file to the assignment attachments. Can the expert please include it?",
-      "priority": "Medium",
-      "status": "Open",
-      "created_at": "2026-09-02 16:20:00",
-      "replies": [
+    "students": [
         {
-          "sender_role": "Admin",
-          "sender_name": "Support Desk",
-          "message": "Thank you Sarah! We have notified Dr. Robert Vance and forwarded the new dataset.",
-          "timestamp": "2026-09-02 17:05:00"
+            "student_id": "STU-1001",
+            "name": "Sarah Jenkins",
+            "email": "sarah.jenkins@stanford.edu",
+            "phone": "+1 (555) 234-5678",
+            "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC\/.og\/at2.RAWefReD2",
+            "country": "United States",
+            "university": "Stanford University",
+            "course": "Computer Science",
+            "status": "Active",
+            "created_at": "2026-08-15 10:30:00"
+        },
+        {
+            "student_id": "STU-1002",
+            "name": "Liam Hemsworth",
+            "email": "liam.h@oxford.ac.uk",
+            "phone": "+44 7911 123456",
+            "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC\/.og\/at2.RAWefReD2",
+            "country": "United Kingdom",
+            "university": "University of Oxford",
+            "course": "Business Management",
+            "status": "Active",
+            "created_at": "2026-08-20 14:15:00"
+        },
+        {
+            "student_id": "STU-1003",
+            "name": "Aarav Sharma",
+            "email": "aarav.sharma@sydney.edu.au",
+            "phone": "+61 412 345 678",
+            "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC\/.og\/at2.RAWefReD2",
+            "country": "Australia",
+            "university": "University of Sydney",
+            "course": "Nursing & Healthcare",
+            "status": "Active",
+            "created_at": "2026-08-28 09:00:00"
         }
-      ]
-    }
-  ],
-  "chat_messages": [
-    {
-      "msg_id": "MSG-101",
-      "student_id": "STU-1001",
-      "sender_id": "STU-1001",
-      "sender_role": "Student",
-      "sender_name": "Sarah Jenkins",
-      "message": "Hi team! Is my Machine Learning paper currently being reviewed?",
-      "assignment_id": "ACE-2026-000101",
-      "timestamp": "2026-09-04 10:15:00"
-    },
-    {
-      "msg_id": "MSG-102",
-      "student_id": "STU-1001",
-      "sender_id": "ALL-501",
-      "sender_role": "Allocator",
-      "sender_name": "David Vance",
-      "message": "Hello Sarah! Yes, Dr. Robert Vance is currently finalizing the scikit-learn model tuning section.",
-      "assignment_id": "ACE-2026-000101",
-      "timestamp": "2026-09-04 10:18:00"
-    },
-    {
-      "msg_id": "MSG-103",
-      "student_id": "STU-1002",
-      "sender_id": "STU-1002",
-      "sender_role": "Student",
-      "sender_name": "Liam Hemsworth",
-      "message": "Hello, can I check when my supply chain case study will be ready?",
-      "assignment_id": "ACE-2026-000102",
-      "timestamp": "2026-09-04 11:30:00"
-    },
-    {
-      "msg_id": "MSG-104",
-      "student_id": "STU-1002",
-      "sender_id": "ADM-001",
-      "sender_role": "Admin",
-      "sender_name": "Support Desk",
-      "message": "Hi Liam! Your case study is in final Quality Check and will be uploaded shortly.",
-      "assignment_id": "ACE-2026-000102",
-      "timestamp": "2026-09-04 11:35:00"
-    }
-  ],
-  "audit_logs": [
-    {
-      "log_id": "LOG-1001",
-      "user_role": "Student",
-      "user_id": "STU-1001",
-      "action": "Submit Assignment",
-      "details": "Created new assignment ACE-2026-000101",
-      "timestamp": "2026-09-01 12:00:00"
-    },
-    {
-      "log_id": "LOG-1002",
-      "user_role": "Allocator",
-      "user_id": "ALL-501",
-      "action": "Allocate Expert",
-      "details": "Assigned ACE-2026-000101 to Expert EXP-301",
-      "timestamp": "2026-09-01 14:30:00"
-    }
-  ]
+    ],
+    "allocators": [
+        {
+            "allocator_id": "ALL-501",
+            "name": "David Vance",
+            "email": "allocator@aceassign.com",
+            "phone": "+1 (555) 987-6543",
+            "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC\/.og\/at2.RAWefReD2",
+            "status": "Active",
+            "performance_score": 98.4
+        },
+        {
+            "allocator_id": "ALL-502",
+            "name": "Emma Watson",
+            "email": "emma.allocator@aceassign.com",
+            "phone": "+1 (555) 444-3322",
+            "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC\/.og\/at2.RAWefReD2",
+            "status": "Active",
+            "performance_score": 96.1
+        }
+    ],
+    "admins": [
+        {
+            "admin_id": "ADM-001",
+            "name": "System Director Admin",
+            "email": "admin@aceassign.com",
+            "phone": "+1 (800) 555-ACE1",
+            "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC\/.og\/at2.RAWefReD2",
+            "status": "Active"
+        }
+    ],
+    "experts": [
+        {
+            "expert_id": "EXP-301",
+            "name": "Dr. Robert Vance (PhD)",
+            "email": "robert.vance@experts.com",
+            "phone": "+1 555 888 1111",
+            "subjects": [
+                "Computer Science",
+                "Artificial Intelligence",
+                "Python"
+            ],
+            "rating": 4.9,
+            "completed_count": 142,
+            "status": "Available"
+        },
+        {
+            "expert_id": "EXP-302",
+            "name": "Prof. Elena Rostova",
+            "email": "elena.rostova@experts.com",
+            "phone": "+44 7700 900123",
+            "subjects": [
+                "Business Management",
+                "Finance",
+                "Economics"
+            ],
+            "rating": 4.85,
+            "completed_count": 98,
+            "status": "Available"
+        },
+        {
+            "expert_id": "EXP-303",
+            "name": "Dr. Michael Zhang",
+            "email": "michael.zhang@experts.com",
+            "phone": "+61 400 123 999",
+            "subjects": [
+                "Nursing & Healthcare",
+                "Biology",
+                "Medical Sciences"
+            ],
+            "rating": 4.95,
+            "completed_count": 210,
+            "status": "Busy"
+        },
+        {
+            "expert_id": "EXP-304",
+            "name": "Clara Higgins (LLM)",
+            "email": "clara.h@experts.com",
+            "phone": "+1 555 333 4444",
+            "subjects": [
+                "Law & Legal Studies",
+                "Corporate Governance"
+            ],
+            "rating": 4.78,
+            "completed_count": 76,
+            "status": "Available"
+        }
+    ],
+    "assignments": [
+        {
+            "assignment_id": "ACE-2026-000101",
+            "student_id": "STU-1001",
+            "title": "Machine Learning Model Optimization Paper",
+            "subject": "Computer Science",
+            "assignment_type": "Research Paper",
+            "deadline": "2026-09-06 18:00:00",
+            "timezone": "EST (UTC-5)",
+            "word_count": 2500,
+            "pages": 10,
+            "reference_style": "IEEE",
+            "priority": "High",
+            "language": "English (US)",
+            "instructions": "Develop a hyperparameter tuning evaluation matrix for Random Forest and XGBoost algorithms using Python scikit-learn.",
+            "price": 180,
+            "discount_code": "ACE20",
+            "final_price": 144,
+            "status": "In Progress",
+            "allocator_id": "ALL-501",
+            "expert_id": "EXP-301",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-09-01 12:00:00",
+            "updated_at": "2026-09-02 10:15:00"
+        },
+        {
+            "assignment_id": "ACE-2026-000102",
+            "student_id": "STU-1002",
+            "title": "Global Supply Chain Disruptions Case Study",
+            "subject": "Business Management",
+            "assignment_type": "Case Study",
+            "deadline": "2026-09-05 12:00:00",
+            "timezone": "GMT (UTC+0)",
+            "word_count": 1800,
+            "pages": 7,
+            "reference_style": "Harvard",
+            "priority": "Urgent",
+            "language": "English (UK)",
+            "instructions": "Analyze post-2024 maritime logistics bottlenecks in EU ports and recommend mitigation strategies.",
+            "price": 140,
+            "discount_code": "",
+            "final_price": 140,
+            "status": "Quality Check",
+            "allocator_id": "ALL-501",
+            "expert_id": "EXP-302",
+            "country": "United Kingdom",
+            "university": "University of Oxford",
+            "created_at": "2026-09-02 14:30:00",
+            "updated_at": "2026-09-04 08:20:00"
+        },
+        {
+            "assignment_id": "ACE-2026-000103",
+            "student_id": "STU-1003",
+            "title": "Patient Care Plan & Clinical Risk Assessment",
+            "subject": "Nursing & Healthcare",
+            "assignment_type": "Coursework",
+            "deadline": "2026-09-08 23:59:00",
+            "timezone": "AEST (UTC+10)",
+            "word_count": 3000,
+            "pages": 12,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (UK)",
+            "instructions": "Formulate a comprehensive care pathway for acute respiratory distress syndrome in geriatric patients.",
+            "price": 210,
+            "discount_code": "FIRST15",
+            "final_price": 178.5,
+            "status": "Waiting for Payment",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "University of Sydney",
+            "created_at": "2026-09-03 16:45:00",
+            "updated_at": "2026-09-03 16:45:00"
+        },
+        {
+            "assignment_id": "ACE-2026-000104",
+            "student_id": "STU-1001",
+            "title": "Database Schema Design & SQL Queries",
+            "subject": "Computer Science",
+            "assignment_type": "Programming \/ Code",
+            "deadline": "2026-09-10 17:00:00",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "None",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Design ER diagram and write normalized SQL DDL and DML scripts for an e-commerce platform.",
+            "price": 120,
+            "discount_code": "",
+            "final_price": 120,
+            "status": "Completed",
+            "allocator_id": "ALL-502",
+            "expert_id": "EXP-301",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-08-25 09:10:00",
+            "updated_at": "2026-08-30 11:00:00"
+        },
+        {
+            "assignment_id": "ACE-2026-000105",
+            "student_id": "STU-1002",
+            "title": "International Trade Law & Tariff Regulation",
+            "subject": "Law & Legal Studies",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-04 20:00:00",
+            "timezone": "GMT (UTC+0)",
+            "word_count": 2000,
+            "pages": 8,
+            "reference_style": "OSCOLA",
+            "priority": "Urgent",
+            "language": "English (UK)",
+            "instructions": "Critique recent WTO dispute settlement decisions regarding digital tariffs.",
+            "price": 160,
+            "discount_code": "",
+            "final_price": 160,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "United Kingdom",
+            "university": "University of Oxford",
+            "created_at": "2026-09-04 07:30:00",
+            "updated_at": "2026-09-04 07:30:00"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-8454",
+            "title": "Test Tiered Pricing Assignment",
+            "subject": "General",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-11 08:56:00",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "",
+            "currency": "INR",
+            "price": 1500,
+            "discount_code": "",
+            "final_price": 1500,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-09-09 08:56:01",
+            "updated_at": "2026-09-09 08:56:01"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-8534",
+            "title": "Test 24h USD Assignment",
+            "subject": "General",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-10 08:56:17",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "",
+            "currency": "USD",
+            "price": 21,
+            "discount_code": "",
+            "final_price": 21,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-09-09 08:56:18",
+            "updated_at": "2026-09-09 08:56:18"
+        }
+    ],
+    "files": [
+        {
+            "file_id": "FILE-101",
+            "assignment_id": "ACE-2026-000101",
+            "file_name": "ML_Assignment_Prompt_2026.pdf",
+            "path": "assets\/uploads\/ML_Assignment_Prompt_2026.pdf",
+            "file_type": "pdf",
+            "uploaded_by": "Student",
+            "upload_date": "2026-09-01 12:05:00",
+            "is_internal": false
+        },
+        {
+            "file_id": "FILE-102",
+            "assignment_id": "ACE-2026-000101",
+            "file_name": "Dataset_Scikit_Sample.csv",
+            "path": "assets\/uploads\/Dataset_Scikit_Sample.csv",
+            "file_type": "csv",
+            "uploaded_by": "Student",
+            "upload_date": "2026-09-01 12:05:00",
+            "is_internal": false
+        },
+        {
+            "file_id": "FILE-103",
+            "assignment_id": "ACE-2026-000101",
+            "file_name": "Internal_Outline_Verification.docx",
+            "path": "assets\/uploads\/Internal_Outline_Verification.docx",
+            "file_type": "docx",
+            "uploaded_by": "Allocator",
+            "upload_date": "2026-09-01 14:00:00",
+            "is_internal": true
+        },
+        {
+            "file_id": "FILE-104",
+            "assignment_id": "ACE-2026-000104",
+            "file_name": "Final_Database_Schema_Solution.pdf",
+            "path": "assets\/uploads\/Final_Database_Schema_Solution.pdf",
+            "file_type": "pdf",
+            "uploaded_by": "Expert",
+            "upload_date": "2026-08-30 10:45:00",
+            "is_internal": false
+        }
+    ],
+    "payments": [
+        {
+            "payment_id": "PAY-8801",
+            "assignment_id": "ACE-2026-000101",
+            "student_id": "STU-1001",
+            "amount": 144,
+            "currency": "USD",
+            "status": "Paid",
+            "payment_method": "Stripe Credit Card",
+            "transaction_id": "ch_3M00192837192837",
+            "payment_date": "2026-09-01 12:15:00"
+        },
+        {
+            "payment_id": "PAY-8802",
+            "assignment_id": "ACE-2026-000102",
+            "student_id": "STU-1002",
+            "amount": 140,
+            "currency": "GBP",
+            "status": "Paid",
+            "payment_method": "Razorpay NetBanking",
+            "transaction_id": "pay_Kx9281729384",
+            "payment_date": "2026-09-02 14:35:00"
+        },
+        {
+            "payment_id": "PAY-8803",
+            "assignment_id": "ACE-2026-000104",
+            "student_id": "STU-1001",
+            "amount": 120,
+            "currency": "USD",
+            "status": "Paid",
+            "payment_method": "PayPal",
+            "transaction_id": "PP-99201948201",
+            "payment_date": "2026-08-25 09:20:00"
+        }
+    ],
+    "allocation": [
+        {
+            "allocation_id": "ALC-901",
+            "assignment_id": "ACE-2026-000101",
+            "expert_id": "EXP-301",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-01 14:30:00",
+            "deadline": "2026-09-06 12:00:00",
+            "status": "Active"
+        },
+        {
+            "allocation_id": "ALC-902",
+            "assignment_id": "ACE-2026-000102",
+            "expert_id": "EXP-302",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-02 15:00:00",
+            "deadline": "2026-09-05 09:00:00",
+            "status": "Active"
+        }
+    ],
+    "notes": [
+        {
+            "note_id": "NOTE-1",
+            "assignment_id": "ACE-2026-000101",
+            "user_id": "ALL-501",
+            "user_role": "Allocator",
+            "user_name": "David Vance",
+            "message": "Assigned to Dr. Robert Vance. Strict IEEE formatting requirement verified.",
+            "visibility": "Internal",
+            "created_at": "2026-09-01 14:32:00"
+        },
+        {
+            "note_id": "NOTE-2",
+            "assignment_id": "ACE-2026-000102",
+            "user_id": "EXP-302",
+            "user_role": "Expert",
+            "user_name": "Prof. Elena Rostova",
+            "message": "Draft completed. Submitted for Quality Check review.",
+            "visibility": "Internal",
+            "created_at": "2026-09-04 08:15:00"
+        }
+    ],
+    "notifications": [
+        {
+            "id": "NTF-1",
+            "user_id": "STU-1001",
+            "user_role": "Student",
+            "title": "Assignment Status Update",
+            "message": "Your assignment ACE-2026-000101 is now In Progress by Expert Dr. Robert Vance.",
+            "is_read": false,
+            "created_at": "2026-09-01 14:30:00"
+        },
+        {
+            "id": "NTF-2",
+            "user_id": "ALL-501",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000105 requires allocation.",
+            "is_read": false,
+            "created_at": "2026-09-04 07:30:00"
+        },
+        {
+            "id": "NTF-3",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Test Homepage Order with Files) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-09 08:41:07"
+        },
+        {
+            "id": "NTF-4",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Test Homepage Order with Files) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-09 08:41:32"
+        },
+        {
+            "id": "NTF-5",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Test Homepage Order with Files) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-09 08:41:50"
+        },
+        {
+            "id": "NTF-6",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Test Tiered Pricing Assignment) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-09 08:56:02"
+        },
+        {
+            "id": "NTF-7",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Test 24h USD Assignment) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-09 08:56:18"
+        }
+    ],
+    "coupons": [
+        {
+            "coupon_id": "CPN-1",
+            "code": "ACE20",
+            "discount_percent": 20,
+            "max_uses": 100,
+            "current_uses": 24,
+            "expires_at": "2026-12-31",
+            "status": "Active"
+        },
+        {
+            "coupon_id": "CPN-2",
+            "code": "FIRST15",
+            "discount_percent": 15,
+            "max_uses": 500,
+            "current_uses": 112,
+            "expires_at": "2026-12-31",
+            "status": "Active"
+        },
+        {
+            "coupon_id": "CPN-3",
+            "code": "SUPER30",
+            "discount_percent": 30,
+            "max_uses": 50,
+            "current_uses": 50,
+            "expires_at": "2026-08-31",
+            "status": "Expired"
+        }
+    ],
+    "blogs": [
+        {
+            "id": 1,
+            "title": "10 Master Strategies for Structuring a Top-Grade University Dissertation",
+            "excerpt": "Discover how leading researchers organize literature reviews, methodology sections, and empirical findings for maximum academic impact.",
+            "category": "Academic Writing",
+            "author": "Dr. Robert Vance",
+            "published_at": "2026-08-20",
+            "image": "blog-dissertation.jpg"
+        },
+        {
+            "id": 2,
+            "title": "Demystifying Scikit-Learn Hyperparameter Tuning in Machine Learning",
+            "excerpt": "A practical guide to cross-validation, grid search, and Bayesian optimization in Python.",
+            "category": "Computer Science",
+            "author": "Dr. Michael Zhang",
+            "published_at": "2026-08-25",
+            "image": "blog-ml.jpg"
+        },
+        {
+            "id": 3,
+            "title": "Mastering OSCOLA & APA 7th Referencing Standards Without Headaches",
+            "excerpt": "Avoid plagiarism flags and citation errors with our comprehensive referencing quick-reference chart.",
+            "category": "Study Tips",
+            "author": "Clara Higgins",
+            "published_at": "2026-09-01",
+            "image": "blog-referencing.jpg"
+        }
+    ],
+    "support_tickets": [
+        {
+            "ticket_id": "TCK-401",
+            "student_id": "STU-1001",
+            "assignment_id": "ACE-2026-000101",
+            "subject": "Request for additional dataset integration",
+            "message": "Hi, I just uploaded an updated CSV file to the assignment attachments. Can the expert please include it?",
+            "priority": "Medium",
+            "status": "Open",
+            "created_at": "2026-09-02 16:20:00",
+            "replies": [
+                {
+                    "sender_role": "Admin",
+                    "sender_name": "Support Desk",
+                    "message": "Thank you Sarah! We have notified Dr. Robert Vance and forwarded the new dataset.",
+                    "timestamp": "2026-09-02 17:05:00"
+                }
+            ]
+        }
+    ],
+    "chat_messages": [
+        {
+            "msg_id": "MSG-101",
+            "student_id": "STU-1001",
+            "sender_id": "STU-1001",
+            "sender_role": "Student",
+            "sender_name": "Sarah Jenkins",
+            "message": "Hi team! Is my Machine Learning paper currently being reviewed?",
+            "assignment_id": "ACE-2026-000101",
+            "timestamp": "2026-09-04 10:15:00"
+        },
+        {
+            "msg_id": "MSG-102",
+            "student_id": "STU-1001",
+            "sender_id": "ALL-501",
+            "sender_role": "Allocator",
+            "sender_name": "David Vance",
+            "message": "Hello Sarah! Yes, Dr. Robert Vance is currently finalizing the scikit-learn model tuning section.",
+            "assignment_id": "ACE-2026-000101",
+            "timestamp": "2026-09-04 10:18:00"
+        },
+        {
+            "msg_id": "MSG-103",
+            "student_id": "STU-1002",
+            "sender_id": "STU-1002",
+            "sender_role": "Student",
+            "sender_name": "Liam Hemsworth",
+            "message": "Hello, can I check when my supply chain case study will be ready?",
+            "assignment_id": "ACE-2026-000102",
+            "timestamp": "2026-09-04 11:30:00"
+        },
+        {
+            "msg_id": "MSG-104",
+            "student_id": "STU-1002",
+            "sender_id": "ADM-001",
+            "sender_role": "Admin",
+            "sender_name": "Support Desk",
+            "message": "Hi Liam! Your case study is in final Quality Check and will be uploaded shortly.",
+            "assignment_id": "ACE-2026-000102",
+            "timestamp": "2026-09-04 11:35:00"
+        }
+    ],
+    "audit_logs": [
+        {
+            "log_id": "LOG-1001",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Submit Assignment",
+            "details": "Created new assignment ACE-2026-000101",
+            "timestamp": "2026-09-01 12:00:00"
+        },
+        {
+            "log_id": "LOG-1002",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "Allocate Expert",
+            "details": "Assigned ACE-2026-000101 to Expert EXP-301",
+            "timestamp": "2026-09-01 14:30:00"
+        },
+        {
+            "log_id": "LOG-1003",
+            "user_role": "Student",
+            "user_id": "STU-1622",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Test Homepage Order with Files (USD 17.6)",
+            "timestamp": "2026-09-09 08:41:07"
+        },
+        {
+            "log_id": "LOG-1004",
+            "user_role": "Student",
+            "user_id": "STU-5609",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Test Homepage Order with Files (USD 17.6)",
+            "timestamp": "2026-09-09 08:41:32"
+        },
+        {
+            "log_id": "LOG-1005",
+            "user_role": "Student",
+            "user_id": "STU-6428",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Test Homepage Order with Files (USD 17.6)",
+            "timestamp": "2026-09-09 08:41:50"
+        },
+        {
+            "log_id": "LOG-1006",
+            "user_role": "Student",
+            "user_id": "STU-8454",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Test Tiered Pricing Assignment (INR 1500)",
+            "timestamp": "2026-09-09 08:56:02"
+        },
+        {
+            "log_id": "LOG-1007",
+            "user_role": "Student",
+            "user_id": "STU-8534",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Test 24h USD Assignment (USD 21)",
+            "timestamp": "2026-09-09 08:56:18"
+        }
+    ]
 }

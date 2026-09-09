@@ -16,6 +16,14 @@ if (!$asm || $asm['student_id'] !== $user['id']) {
 }
 
 $sla = get_sla_status($asm['deadline']);
+$currency = $asm['currency'] ?? 'USD';
+$currencySymbol = '$';
+if ($currency === 'INR') $currencySymbol = '₹';
+elseif ($currency === 'GBP') $currencySymbol = '£';
+elseif ($currency === 'EUR') $currencySymbol = '€';
+elseif ($currency === 'AUD') $currencySymbol = 'A$';
+elseif ($currency === 'CAD') $currencySymbol = 'C$';
+
 $files = DataStore::filter('files', function($f) use ($id) {
     return isset($f['assignment_id']) && $f['assignment_id'] === $id && empty($f['is_internal']);
 });
@@ -52,7 +60,7 @@ $workflow = [
   <div style="display:flex; gap:10px;">
     <?php if (!$isPaid): ?>
       <button class="btn btn-primary" onclick="triggerPaymentModal('<?php echo $asm['assignment_id']; ?>', <?php echo $asm['final_price']; ?>)">
-        <i class="fa-solid fa-credit-card"></i> Pay Now ($<?php echo number_format($asm['final_price'], 2); ?>)
+        <i class="fa-solid fa-credit-card"></i> Pay Now (<?php echo $currencySymbol . number_format($asm['final_price'], ($currency === 'INR' ? 0 : 2)); ?>)
       </button>
     <?php endif; ?>
     <?php if (in_array($asm['status'], ['Completed', 'Delivered'])): ?>
@@ -100,12 +108,22 @@ $workflow = [
         <p style="color:var(--text-muted); font-size:0.9rem;">No files attached to this assignment yet.</p>
       <?php else: ?>
         <div style="display:flex; flex-direction:column; gap:10px;">
-          <?php foreach ($files as $file): ?>
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid var(--portal-border); padding:0.8rem 1rem; border-radius:var(--radius-sm);">
+          <?php foreach ($files as $file): 
+            $ext = strtolower($file['file_type'] ?? '');
+            $icon = 'fa-file';
+            if (in_array($ext, ['pdf'])) $icon = 'fa-file-pdf';
+            elseif (in_array($ext, ['doc', 'docx'])) $icon = 'fa-file-word';
+            elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $icon = 'fa-file-excel';
+            elseif (in_array($ext, ['ppt', 'pptx'])) $icon = 'fa-file-powerpoint';
+            elseif (in_array($ext, ['zip', 'rar', 'tar', 'gz', '7z'])) $icon = 'fa-file-zipper';
+            elseif (in_array($ext, ['py', 'java', 'cpp', 'c', 'js', 'html', 'css', 'sql', 'php', 'ipynb'])) $icon = 'fa-file-code';
+            elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) $icon = 'fa-file-image';
+          ?>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid var(--portal-border); padding:0.8rem 1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
               <div>
-                <i class="fa-solid fa-file-pdf" style="color:var(--primary); margin-right:8px;"></i>
+                <i class="fa-solid <?php echo $icon; ?>" style="color:var(--primary); margin-right:8px; font-size:1.1rem;"></i>
                 <strong style="color:var(--text-main);"><?php echo htmlspecialchars($file['file_name']); ?></strong>
-                <small style="color:var(--text-muted); margin-left:10px;">Uploaded by <?php echo $file['uploaded_by']; ?> &bull; <?php echo $file['upload_date']; ?></small>
+                <small style="color:var(--text-muted); margin-left:10px;">Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?></small>
               </div>
               <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-outline btn-sm">
                 <i class="fa-solid fa-download"></i> Download
@@ -114,6 +132,24 @@ $workflow = [
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
+    </div>
+
+    <!-- Upload Additional Files Form (Accepts Any Format) -->
+    <div class="table-card" style="padding:1.5rem; margin-top:1.5rem;">
+      <h3 style="font-size:1.1rem; margin-bottom:0.4rem; color:var(--text-main);">
+        <i class="fa-solid fa-cloud-arrow-up" style="color:var(--primary);"></i> Upload Additional Files / Guidelines
+      </h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+        Need to add more files, data sets, lecture notes, or guidelines? Upload files here in <strong>ANY format</strong> (PDF, DOCX, ZIP, RAR, TXT, PY, IPYNB, XLS, PPTX, images, etc.). Multiple files supported.
+      </p>
+      <form id="studentAddFileForm" enctype="multipart/form-data">
+        <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($asm['assignment_id']); ?>">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input type="file" name="assignment_files[]" id="studentDetailFiles" multiple class="form-control" style="flex:1; min-width:240px;" required>
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-upload"></i> Upload Now</button>
+        </div>
+        <div id="studentAddFileMsg" style="margin-top:0.8rem;"></div>
+      </form>
     </div>
   </div>
 
@@ -126,8 +162,9 @@ $workflow = [
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Type:</td><td style="text-align:right; color:var(--text-main);"><?php echo htmlspecialchars($asm['assignment_type']); ?></td></tr>
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Word Count:</td><td style="text-align:right; color:var(--text-main);"><?php echo $asm['word_count']; ?> Words (<?php echo $asm['pages']; ?> Pages)</td></tr>
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Referencing:</td><td style="text-align:right; color:var(--text-main);"><?php echo htmlspecialchars($asm['reference_style']); ?></td></tr>
+        <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Currency:</td><td style="text-align:right; color:var(--text-main); font-weight:700;"><?php echo htmlspecialchars($currency); ?></td></tr>
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Timezone:</td><td style="text-align:right; color:var(--text-main);"><?php echo htmlspecialchars($asm['timezone']); ?></td></tr>
-        <tr><td style="padding:12px 0; color:var(--text-muted); font-weight:700;">Final Investment:</td><td style="text-align:right; font-size:1.4rem; font-weight:800; color:var(--secondary);">$<?php echo number_format($asm['final_price'], 2); ?></td></tr>
+        <tr><td style="padding:12px 0; color:var(--text-muted); font-weight:700;">Final Investment:</td><td style="text-align:right; font-size:1.4rem; font-weight:800; color:var(--secondary);"><?php echo $currencySymbol . number_format($asm['final_price'], ($currency === 'INR' ? 0 : 2)); ?></td></tr>
       </table>
     </div>
 
@@ -176,7 +213,15 @@ $workflow = [
     
     <div class="form-group">
       <label>Revision Details & Feedback *</label>
-      <textarea id="revisionInstructionsInput" class="form-control" rows="4" placeholder="e.g. Please expand the scikit-learn hyperparameter evaluation section by adding 500 words on cross-validation folds..."></textarea>
+      <textarea id="revisionInstructionsInput" class="form-control" rows="3" placeholder="e.g. Please expand the scikit-learn hyperparameter evaluation section by adding 500 words on cross-validation folds..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-cloud-arrow-up"></i> Attach Annotated Document / Feedback Files (Any Format)</label>
+      <input type="file" id="revisionFileInput" name="revision_files[]" multiple class="form-control">
+      <small style="color:var(--text-muted); font-size:0.8rem; display:block; margin-top:4px;">
+        Upload marked drafts, professor rubrics, or notes in ANY format (PDF, DOCX, ZIP, etc.)
+      </small>
     </div>
 
     <div id="revisionStatusMsg" style="margin-bottom:1rem;"></div>
@@ -231,6 +276,13 @@ function executeRevisionRequest() {
   fd.append('assignment_id', '<?php echo $asm['assignment_id']; ?>');
   fd.append('instructions', inst);
 
+  const fileInput = document.getElementById('revisionFileInput');
+  if (fileInput && fileInput.files.length > 0) {
+    for (let i = 0; i < fileInput.files.length; i++) {
+      fd.append('revision_files[]', fileInput.files[i]);
+    }
+  }
+
   fetch('/api.php?action=request_revision', {
     method: 'POST',
     body: fd
@@ -241,6 +293,31 @@ function executeRevisionRequest() {
       msgDiv.innerHTML = `<div class="badge badge-success">${data.message}</div>`;
       setTimeout(() => { window.location.reload(); }, 1200);
     }
+  });
+}
+
+const studentAddFileForm = document.getElementById('studentAddFileForm');
+if (studentAddFileForm) {
+  studentAddFileForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('studentAddFileMsg');
+    msg.innerHTML = '<div class="badge badge-info"><i class="fa-solid fa-spinner fa-spin"></i> Uploading files...</div>';
+    fetch('/api.php?action=upload_assignment_file', {
+      method: 'POST',
+      body: new FormData(studentAddFileForm)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        msg.innerHTML = `<div class="badge badge-success">${data.message}</div>`;
+        setTimeout(() => { window.location.reload(); }, 1000);
+      } else {
+        msg.innerHTML = `<div class="badge badge-danger">${data.message || 'Upload failed'}</div>`;
+      }
+    })
+    .catch(err => {
+      msg.innerHTML = `<div class="badge badge-danger">An error occurred while uploading.</div>`;
+    });
   });
 }
 </script>
