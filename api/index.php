@@ -1,10 +1,71 @@
 <?php
+// Vercel Serverless Entrypoint & Front Router
+$baseDir = dirname(__DIR__);
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$parsedPath = parse_url($requestUri, PHP_URL_PATH);
+$route = ltrim($parsedPath, '/');
+
+// When running under built-in CLI server (php -S)
+if (php_sapi_name() === 'cli-server') {
+    if (!empty($route) && is_file($baseDir . '/' . $route)) {
+        return false; // Let PHP built-in server handle existing static files directly
+    }
+}
+
+// Route non-homepage requests when routed through api/index.php on Vercel
+if (!empty($route) && $route !== 'index.php' && $route !== 'api/index.php') {
+    $target = $baseDir . '/' . $route;
+
+    // Check directory index (e.g. /admin -> /admin/index.php)
+    if (is_dir($target)) {
+        $target = rtrim($target, '/') . '/index.php';
+    } elseif (!file_exists($target) && file_exists($target . '.php')) {
+        $target .= '.php';
+    }
+
+    if (file_exists($target) && !is_dir($target)) {
+        $ext = strtolower(pathinfo($target, PATHINFO_EXTENSION));
+        // Serve static assets if not intercepted by Vercel routes
+        if ($ext !== 'php') {
+            $mimeTypes = [
+                'css'   => 'text/css',
+                'js'    => 'application/javascript',
+                'json'  => 'application/json',
+                'png'   => 'image/png',
+                'jpg'   => 'image/jpeg',
+                'jpeg'  => 'image/jpeg',
+                'gif'   => 'image/gif',
+                'svg'   => 'image/svg+xml',
+                'ico'   => 'image/x-icon',
+                'woff'  => 'font/woff',
+                'woff2' => 'font/woff2',
+                'ttf'   => 'font/ttf',
+                'pdf'   => 'application/pdf',
+                'webp'  => 'image/webp'
+            ];
+            if (isset($mimeTypes[$ext])) {
+                header('Content-Type: ' . $mimeTypes[$ext]);
+            }
+            readfile($target);
+            exit;
+        }
+
+        // Execute targeted PHP script in its own directory context
+        chdir(dirname($target));
+        require $target;
+        exit;
+    }
+}
+
+// Set working directory to project root for homepage rendering
+chdir($baseDir);
+
 $pageTitle = "Ace Assignment Helps - #1 University Assignment Assistance (UK, USA, Ireland, Australia, Canada & India)";
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/includes/helpers.php';
+require_once $baseDir . '/includes/auth.php';
+require_once $baseDir . '/includes/helpers.php';
 $currentUser = Auth::currentUser();
 
-include __DIR__ . '/includes/header.php';
+include $baseDir . '/includes/header.php';
 ?>
 
 <!-- HERO SECTION -->
@@ -453,4 +514,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<?php include $baseDir . '/includes/footer.php'; ?>

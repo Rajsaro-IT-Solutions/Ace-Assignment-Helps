@@ -64,14 +64,14 @@ $userRole = $_SESSION['user']['role'] ?? '';
 
 <header class="header-glass">
   <div class="container navbar">
-    <a href="/index.php" class="logo">
+    <a href="/" class="logo">
       <div class="logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
       <span>Ace Assignment Helps</span>
     </a>
 
     <!-- Clean Responsive Nav Menu Drawer -->
     <ul class="nav-menu" id="primaryNavMenu">
-      <li><a href="/index.php" class="nav-link">Home</a></li>
+      <li><a href="/" class="nav-link">Home</a></li>
       <li><a href="/services.php" class="nav-link">Services</a></li>
       <li><a href="/pricing.php" class="nav-link">Pricing</a></li>
       <li><a href="/subjects.php" class="nav-link">Subjects</a></li>
