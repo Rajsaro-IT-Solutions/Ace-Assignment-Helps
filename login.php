@@ -38,9 +38,9 @@ include __DIR__ . '/includes/header.php';
 <div class="container" style="padding: 4rem 1.5rem; max-width: 480px;">
   <div class="calc-card" style="padding: 2.5rem; background: #ffffff;">
     <div style="text-align: center; margin-bottom: 2rem;">
-      <div class="logo-icon" style="width: 56px; height: 56px; font-size: 1.6rem; margin: 0 auto 1rem auto;">
-        <i class="fa-solid fa-graduation-cap"></i>
-      </div>
+      <a href="/" style="display:inline-block; text-decoration:none;">
+        <img src="/assets/image/logo.png" alt="Ace Assignment Helps" style="width: 76px; height: 76px; object-fit: contain; border-radius: 14px; margin: 0 auto 1rem auto; display: block; box-shadow: 0 4px 16px rgba(0,0,0,0.06); background: #ffffff; padding: 4px; border: 1px solid var(--border-color);">
+      </a>
       <h1 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: #0f172a;">Portal Account Login</h1>
       <p style="color: var(--text-muted); font-size: 0.95rem;">Access your <strong>Ace Assignment Helps</strong> dashboard</p>
     </div>

@@ -3,8 +3,8 @@
     <div class="footer-grid">
       <div>
         <div class="logo" style="margin-bottom:1.2rem; color:#fff;">
-          <div class="logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
-          <span>Ace Assignment Helps</span>
+          <img src="/assets/image/logo.png" alt="Ace Assignment Helps" class="logo-img" style="background:#ffffff; padding:2px; border-radius:8px;">
+          <span style="color:#ffffff;">Ace Assignment Helps</span>
         </div>
         <p style="color:#94a3b8; font-size:0.92rem; line-height:1.7; margin-bottom:1.5rem; max-width:380px;">
           Ace Assignment Helps is the world's leading academic assistance platform, empowering university students across the US, UK, Australia, and Canada to achieve top grades with 100% original Turnitin-scanned assignments.

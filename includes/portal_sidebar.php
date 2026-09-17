@@ -4,10 +4,10 @@ $currUri = $_SERVER['REQUEST_URI'];
 ?>
 <aside class="portal-sidebar">
   <div class="sidebar-brand">
-    <div class="logo-icon" style="width:36px; height:36px; font-size:1rem; background:linear-gradient(135deg, #6366f1, #06b6d4); color:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center;">
-      <i class="fa-solid fa-graduation-cap"></i>
-    </div>
-    <span style="font-size:1.05rem;">Ace Assignment</span>
+    <a href="/">
+      <img src="/assets/image/logo.png" alt="Ace Assignment Helps" class="logo-img">
+      <span style="font-size:1.05rem;">Ace Assignment</span>
+    </a>
   </div>
 
   <div class="sidebar-nav">

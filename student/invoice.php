@@ -19,6 +19,7 @@ $payment = DataStore::findOne('payments', 'assignment_id', $id);
 <head>
   <meta charset="UTF-8">
   <title>Invoice - <?php echo htmlspecialchars($asm['assignment_id']); ?> | Ace Assignment Helps</title>
+  <link rel="icon" type="image/png" href="/assets/image/logo.png">
   <style>
     body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; background: #f8fafc; margin: 0; padding: 40px; }
     .invoice-card { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
@@ -50,10 +51,13 @@ $payment = DataStore::findOne('payments', 'assignment_id', $id);
 
 <div class="invoice-card">
   <div class="inv-header">
-    <div>
-      <div class="logo">Ace Assignment Helps</div>
-      <div style="color:#64748b; font-size:0.85rem; margin-top:4px;">Global Academic Services Platform</div>
-      <div style="color:#64748b; font-size:0.85rem;">support@aceassign.com</div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <img src="/assets/image/logo.png" alt="Ace Assignment Helps" style="width:58px; height:58px; object-fit:contain; border-radius:8px;">
+      <div>
+        <div class="logo">Ace Assignment Helps</div>
+        <div style="color:#64748b; font-size:0.85rem; margin-top:2px;">Global Academic Services Platform</div>
+        <div style="color:#64748b; font-size:0.85rem;">support@aceassign.com</div>
+      </div>
     </div>
     <div>
       <div class="inv-title">TAX INVOICE</div>

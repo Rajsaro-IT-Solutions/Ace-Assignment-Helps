@@ -104,12 +104,22 @@ a:hover {
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-family: var(--font-head);
   font-size: 1.25rem;
   font-weight: 800;
   color: #0f172a;
   white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
   flex-shrink: 0;
 }
 
@@ -276,6 +286,7 @@ a:hover {
 .hero-title span {
   background: var(--primary-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

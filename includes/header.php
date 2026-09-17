@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/helpers.php';
 $isLoggedIn = isset($_SESSION['user']);
 $userRole = $_SESSION['user']['role'] ?? '';
 ?>
@@ -31,12 +32,16 @@ $userRole = $_SESSION['user']['role'] ?? '';
   <link rel="alternate" hreflang="en-ca" href="http://127.0.0.1:8085/?country=canada" />
   <link rel="alternate" hreflang="en-in" href="http://127.0.0.1:8085/?country=india" />
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/assets/image/logo.png">
+  <link rel="apple-touch-icon" href="/assets/image/logo.png">
+
   <!-- Open Graph / Social Media -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="http://127.0.0.1:8085/">
   <meta property="og:title" content="Ace Assignment Helps - Trusted Global Academic Writing Service">
   <meta property="og:description" content="24/7 PhD expert assignment writing help across UK, USA, Ireland, Australia, Canada, and India with 0% Turnitin plagiarism guarantee.">
-  <meta property="og:image" content="http://127.0.0.1:8085/assets/images/og-banner.jpg">
+  <meta property="og:image" content="http://127.0.0.1:8085/assets/image/logo.png">
 
   <!-- Schema.org JSON-LD Structured Data for International Service -->
   <script type="application/ld+json">
@@ -45,7 +50,7 @@ $userRole = $_SESSION['user']['role'] ?? '';
     "@type": "EducationalOrganization",
     "name": "Ace Assignment Helps",
     "url": "http://127.0.0.1:8085/",
-    "logo": "http://127.0.0.1:8085/assets/images/logo.png",
+    "logo": "http://127.0.0.1:8085/assets/image/logo.png",
     "description": "Global academic assignment writing and dissertation support service.",
     "areaServed": ["United Kingdom", "United States", "Ireland", "Australia", "Canada", "India"],
     "aggregateRating": {
@@ -65,7 +70,7 @@ $userRole = $_SESSION['user']['role'] ?? '';
 <header class="header-glass">
   <div class="container navbar">
     <a href="/" class="logo">
-      <div class="logo-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+      <img src="/assets/image/logo.png" alt="Ace Assignment Helps" class="logo-img">
       <span>Ace Assignment Helps</span>
     </a>
 

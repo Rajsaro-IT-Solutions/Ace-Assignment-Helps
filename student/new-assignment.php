@@ -78,8 +78,10 @@ include __DIR__ . '/../includes/portal_header.php';
 
       <div class="grid-3" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.2rem; margin-bottom:1.2rem;">
         <div class="form-group">
-          <label>Word Count</label>
-          <input type="number" name="word_count" id="pWords" class="form-control" value="1000" min="250" step="250">
+          <label><i class="fa-solid fa-file-lines"></i> Word Count (250 Words = 1 Page)</label>
+          <select name="word_count" id="pWords" class="form-control">
+            <?php echo render_word_count_options(1000); ?>
+          </select>
         </div>
 
         <div class="form-group">

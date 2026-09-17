@@ -15,6 +15,8 @@ $userRole = $currentUser['role'];
   <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) . " | Ace Assignment Helps Portal" : "Ace Assignment Helps Portal"; ?></title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/assets/css/portal.css">
+  <link rel="icon" type="image/png" href="/assets/image/logo.png">
+  <link rel="apple-touch-icon" href="/assets/image/logo.png">
 </head>
 <body class="portal-body">
 

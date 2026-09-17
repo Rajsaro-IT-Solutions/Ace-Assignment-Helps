@@ -138,13 +138,9 @@ include $baseDir . '/includes/header.php';
 
         <div class="grid-2" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
           <div class="form-group">
-            <label for="word_count">Word Count (Pages)</label>
+            <label for="word_count"><i class="fa-solid fa-file-lines"></i> Word Count (250 Words = 1 Page)</label>
             <select id="word_count" class="form-control">
-              <option value="500">500 Words (2 Pages)</option>
-              <option value="1000">1,000 Words (4 Pages)</option>
-              <option value="2000" selected>2,000 Words (8 Pages)</option>
-              <option value="3000">3,000 Words (12 Pages)</option>
-              <option value="5000">5,000 Words (20 Pages)</option>
+              <?php echo render_word_count_options(2000); ?>
             </select>
           </div>
 

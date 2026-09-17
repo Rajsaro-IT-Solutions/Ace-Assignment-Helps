@@ -51,6 +51,19 @@ function get_sla_status($deadline_str) {
     }
 }
 
+function render_word_count_options($selectedWords = 1000) {
+    $selectedWords = (int)$selectedWords ?: 1000;
+    $html = '';
+    for ($w = 250; $w <= 20000; $w += 250) {
+        $pages = (int)($w / 250);
+        $pageText = ($pages === 1) ? '1 Page' : number_format($pages) . ' Pages';
+        $selected = ($w === $selectedWords) ? ' selected' : '';
+        $formattedWords = number_format($w);
+        $html .= "  <option value=\"{$w}\"{$selected}>{$formattedWords} Words ({$pageText})</option>\n";
+    }
+    return $html;
+}
+
 function calculate_assignment_price($word_count, $deadline_hours, $academic_level = 'Undergraduate', $subject = 'General', $coupon_code = '', $currency = 'USD') {
     $word_count = max(250, (int)$word_count);
     $pages = ceil($word_count / 250);

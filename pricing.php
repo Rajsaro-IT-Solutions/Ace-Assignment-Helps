@@ -105,8 +105,10 @@ include __DIR__ . '/includes/header.php';
         </div>
 
         <div class="form-group">
-          <label>Word Count</label>
-          <input type="number" id="calcWordCount" class="form-control" value="1000" min="250" step="250">
+          <label><i class="fa-solid fa-file-lines"></i> Word Count (250 Words = 1 Page)</label>
+          <select id="calcWordCount" class="form-control">
+            <?php echo render_word_count_options(1000); ?>
+          </select>
           <small style="color:var(--text-muted);" id="calcPagesDisplay">4 pages (approx 250 words/page)</small>
         </div>
 
