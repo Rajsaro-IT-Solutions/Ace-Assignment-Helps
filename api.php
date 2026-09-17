@@ -19,6 +19,40 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $calc]);
         exit;
 
+    case 'validate_coupon':
+        $code = strtoupper(trim($_REQUEST['code'] ?? ($_REQUEST['coupon_code'] ?? '')));
+        if (empty($code)) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a coupon code.']);
+            exit;
+        }
+        $coupon = DataStore::findOne('coupons', 'code', $code);
+        if (!$coupon) {
+            echo json_encode(['success' => false, 'message' => "Coupon code '{$code}' does not exist."]);
+            exit;
+        }
+        if (($coupon['status'] ?? 'Active') !== 'Active') {
+            echo json_encode(['success' => false, 'message' => "Coupon '{$code}' is currently inactive or disabled."]);
+            exit;
+        }
+        if (!empty($coupon['expires_at']) && strtotime($coupon['expires_at'] . ' 23:59:59') < time()) {
+            echo json_encode(['success' => false, 'message' => "Coupon '{$code}' expired on " . htmlspecialchars($coupon['expires_at']) . "."]);
+            exit;
+        }
+        if (!empty($coupon['max_uses']) && (int)($coupon['current_uses'] ?? 0) >= (int)$coupon['max_uses']) {
+            echo json_encode(['success' => false, 'message' => "Coupon '{$code}' has reached its maximum usage limit."]);
+            exit;
+        }
+        echo json_encode([
+            'success' => true,
+            'coupon' => [
+                'code' => $coupon['code'],
+                'discount_percent' => (float)$coupon['discount_percent'],
+                'expires_at' => $coupon['expires_at'] ?? '',
+                'message' => "Coupon {$coupon['code']} Applied! {$coupon['discount_percent']}% Discount Activated."
+            ]
+        ]);
+        exit;
+
     case 'submit_assignment':
         $user = Auth::currentUser();
         $student_id = $user ? $user['id'] : 'STU-' . rand(1004, 9999);
@@ -59,7 +93,7 @@ switch ($action) {
             'instructions' => $instructions,
             'currency' => $currency,
             'price' => $calc['subtotal'],
-            'discount_code' => $coupon_code,
+            'discount_code' => $calc['coupon_valid'] ? $calc['coupon_code'] : '',
             'final_price' => $calc['final_price'],
             'status' => 'Pending Review',
             'allocator_id' => '',
@@ -71,6 +105,15 @@ switch ($action) {
         ];
 
         DataStore::insert('assignments', $assignment_data);
+
+        // If a valid coupon was applied, increment current_uses
+        if ($calc['coupon_valid'] && !empty($calc['coupon_code'])) {
+            $cpn = DataStore::findOne('coupons', 'code', $calc['coupon_code']);
+            if ($cpn) {
+                $currUses = (int)($cpn['current_uses'] ?? 0) + 1;
+                DataStore::update('coupons', 'coupon_id', $cpn['coupon_id'], ['current_uses' => $currUses]);
+            }
+        }
 
         // Handle uploaded files of ANY format (single or multiple)
         if (!empty($_FILES)) {

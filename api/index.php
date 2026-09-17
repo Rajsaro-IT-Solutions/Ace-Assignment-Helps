@@ -157,14 +157,31 @@ include $baseDir . '/includes/header.php';
           </div>
         </div>
 
+<?php
+// Check active default coupon from DataStore (prefer ACE20 if active, else first active)
+$ace20 = DataStore::findOne('coupons', 'code', 'ACE20');
+if ($ace20 && ($ace20['status'] ?? '') === 'Active' && (empty($ace20['expires_at']) || strtotime($ace20['expires_at'] . ' 23:59:59') >= time())) {
+    $defaultPromoCode = 'ACE20';
+} else {
+    $activeCoupons = DataStore::filter('coupons', function($c) {
+        return ($c['status'] ?? '') === 'Active' && (empty($c['expires_at']) || strtotime($c['expires_at'] . ' 23:59:59') >= time());
+    });
+    $defaultPromoCode = !empty($activeCoupons) ? $activeCoupons[0]['code'] : '';
+}
+$defaultHeroCalc = calculate_assignment_price(2000, 120, 'postgraduate', 'General', $defaultPromoCode, 'USD');
+?>
         <div class="form-group">
           <label for="coupon_input">Discount Promo Code</label>
           <div style="display:flex; gap:10px;">
-            <input type="text" id="coupon_input" class="form-control" placeholder="Try promo ACE20" value="ACE20">
+            <input type="text" id="coupon_input" class="form-control" placeholder="Enter promo code" value="<?php echo htmlspecialchars($defaultPromoCode); ?>" style="text-transform:uppercase;">
             <button type="button" id="apply_coupon_btn" class="btn btn-outline btn-sm">Apply</button>
           </div>
-          <small id="coupon_msg" style="color:var(--success); font-weight:600; display:block; margin-top:4px;">
-            <i class="fa-solid fa-circle-check"></i> Coupon ACE20 Applied! 20% Discount Activated.
+          <small id="coupon_msg" style="<?php echo ($defaultHeroCalc['discount_percent'] > 0) ? 'color:var(--success); display:block;' : 'display:none;'; ?> font-weight:600; margin-top:4px;">
+            <?php if ($defaultHeroCalc['discount_percent'] > 0): 
+              $discFmt = ($defaultHeroCalc['currency'] === 'INR') ? number_format($defaultHeroCalc['discount_amount'], 0) : number_format($defaultHeroCalc['discount_amount'], 2);
+            ?>
+              <i class="fa-solid fa-circle-check"></i> <?php echo htmlspecialchars($defaultHeroCalc['coupon_message']); ?> (-<?php echo $defaultHeroCalc['currency_symbol'] . $discFmt; ?>)
+            <?php endif; ?>
           </small>
         </div>
 
@@ -182,7 +199,7 @@ include $baseDir . '/includes/header.php';
 
         <div class="price-display-box">
           <div class="est-label">Estimated Total Price</div>
-          <div class="est-amount" id="final_calc_price">$17.60</div>
+          <div class="est-amount" id="final_calc_price"><?php echo '$' . number_format($defaultHeroCalc['final_price'], 2); ?></div>
           <small style="color:var(--text-muted); display:block; margin-top:4px;">Includes Free Turnitin Plagiarism Report & Unlimited Revisions</small>
         </div>
 
@@ -430,13 +447,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const c = countrySel ? countrySel.value : 'USD';
       const w = wordSel ? wordSel.value : '2000';
       const d = urgencySel ? urgencySel.value : '120';
-      const cp = couponInp ? couponInp.value.trim() : 'ACE20';
+      const cp = couponInp ? couponInp.value.trim() : '';
       heroFullOrderLink.href = `/submit-assignment.php?currency=${c}&words=${w}&deadline=${d}&coupon=${encodeURIComponent(cp)}`;
     }
   }
 
   [countrySel, levelSel, wordSel, urgencySel, couponInp].forEach(el => {
-    if (el) el.addEventListener('change', updateFullOrderLink);
+    if (el) {
+      el.addEventListener('change', updateFullOrderLink);
+      el.addEventListener('input', updateFullOrderLink);
+    }
   });
   updateFullOrderLink();
 
@@ -476,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('academic_level', levelSel ? levelSel.value : 'postgraduate');
       fd.append('word_count', wordSel ? wordSel.value : '2000');
       fd.append('deadline_hours', urgencySel ? urgencySel.value : '120');
-      fd.append('discount_code', couponInp ? couponInp.value.trim() : 'ACE20');
+      fd.append('discount_code', couponInp ? couponInp.value.trim() : '');
       fd.append('subject', 'General');
       fd.append('assignment_type', 'Essay');
 

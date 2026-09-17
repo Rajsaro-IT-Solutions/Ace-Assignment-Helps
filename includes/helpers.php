@@ -99,12 +99,29 @@ function calculate_assignment_price($word_count, $deadline_hours, $academic_leve
 
     $discount_amount = 0.0;
     $discount_percent = 0;
+    $coupon_valid = false;
+    $coupon_msg = '';
+    $clean_code = strtoupper(trim($coupon_code));
 
-    if (!empty($coupon_code)) {
-        $coupon = DataStore::findOne('coupons', 'code', strtoupper(trim($coupon_code)));
-        if ($coupon && ($coupon['status'] ?? 'Active') === 'Active') {
+    if (!empty($clean_code)) {
+        $coupon = DataStore::findOne('coupons', 'code', $clean_code);
+        if (!$coupon) {
+            $coupon_valid = false;
+            $coupon_msg = "Coupon code '{$clean_code}' is not valid.";
+        } elseif (($coupon['status'] ?? 'Active') !== 'Active') {
+            $coupon_valid = false;
+            $coupon_msg = "Coupon '{$clean_code}' is currently inactive or disabled.";
+        } elseif (!empty($coupon['expires_at']) && strtotime($coupon['expires_at'] . ' 23:59:59') < time()) {
+            $coupon_valid = false;
+            $coupon_msg = "Coupon '{$clean_code}' expired on " . htmlspecialchars($coupon['expires_at']) . ".";
+        } elseif (!empty($coupon['max_uses']) && (int)($coupon['current_uses'] ?? 0) >= (int)$coupon['max_uses']) {
+            $coupon_valid = false;
+            $coupon_msg = "Coupon '{$clean_code}' has reached its maximum usage limit.";
+        } else {
+            $coupon_valid = true;
             $discount_percent = (float)$coupon['discount_percent'];
             $discount_amount = round(($subtotal * $discount_percent) / 100, 2);
+            $coupon_msg = "Coupon {$coupon['code']} Applied! {$discount_percent}% Discount Activated.";
         }
     }
 
@@ -117,10 +134,14 @@ function calculate_assignment_price($word_count, $deadline_hours, $academic_leve
         'deadline_hours' => $deadline_hours,
         'currency' => $currency,
         'currency_symbol' => $config['symbol'],
+        'decimals' => $config['decimals'] ?? 2,
         'base_rate_per_word' => $base_rate,
         'urgency_rate_per_word' => $urgency_rate,
         'effective_rate_per_word' => $effective_rate_per_word,
         'subtotal' => $subtotal,
+        'coupon_code' => $clean_code,
+        'coupon_valid' => $coupon_valid,
+        'coupon_message' => $coupon_msg,
         'discount_percent' => $discount_percent,
         'discount_amount' => $discount_amount,
         'final_price' => $final_price

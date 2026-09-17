@@ -71,10 +71,21 @@ include __DIR__ . '/includes/header.php';
         style="background:rgba(16, 185, 129, 0.1); border:1px solid var(--success); border-radius:var(--radius-sm); padding:1.2rem; margin-top:1.5rem;">
         <h5 style="color:var(--success); font-size:1rem; margin-bottom:0.4rem;"><i class="fa-solid fa-gift"></i> Active
           Student Promo Coupons</h5>
-        <p style="font-size:0.9rem; color:var(--text-muted); margin:0;">
-          Use promo code <strong style="color:var(--text-main);">ACE20</strong> for 20% discount on your order.
-          First-time students use <strong style="color:var(--text-main);">FIRST15</strong> for 15% off!
-        </p>
+        <div style="font-size:0.9rem; color:var(--text-muted); margin:0;">
+          <?php 
+          $activeCouponsList = DataStore::filter('coupons', function($c) {
+              return ($c['status'] ?? '') === 'Active' && (empty($c['expires_at']) || strtotime($c['expires_at'] . ' 23:59:59') >= time());
+          });
+          if (!empty($activeCouponsList)): 
+            foreach ($activeCouponsList as $ac): ?>
+              <span style="display:inline-block; margin-right:15px; margin-bottom:4px;">
+                Use promo code <strong style="color:var(--text-main);"><?php echo htmlspecialchars($ac['code']); ?></strong> for <?php echo (float)$ac['discount_percent']; ?>% discount!
+              </span>
+          <?php endforeach; 
+          else: ?>
+            <span>No active promotional discounts currently running.</span>
+          <?php endif; ?>
+        </div>
       </div>
 
       <div
@@ -216,7 +227,12 @@ include __DIR__ . '/includes/header.php';
             rateText.textContent = `${d.currency_symbol}${effRateFormatted} / word (Base: ${d.currency_symbol}${baseRateFormatted})`;
 
             if (d.discount_percent > 0) {
-              discountNotice.textContent = `✓ ${d.discount_percent}% Coupon Discount Applied (-${d.currency_symbol}${d.discount_amount.toFixed(2)})`;
+              discountNotice.style.color = 'var(--success)';
+              const discFmt = (d.currency === 'INR') ? Math.round(d.discount_amount).toLocaleString('en-IN') : d.discount_amount.toFixed(2);
+              discountNotice.textContent = `✓ ${d.discount_percent}% Coupon Discount Applied (-${d.currency_symbol}${discFmt})`;
+            } else if (coupon) {
+              discountNotice.style.color = '#ef4444';
+              discountNotice.textContent = `✗ ${d.coupon_message || 'Invalid or expired coupon'}`;
             } else {
               discountNotice.textContent = '';
             }

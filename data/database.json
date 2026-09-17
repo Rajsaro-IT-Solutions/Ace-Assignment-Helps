@@ -491,7 +491,7 @@
         {
             "coupon_id": "CPN-1",
             "code": "ACE20",
-            "discount_percent": 20,
+            "discount_percent": 35,
             "max_uses": 100,
             "current_uses": 24,
             "expires_at": "2026-12-31",
@@ -500,7 +500,7 @@
         {
             "coupon_id": "CPN-2",
             "code": "FIRST15",
-            "discount_percent": 15,
+            "discount_percent": 80,
             "max_uses": 500,
             "current_uses": 112,
             "expires_at": "2026-12-31",
@@ -663,6 +663,54 @@
             "action": "Submit Assignment",
             "details": "Created ACE-2026-000106: Test 24h USD Assignment (USD 21)",
             "timestamp": "2026-09-09 08:56:18"
+        },
+        {
+            "log_id": "LOG-1044",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-17 07:00:04"
+        },
+        {
+            "log_id": "LOG-1045",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Coupon",
+            "details": "Updated coupon ACE20 (CPN-1)",
+            "timestamp": "2026-09-17 07:01:47"
+        },
+        {
+            "log_id": "LOG-1046",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-17 07:05:09"
+        },
+        {
+            "log_id": "LOG-1047",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-17 07:05:12"
+        },
+        {
+            "log_id": "LOG-1048",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-17 07:05:15"
+        },
+        {
+            "log_id": "LOG-1049",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Coupon",
+            "details": "Updated coupon FIRST15 (CPN-2)",
+            "timestamp": "2026-09-17 07:05:39"
         }
     ]
 }

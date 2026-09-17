@@ -155,6 +155,14 @@ class DataStore {
                 $sql = "INSERT INTO `$collectionName` (`" . implode("`, `", $fields) . "`) VALUES (" . implode(", ", $placeholders) . ")";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute(array_values($dbRecord));
+                try {
+                    $jsonData = self::getJsonData();
+                    if (!isset($jsonData[$collectionName])) {
+                        $jsonData[$collectionName] = [];
+                    }
+                    $jsonData[$collectionName][] = $record;
+                    self::saveJsonData($jsonData);
+                } catch (Throwable $ignore) {}
                 return $record;
             } catch (Throwable $e) {
                 self::$useJsonFallback = true;
@@ -198,7 +206,25 @@ class DataStore {
 
                 $sql = "UPDATE `$collectionName` SET " . implode(", ", $setParts) . " WHERE `$sqlKey` = ?";
                 $stmt = $pdo->prepare($sql);
-                return $stmt->execute($params);
+                $res = $stmt->execute($params);
+
+                try {
+                    $jsonData = self::getJsonData();
+                    if (isset($jsonData[$collectionName])) {
+                        foreach ($jsonData[$collectionName] as $idx => $item) {
+                            if ((isset($item[$key]) && (string)$item[$key] === (string)$value) ||
+                                (isset($item['id']) && (string)$item['id'] === (string)$value) ||
+                                (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) ||
+                                (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value)) {
+                                $jsonData[$collectionName][$idx] = array_merge($item, $updates);
+                                self::saveJsonData($jsonData);
+                                break;
+                            }
+                        }
+                    }
+                } catch (Throwable $ignore) {}
+
+                return $res;
             } catch (Throwable $e) {
                 self::$useJsonFallback = true;
             }
@@ -210,6 +236,7 @@ class DataStore {
             foreach ($data[$collectionName] as $idx => $item) {
                 if ((isset($item[$key]) && (string)$item[$key] === (string)$value) ||
                     (isset($item['id']) && (string)$item['id'] === (string)$value) ||
+                    (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) ||
                     (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value)) {
                     $data[$collectionName][$idx] = array_merge($item, $updates);
                     self::saveJsonData($data);
@@ -229,7 +256,23 @@ class DataStore {
                     $sqlKey = 'notification_id';
                 }
                 $stmt = $pdo->prepare("DELETE FROM `$collectionName` WHERE `$sqlKey` = ?");
-                return $stmt->execute([$value]);
+                $res = $stmt->execute([$value]);
+
+                try {
+                    $jsonData = self::getJsonData();
+                    if (isset($jsonData[$collectionName])) {
+                        $jsonData[$collectionName] = array_values(array_filter($jsonData[$collectionName], function($item) use ($key, $value) {
+                            if (isset($item[$key]) && (string)$item[$key] === (string)$value) return false;
+                            if (isset($item['id']) && (string)$item['id'] === (string)$value) return false;
+                            if (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) return false;
+                            if (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value) return false;
+                            return true;
+                        }));
+                        self::saveJsonData($jsonData);
+                    }
+                } catch (Throwable $ignore) {}
+
+                return $res;
             } catch (Throwable $e) {
                 self::$useJsonFallback = true;
             }
@@ -241,6 +284,7 @@ class DataStore {
             $data[$collectionName] = array_values(array_filter($data[$collectionName], function($item) use ($key, $value) {
                 if (isset($item[$key]) && (string)$item[$key] === (string)$value) return false;
                 if (isset($item['id']) && (string)$item['id'] === (string)$value) return false;
+                if (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) return false;
                 if (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value) return false;
                 return true;
             }));

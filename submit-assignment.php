@@ -296,7 +296,12 @@ $getCoupon = strtoupper(trim($_GET['coupon'] ?? 'ACE20'));
             formRateDetails.textContent = `Rate: ${d.currency_symbol}${effRateFormatted}/word (Base: ${d.currency_symbol}${baseRateFormatted} for 3+ days)`;
 
             if (d.discount_percent > 0) {
-              formDiscountBadge.textContent = `✓ ${d.discount_percent}% Discount Applied (-${d.currency_symbol}${d.discount_amount.toFixed(2)})`;
+              formDiscountBadge.style.color = 'var(--success)';
+              const discFmt = (d.currency === 'INR') ? Math.round(d.discount_amount).toLocaleString('en-IN') : d.discount_amount.toFixed(2);
+              formDiscountBadge.textContent = `✓ ${d.discount_percent}% Discount Applied (-${d.currency_symbol}${discFmt})`;
+            } else if (coupon) {
+              formDiscountBadge.style.color = '#ef4444';
+              formDiscountBadge.textContent = `✗ ${d.coupon_message || 'Invalid or expired coupon'}`;
             } else {
               formDiscountBadge.textContent = '';
             }
@@ -307,6 +312,17 @@ $getCoupon = strtoupper(trim($_GET['coupon'] ?? 'ACE20'));
     [formWords, formDeadline, formSubject, formCurrency].forEach(el => {
       el.addEventListener('change', updatePrice);
       el.addEventListener('input', updatePrice);
+    });
+    formCoupon.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        updatePrice();
+      }
+    });
+    let couponDebounce = null;
+    formCoupon.addEventListener('input', () => {
+      clearTimeout(couponDebounce);
+      couponDebounce = setTimeout(updatePrice, 400);
     });
     btnApplyCoupon.addEventListener('click', updatePrice);
     updatePrice();

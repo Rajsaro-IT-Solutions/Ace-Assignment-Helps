@@ -196,7 +196,12 @@ document.addEventListener('DOMContentLoaded', () => {
           pRateBreakdown.textContent = `Rate: ${data.currency_symbol}${effRateFormatted}/word (Base: ${data.currency_symbol}${baseRateFormatted} for 3+ days)`;
 
           if (data.discount_percent > 0) {
-            pDiscountNote.textContent = `✓ ${data.discount_percent}% Discount Applied (-${data.currency_symbol}${data.discount_amount.toFixed(2)})`;
+            pDiscountNote.style.color = 'var(--success)';
+            const discFmt = (data.currency === 'INR') ? Math.round(data.discount_amount).toLocaleString('en-IN') : data.discount_amount.toFixed(2);
+            pDiscountNote.textContent = `✓ ${data.discount_percent}% Discount Applied (-${data.currency_symbol}${discFmt})`;
+          } else if (c) {
+            pDiscountNote.style.color = '#ef4444';
+            pDiscountNote.textContent = `✗ ${data.coupon_message || 'Invalid or expired coupon'}`;
           } else {
             pDiscountNote.textContent = '';
           }
@@ -207,6 +212,17 @@ document.addEventListener('DOMContentLoaded', () => {
   [pWords, pDeadline, pSubject, pCurrency].forEach(el => {
     el.addEventListener('change', updatePrice);
     el.addEventListener('input', updatePrice);
+  });
+  pCoupon.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      updatePrice();
+    }
+  });
+  let couponTimer = null;
+  pCoupon.addEventListener('input', () => {
+    clearTimeout(couponTimer);
+    couponTimer = setTimeout(updatePrice, 400);
   });
   btnPApply.addEventListener('click', updatePrice);
   updatePrice();

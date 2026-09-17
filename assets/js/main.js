@@ -41,80 +41,97 @@ function initHeroCalculator() {
 
   if (!priceDisplay) return;
 
-  // Currency pricing configuration matching table:
-  // 3+ days: base rate ($0.011 / ₹1.00)
-  // 2 days (48h): $0.016 / ₹1.50
-  // 1 day (24h or less): $0.021 / ₹2.00
-  const currencyConfigs = {
-    'USD': { symbol: '$', rate_3plus: 0.0110, rate_2days: 0.0160, rate_1day: 0.0210, decimals: 2 },
-    'INR': { symbol: '₹', rate_3plus: 1.0000, rate_2days: 1.5000, rate_1day: 2.0000, decimals: 0 },
-    'GBP': { symbol: '£', rate_3plus: 0.0087, rate_2days: 0.0126, rate_1day: 0.0166, decimals: 2 },
-    'EUR': { symbol: '€', rate_3plus: 0.0100, rate_2days: 0.0145, rate_1day: 0.0191, decimals: 2 },
-    'AUD': { symbol: 'A$', rate_3plus: 0.0170, rate_2days: 0.0247, rate_1day: 0.0325, decimals: 2 },
-    'CAD': { symbol: 'C$', rate_3plus: 0.0150, rate_2days: 0.0218, rate_1day: 0.0286, decimals: 2 }
-  };
+  let abortController = null;
 
-  function updatePrice() {
+  function updatePrice(isExplicitApply = false) {
     const words = parseInt(wordSel ? wordSel.value : 2000) || 2000;
     const urgencyHours = parseInt(urgencySel ? urgencySel.value : 120) || 120;
     const currKey = countrySel ? countrySel.value : 'USD';
-    const code = couponInp ? couponInp.value.trim().toUpperCase() : 'ACE20';
+    const code = couponInp ? couponInp.value.trim().toUpperCase() : '';
+    const level = levelSel ? levelSel.value : 'postgraduate';
 
-    const cfg = currencyConfigs[currKey] || currencyConfigs['USD'];
-    let effectiveRate = cfg.rate_3plus;
-    if (urgencyHours <= 24) {
-      effectiveRate = cfg.rate_1day;
-    } else if (urgencyHours <= 48) {
-      effectiveRate = cfg.rate_2days;
+    if (isExplicitApply && applyBtn) {
+      applyBtn.disabled = true;
+      applyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Applying...';
     }
 
-    let subtotal = words * effectiveRate;
-
-    let discount = 0;
-    if (code === 'ACE20') {
-      discount = 0.20;
-      if (couponMsg) {
-        couponMsg.style.display = 'block';
-        couponMsg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Coupon ACE20 Applied! 20% Discount Activated.';
-      }
-    } else if (code === 'FIRST15') {
-      discount = 0.15;
-      if (couponMsg) {
-        couponMsg.style.display = 'block';
-        couponMsg.innerHTML = '<i class="fa-solid fa-circle-check"></i> Coupon FIRST15 Applied! 15% First Order Discount.';
-      }
-    } else {
-      if (couponMsg) {
-        couponMsg.style.display = 'none';
-      }
+    if (abortController) {
+      abortController.abort();
     }
+    abortController = new AbortController();
 
-    let finalPrice = subtotal * (1 - discount);
-    const minPrice = (currKey === 'INR') ? 100 : 1;
-    finalPrice = Math.max(minPrice, finalPrice);
+    const url = `/api.php?action=price_calc&word_count=${words}&deadline_hours=${urgencyHours}&academic_level=${encodeURIComponent(level)}&currency=${currKey}&coupon_code=${encodeURIComponent(code)}`;
 
-    if (cfg.decimals === 0) {
-      priceDisplay.textContent = cfg.symbol + Math.round(finalPrice).toLocaleString('en-IN');
-    } else {
-      priceDisplay.textContent = cfg.symbol + finalPrice.toFixed(2);
-    }
+    fetch(url, { signal: abortController.signal })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data) {
+          const d = res.data;
+          const formatted = (d.currency === 'INR')
+            ? `${d.currency_symbol}${Math.round(d.final_price).toLocaleString('en-IN')}`
+            : `${d.currency_symbol}${d.final_price.toFixed(d.decimals !== undefined ? d.decimals : 2)}`;
+
+          priceDisplay.textContent = formatted;
+
+          if (couponMsg) {
+            if (code && d.coupon_valid) {
+              couponMsg.style.display = 'block';
+              couponMsg.style.color = 'var(--success)';
+              const discFmt = (d.currency === 'INR') ? Math.round(d.discount_amount).toLocaleString('en-IN') : d.discount_amount.toFixed(2);
+              couponMsg.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${d.coupon_message || `Coupon ${code} Applied! ${d.discount_percent}% Discount Activated.`} (-${d.currency_symbol}${discFmt})`;
+            } else if (code && !d.coupon_valid) {
+              couponMsg.style.display = 'block';
+              couponMsg.style.color = '#ef4444';
+              couponMsg.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${d.coupon_message || `Invalid or expired coupon code: "${code}".`}`;
+            } else {
+              couponMsg.style.display = 'none';
+              couponMsg.innerHTML = '';
+            }
+          }
+        }
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          console.error('Price calculation error:', err);
+        }
+      })
+      .finally(() => {
+        if (isExplicitApply && applyBtn) {
+          applyBtn.disabled = false;
+          applyBtn.innerHTML = 'Apply';
+        }
+      });
   }
 
-  [levelSel, wordSel, urgencySel, countrySel, couponInp].forEach(el => {
+  [levelSel, wordSel, urgencySel, countrySel].forEach(el => {
     if (el) {
-      el.addEventListener('change', updatePrice);
-      el.addEventListener('input', updatePrice);
+      el.addEventListener('change', () => updatePrice(false));
+      el.addEventListener('input', () => updatePrice(false));
     }
   });
+
+  if (couponInp) {
+    couponInp.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        updatePrice(true);
+      }
+    });
+    let couponDebounce = null;
+    couponInp.addEventListener('input', () => {
+      clearTimeout(couponDebounce);
+      couponDebounce = setTimeout(() => updatePrice(false), 400);
+    });
+  }
 
   if (applyBtn) {
     applyBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      updatePrice();
+      updatePrice(true);
     });
   }
 
-  updatePrice();
+  updatePrice(false);
 }
 
 function initPriceCalculator() {
@@ -133,53 +150,38 @@ function initPriceCalculator() {
 
   function calculate() {
     const words = parseInt(wordCountInput.value) || 250;
-    const pages = Math.ceil(words / 250);
     const deadlineHours = parseInt(deadlineSelect.value) || 72;
-    const level = levelSelect.value || 'Undergraduate';
-    const subject = subjectSelect.value || 'General';
+    const level = levelSelect ? levelSelect.value : 'Undergraduate';
+    const subject = subjectSelect ? subjectSelect.value : 'General';
     const coupon = (couponInput ? couponInput.value.trim().toUpperCase() : '');
 
-    let basePerPage = 15.0;
-
-    const levelMults = {
-      'High School': 0.85,
-      'Undergraduate': 1.0,
-      'Master\'s': 1.35,
-      'PhD': 1.75
-    };
-    const lvlM = levelMults[level] || 1.0;
-
-    let urgencyM = 1.0;
-    if (deadlineHours <= 12) urgencyM = 2.2;
-    else if (deadlineHours <= 24) urgencyM = 1.8;
-    else if (deadlineHours <= 48) urgencyM = 1.4;
-    else if (deadlineHours <= 72) urgencyM = 1.2;
-
-    const complexSubjects = ['Computer Science', 'Programming', 'Engineering', 'Medical Sciences', 'Finance', 'Law & Legal Studies'];
-    const subjM = complexSubjects.includes(subject) ? 1.15 : 1.0;
-
-    let subtotal = pages * basePerPage * lvlM * urgencyM * subjM;
-
-    let discount = 0;
-    if (coupon === 'ACE20') {
-      discount = 0.20;
-      if (discountNotice) discountNotice.innerHTML = '✨ 20% Discount Applied (ACE20)';
-    } else if (coupon === 'FIRST15') {
-      discount = 0.15;
-      if (discountNotice) discountNotice.innerHTML = '✨ 15% First Order Discount Applied';
-    } else {
-      if (discountNotice) discountNotice.innerHTML = '';
-    }
-
-    let finalPrice = Math.max(10.0, subtotal * (1 - discount));
-
-    if (displayPages) displayPages.textContent = pages + (pages === 1 ? ' page' : ' pages');
-    if (displayAmount) displayAmount.textContent = '$' + finalPrice.toFixed(2);
+    fetch(`/api.php?action=price_calc&word_count=${words}&deadline_hours=${deadlineHours}&academic_level=${encodeURIComponent(level)}&subject=${encodeURIComponent(subject)}&currency=USD&coupon_code=${encodeURIComponent(coupon)}`)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data) {
+          const d = res.data;
+          if (displayPages) displayPages.textContent = d.pages + (d.pages === 1 ? ' page' : ' pages');
+          if (displayAmount) displayAmount.textContent = '$' + d.final_price.toFixed(2);
+          if (discountNotice) {
+            if (coupon && d.coupon_valid) {
+              discountNotice.style.color = 'var(--success)';
+              discountNotice.innerHTML = `✨ ${d.discount_percent}% Discount Applied (${coupon})`;
+            } else if (coupon && !d.coupon_valid) {
+              discountNotice.style.color = '#ef4444';
+              discountNotice.innerHTML = `✗ ${d.coupon_message || 'Invalid coupon'}`;
+            } else {
+              discountNotice.innerHTML = '';
+            }
+          }
+        }
+      });
   }
 
   [wordCountInput, deadlineSelect, levelSelect, subjectSelect, couponInput].forEach(el => {
-    if (el) el.addEventListener('input', calculate);
-    if (el) el.addEventListener('change', calculate);
+    if (el) {
+      el.addEventListener('input', calculate);
+      el.addEventListener('change', calculate);
+    }
   });
 
   calculate();
