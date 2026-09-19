@@ -531,7 +531,7 @@ select.form-control, select {
   padding: 1rem;
 }
 
-.modal-box, .calc-card {
+.modal-box {
   background: #ffffff;
   border-radius: var(--radius-md);
   border: 1px solid var(--portal-border);
@@ -540,6 +540,14 @@ select.form-control, select {
   max-width: 520px;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.calc-card {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--portal-border);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  width: 100%;
 }
 
 /* Sidebar Mobile Overlay Backdrop */

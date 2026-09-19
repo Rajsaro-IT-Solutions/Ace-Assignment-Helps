@@ -3,6 +3,7 @@ $pageTitle = "Submit New Assignment";
 require_once __DIR__ . '/../includes/auth.php';
 Auth::checkRole('Student');
 $user = Auth::currentUser();
+require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
 ?>
 
@@ -40,13 +41,25 @@ include __DIR__ . '/../includes/portal_header.php';
         <div class="form-group">
           <label>Subject Discipline *</label>
           <select name="subject" id="pSubject" class="form-control">
-            <option value="Computer Science">Computer Science & IT</option>
-            <option value="Business Management">Business & Management</option>
-            <option value="Nursing & Healthcare">Nursing & Healthcare</option>
-            <option value="Law & Legal Studies">Law & Legal Studies</option>
-            <option value="Engineering">Engineering & Physics</option>
-            <option value="Finance">Finance & Accounting</option>
-            <option value="General">General Academic</option>
+            <?php 
+            $allCourses = DataStore::getCollection('courses');
+            $activeCourses = array_filter($allCourses, function($c) { return ($c['status'] ?? 'Active') === 'Active'; });
+            if (!empty($activeCourses)):
+              foreach ($activeCourses as $c):
+            ?>
+              <option value="<?php echo htmlspecialchars($c['title']); ?>"><?php echo htmlspecialchars($c['title']); ?></option>
+            <?php 
+              endforeach;
+            else: 
+            ?>
+              <option value="Computer Science">Computer Science & IT</option>
+              <option value="Business Management">Business & Management</option>
+              <option value="Nursing & Healthcare">Nursing & Healthcare</option>
+              <option value="Law & Legal Studies">Law & Legal Studies</option>
+              <option value="Engineering">Engineering & Physics</option>
+              <option value="Finance">Finance & Accounting</option>
+              <option value="General">General Academic</option>
+            <?php endif; ?>
           </select>
         </div>
 

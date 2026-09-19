@@ -9,7 +9,7 @@ include __DIR__ . '/../includes/portal_header.php';
 $msg = '';
 $msgType = 'info';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = $_POST['action'] ?? '';
 
     // 1. Mark Read

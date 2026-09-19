@@ -61,6 +61,13 @@ class DataStore {
             }
         }
 
+        if ($collectionName === 'courses' && isset($row['topics'])) {
+            if (is_string($row['topics'])) {
+                $decoded = json_decode($row['topics'], true);
+                $row['topics'] = is_array($decoded) ? $decoded : array_map('trim', explode(',', $row['topics']));
+            }
+        }
+
         if ($collectionName === 'support_tickets' && isset($row['replies'])) {
             if (is_string($row['replies'])) {
                 $decoded = json_decode($row['replies'], true);
@@ -141,12 +148,30 @@ class DataStore {
                 if ($collectionName === 'experts' && isset($dbRecord['subjects']) && is_array($dbRecord['subjects'])) {
                     $dbRecord['subjects'] = json_encode($dbRecord['subjects']);
                 }
+                if ($collectionName === 'courses' && isset($dbRecord['topics']) && is_array($dbRecord['topics'])) {
+                    $dbRecord['topics'] = json_encode($dbRecord['topics']);
+                }
                 if ($collectionName === 'support_tickets' && isset($dbRecord['replies']) && is_array($dbRecord['replies'])) {
                     $dbRecord['replies'] = json_encode($dbRecord['replies']);
                 }
                 if ($collectionName === 'notifications' && isset($dbRecord['id'])) {
                     $dbRecord['notification_id'] = $dbRecord['id'];
                     unset($dbRecord['id']);
+                }
+
+                // Filter to only columns that actually exist in the table
+                static $columnsCache = [];
+                if (!isset($columnsCache[$collectionName])) {
+                    try {
+                        $colStmt = $pdo->query("SHOW COLUMNS FROM `$collectionName`");
+                        $columnsCache[$collectionName] = array_column($colStmt->fetchAll(), 'Field');
+                    } catch (Throwable $ignore) {
+                        $columnsCache[$collectionName] = null;
+                    }
+                }
+                if (!empty($columnsCache[$collectionName])) {
+                    $validCols = array_flip($columnsCache[$collectionName]);
+                    $dbRecord = array_intersect_key($dbRecord, $validCols);
                 }
 
                 $fields = array_keys($dbRecord);
@@ -187,8 +212,26 @@ class DataStore {
                 if ($collectionName === 'experts' && isset($dbUpdates['subjects']) && is_array($dbUpdates['subjects'])) {
                     $dbUpdates['subjects'] = json_encode($dbUpdates['subjects']);
                 }
+                if ($collectionName === 'courses' && isset($dbUpdates['topics']) && is_array($dbUpdates['topics'])) {
+                    $dbUpdates['topics'] = json_encode($dbUpdates['topics']);
+                }
                 if ($collectionName === 'support_tickets' && isset($dbUpdates['replies']) && is_array($dbUpdates['replies'])) {
                     $dbUpdates['replies'] = json_encode($dbUpdates['replies']);
+                }
+
+                // Filter to only columns that actually exist in the table
+                static $updateColsCache = [];
+                if (!isset($updateColsCache[$collectionName])) {
+                    try {
+                        $colStmt = $pdo->query("SHOW COLUMNS FROM `$collectionName`");
+                        $updateColsCache[$collectionName] = array_column($colStmt->fetchAll(), 'Field');
+                    } catch (Throwable $ignore) {
+                        $updateColsCache[$collectionName] = null;
+                    }
+                }
+                if (!empty($updateColsCache[$collectionName])) {
+                    $validCols = array_flip($updateColsCache[$collectionName]);
+                    $dbUpdates = array_intersect_key($dbUpdates, $validCols);
                 }
 
                 $setParts = [];
@@ -293,4 +336,19 @@ class DataStore {
         }
         return false;
     }
+
+    public static function getSetting($key, $default = '') {
+        $row = self::findOne('settings', 'setting_key', $key);
+        return ($row && isset($row['setting_value']) && $row['setting_value'] !== '') ? $row['setting_value'] : $default;
+    }
+
+    public static function setSetting($key, $value) {
+        $existing = self::findOne('settings', 'setting_key', $key);
+        if ($existing) {
+            return self::update('settings', 'setting_key', $key, ['setting_value' => $value]);
+        } else {
+            return self::insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
+        }
+    }
 }
+

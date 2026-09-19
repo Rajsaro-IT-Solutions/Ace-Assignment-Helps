@@ -260,6 +260,7 @@ function deleteFile(fileId) {
 }
 </script>
 
+<script src="/assets/js/portal.js"></script>
 </div>
 </div>
 </body>

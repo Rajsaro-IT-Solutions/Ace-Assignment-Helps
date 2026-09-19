@@ -80,6 +80,7 @@ $userRole = $_SESSION['user']['role'] ?? '';
       <li><a href="/services.php" class="nav-link">Services</a></li>
       <li><a href="/pricing.php" class="nav-link">Pricing</a></li>
       <li><a href="/subjects.php" class="nav-link">Subjects</a></li>
+      <li><a href="/blog.php" class="nav-link">Blog</a></li>
       <li><a href="/how-it-works.php" class="nav-link">How It Works</a></li>
       <li><a href="/reviews.php" class="nav-link">Reviews</a></li>
       <li><a href="/faq.php" class="nav-link">FAQ</a></li>

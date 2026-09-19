@@ -64,6 +64,8 @@ $pageTitle = "Ace Assignment Helps - #1 University Assignment Assistance (UK, US
 require_once $baseDir . '/includes/auth.php';
 require_once $baseDir . '/includes/helpers.php';
 $currentUser = Auth::currentUser();
+$homepageCourses = array_filter(DataStore::getCollection('courses'), function($c) { return ($c['status'] ?? 'Active') === 'Active'; });
+$homepageBlogs = DataStore::getCollection('blogs');
 
 include $baseDir . '/includes/header.php';
 ?>
@@ -328,6 +330,92 @@ $defaultHeroCalc = calculate_assignment_price(2000, 120, 'postgraduate', 'Genera
           Get instant progress updates, upload additional requirements, or speak with our support staff anytime via WhatsApp or live portal chat.
         </p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- DYNAMIC COURSES & ACADEMIC DISCIPLINES SECTION -->
+<section style="padding: 4rem 0; background: #f8fafc; border-top: 1px solid var(--border-color);">
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:2.5rem; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <div class="badge badge-info" style="margin-bottom:0.6rem;"><i class="fa-solid fa-graduation-cap"></i> Dynamic Disciplines</div>
+        <h2 style="font-size:2.2rem; color:#0f172a; margin:0;">Supported Academic Courses & Subjects</h2>
+        <p style="color:var(--text-muted); font-size:1rem; margin:0.4rem 0 0 0;">Accredited PhD experts covering every syllabus module and university faculty globally.</p>
+      </div>
+      <a href="/subjects.php" class="btn btn-outline">Explore All <?php echo count($homepageCourses); ?>+ Courses &rarr;</a>
+    </div>
+
+    <div class="grid-3">
+      <?php foreach (array_slice($homepageCourses, 0, 6) as $c): 
+        $topics = is_array($c['topics']) ? $c['topics'] : array_filter(explode(',', (string)$c['topics']));
+        $icon = !empty($c['icon']) ? $c['icon'] : 'fa-book-open';
+      ?>
+        <div class="feature-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <div style="width:44px; height:44px; border-radius:10px; background:rgba(99,102,241,0.1); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:1.3rem;">
+                <i class="fa-solid <?php echo htmlspecialchars($icon); ?>"></i>
+              </div>
+              <span class="badge badge-info" style="font-size:0.75rem;"><?php echo htmlspecialchars($c['category']); ?></span>
+            </div>
+            <h3 style="font-size:1.18rem; margin-bottom:0.5rem; color:#0f172a;"><?php echo htmlspecialchars($c['title']); ?></h3>
+            <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.5; margin-bottom:1rem;"><?php echo htmlspecialchars($c['description']); ?></p>
+            <?php if (!empty($topics)): ?>
+              <ul style="list-style:none; padding:0; margin:0 0 1rem 0; font-size:0.85rem; color:#475569; line-height:1.7;">
+                <?php foreach (array_slice($topics, 0, 3) as $t): ?>
+                  <li><i class="fa-solid fa-check" style="color:var(--success); font-size:0.75rem; margin-right:6px;"></i> <?php echo htmlspecialchars(trim($t)); ?></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+          </div>
+          <div style="border-top:1px solid var(--border-color); padding-top:0.8rem; margin-top:auto;">
+            <a href="/submit-assignment.php?subject=<?php echo urlencode($c['title']); ?>" class="btn btn-outline btn-sm" style="width:100%; text-align:center;">
+              Order <?php echo htmlspecialchars($c['title']); ?> &rarr;
+            </a>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+
+<!-- DYNAMIC RECENT BLOGS & STUDY GUIDES SECTION -->
+<section style="padding: 4rem 0; background: #ffffff;">
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:2.5rem; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <div class="badge badge-primary" style="margin-bottom:0.6rem;"><i class="fa-solid fa-newspaper"></i> Academic Guides</div>
+        <h2 style="font-size:2.2rem; color:#0f172a; margin:0;">Latest University Guides & Tips</h2>
+        <p style="color:var(--text-muted); font-size:1rem; margin:0.4rem 0 0 0;">Expert writing insights, dissertation methods, and university success guides.</p>
+      </div>
+      <a href="/blog.php" class="btn btn-outline">Visit Study Hub &rarr;</a>
+    </div>
+
+    <div class="grid-3">
+      <?php foreach (array_slice($homepageBlogs, 0, 3) as $hb): ?>
+        <div class="feature-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+              <span class="badge badge-info"><?php echo htmlspecialchars($hb['category']); ?></span>
+              <small style="color:var(--text-muted); font-size:0.75rem;"><?php echo htmlspecialchars($hb['published_at']); ?></small>
+            </div>
+            <h3 style="font-size:1.18rem; margin-bottom:0.6rem; line-height:1.4;">
+              <a href="/blog-detail.php?id=<?php echo $hb['id']; ?>" style="color:#0f172a; text-decoration:none;">
+                <?php echo htmlspecialchars($hb['title']); ?>
+              </a>
+            </h3>
+            <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.6; margin-bottom:1rem;">
+              <?php echo htmlspecialchars($hb['excerpt']); ?>
+            </p>
+          </div>
+          <div style="border-top:1px solid var(--border-color); padding-top:0.8rem; margin-top:auto;">
+            <a href="/blog-detail.php?id=<?php echo $hb['id']; ?>" style="color:var(--primary); font-weight:700; font-size:0.9rem; text-decoration:none;">
+              Read Guide &rarr;
+            </a>
+          </div>
+        </div>
+      <?php endforeach; ?>
     </div>
   </div>
 </section>

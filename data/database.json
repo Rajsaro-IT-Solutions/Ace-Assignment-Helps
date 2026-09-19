@@ -141,14 +141,14 @@
             "instructions": "Develop a hyperparameter tuning evaluation matrix for Random Forest and XGBoost algorithms using Python scikit-learn.",
             "price": 180,
             "discount_code": "ACE20",
-            "final_price": 144,
+            "final_price": 45,
             "status": "In Progress",
             "allocator_id": "ALL-501",
             "expert_id": "EXP-301",
             "country": "United States",
             "university": "Stanford University",
             "created_at": "2026-09-01 12:00:00",
-            "updated_at": "2026-09-02 10:15:00"
+            "updated_at": "2026-09-18 11:40:22"
         },
         {
             "assignment_id": "ACE-2026-000102",
@@ -192,13 +192,13 @@
             "price": 210,
             "discount_code": "FIRST15",
             "final_price": 178.5,
-            "status": "Waiting for Payment",
+            "status": "Confirmed",
             "allocator_id": "",
             "expert_id": "",
             "country": "Australia",
             "university": "University of Sydney",
             "created_at": "2026-09-03 16:45:00",
-            "updated_at": "2026-09-03 16:45:00"
+            "updated_at": "2026-09-18 12:15:17"
         },
         {
             "assignment_id": "ACE-2026-000104",
@@ -242,13 +242,13 @@
             "price": 160,
             "discount_code": "",
             "final_price": 160,
-            "status": "Pending Review",
-            "allocator_id": "",
+            "status": "Allocated",
+            "allocator_id": "ALL-502",
             "expert_id": "",
             "country": "United Kingdom",
             "university": "University of Oxford",
             "created_at": "2026-09-04 07:30:00",
-            "updated_at": "2026-09-04 07:30:00"
+            "updated_at": "2026-09-18 10:27:35"
         },
         {
             "assignment_id": "ACE-2026-000106",
@@ -301,6 +301,214 @@
             "university": "Stanford University",
             "created_at": "2026-09-09 08:56:18",
             "updated_at": "2026-09-09 08:56:18"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "title": "Clinical Ethics in Geriatric Palliative Care",
+            "subject": "Nursing & Clinical Healthcare",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 12:22:00",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Review clinical protocols and ethical considerations for elderly care in Australia.Review clinical protocols and ethical considerations for elderly care in Australia.",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "ACE20",
+            "final_price": 7.15,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "Stanford University",
+            "created_at": "2026-09-18 12:22:00",
+            "updated_at": "2026-09-18 12:22:00"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "title": "Clinical Ethics in Geriatric Palliative Care",
+            "subject": "Nursing & Clinical Healthcare",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 12:32:02",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Review clinical protocols and ethical considerations for elderly care in Australia.Review clinical protocols and ethical considerations for elderly care in Australia.",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "ACE20",
+            "final_price": 7.15,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "Stanford University",
+            "created_at": "2026-09-18 12:32:03",
+            "updated_at": "2026-09-18 12:32:03"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "title": "Clinical Ethics in Geriatric Palliative Care",
+            "subject": "Nursing & Clinical Healthcare",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 12:38:21",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Review clinical protocols and ethical considerations for elderly care in Australia.",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "ACE20",
+            "final_price": 7.15,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "Stanford University",
+            "created_at": "2026-09-18 12:38:21",
+            "updated_at": "2026-09-18 12:38:21"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "title": "Clinical Ethics in Geriatric Palliative Care",
+            "subject": "Nursing & Clinical Healthcare",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 12:45:45",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Review clinical protocols and ethical considerations for elderly care in Australia.",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "ACE20",
+            "final_price": 7.15,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "Stanford University",
+            "created_at": "2026-09-18 12:45:51",
+            "updated_at": "2026-09-18 12:45:51"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "title": "test",
+            "subject": "Law & Legal Studies",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 12:49:20",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "test",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "ACE20",
+            "final_price": 7.15,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "Stanford University",
+            "created_at": "2026-09-18 12:49:21",
+            "updated_at": "2026-09-18 12:49:21"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "title": "Clinical Ethics in Geriatric Palliative Care",
+            "subject": "Nursing & Clinical Healthcare",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 12:57:23",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Review clinical protocols and ethical considerations for elderly care in Australia.",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "ACE20",
+            "final_price": 7.15,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "Stanford University",
+            "created_at": "2026-09-18 12:57:23",
+            "updated_at": "2026-09-18 12:57:23"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-8201",
+            "title": "Test Clinical Ethics",
+            "subject": "Nursing & Healthcare",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 13:02:18",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Test instructions for nursing assignment",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "",
+            "final_price": 11,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-09-18 13:02:19",
+            "updated_at": "2026-09-18 13:02:19"
+        },
+        {
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "title": "Clinical Ethics in Geriatric Palliative Care",
+            "subject": "Nursing & Healthcare",
+            "assignment_type": "Essay",
+            "deadline": "2026-09-23 13:13:16",
+            "timezone": "EST (UTC-5)",
+            "word_count": 1000,
+            "pages": 4,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Review clinical protocols and ethical considerations for elderly care in Australia.",
+            "currency": "USD",
+            "price": 11,
+            "discount_code": "",
+            "final_price": 11,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "Australia",
+            "university": "University of Sydney",
+            "created_at": "2026-09-18 13:13:16",
+            "updated_at": "2026-09-18 13:13:16"
         }
     ],
     "files": [
@@ -378,6 +586,17 @@
             "payment_method": "PayPal",
             "transaction_id": "PP-99201948201",
             "payment_date": "2026-08-25 09:20:00"
+        },
+        {
+            "payment_id": "PAY-9794",
+            "assignment_id": "ACE-2026-000103",
+            "student_id": "STU-1003",
+            "amount": 178.5,
+            "currency": "USD",
+            "status": "Paid",
+            "payment_method": "Stripe Credit Card",
+            "transaction_id": "ch_119a09bf16c0daf8",
+            "payment_date": "2026-09-18 12:15:17"
         }
     ],
     "allocation": [
@@ -442,15 +661,6 @@
             "created_at": "2026-09-04 07:30:00"
         },
         {
-            "id": "NTF-3",
-            "user_id": "",
-            "user_role": "Allocator",
-            "title": "New Assignment Received",
-            "message": "Assignment ACE-2026-000106 (Test Homepage Order with Files) has been submitted and awaits allocation.",
-            "is_read": false,
-            "created_at": "2026-09-09 08:41:07"
-        },
-        {
             "id": "NTF-4",
             "user_id": "",
             "user_role": "Allocator",
@@ -485,6 +695,87 @@
             "message": "Assignment ACE-2026-000106 (Test 24h USD Assignment) has been submitted and awaits allocation.",
             "is_read": false,
             "created_at": "2026-09-09 08:56:18"
+        },
+        {
+            "id": "NTF-3",
+            "user_id": "STU-1003",
+            "user_role": "Student",
+            "title": "Payment Pending for ACE-2026-000103",
+            "message": "Your assignment ACE-2026-000103 is reviewed. Please settle payment to begin expert allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:05:14"
+        },
+        {
+            "id": "NTF-4",
+            "user_id": "STU-1003",
+            "user_role": "Student",
+            "title": "Welcome to Ace Assignment Helps!",
+            "message": "Welcome Aarav! PhD experts in Nursing & Healthcare are available 24\/7.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:05:15"
+        },
+        {
+            "id": "NTF-9",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Clinical Ethics in Geriatric Palliative Care) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:22:00"
+        },
+        {
+            "id": "NTF-10",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Clinical Ethics in Geriatric Palliative Care) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:32:03"
+        },
+        {
+            "id": "NTF-11",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Clinical Ethics in Geriatric Palliative Care) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:38:22"
+        },
+        {
+            "id": "NTF-12",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Clinical Ethics in Geriatric Palliative Care) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:45:51"
+        },
+        {
+            "id": "NTF-13",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (test) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:49:21"
+        },
+        {
+            "id": "NTF-14",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Clinical Ethics in Geriatric Palliative Care) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 12:57:23"
+        },
+        {
+            "id": "NTF-15",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000106 (Test Clinical Ethics) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-18 13:02:19"
         }
     ],
     "coupons": [
@@ -493,7 +784,7 @@
             "code": "ACE20",
             "discount_percent": 35,
             "max_uses": 100,
-            "current_uses": 24,
+            "current_uses": 30,
             "expires_at": "2026-12-31",
             "status": "Active"
         },
@@ -524,7 +815,8 @@
             "category": "Academic Writing",
             "author": "Dr. Robert Vance",
             "published_at": "2026-08-20",
-            "image": "blog-dissertation.jpg"
+            "image": "blog-dissertation.jpg",
+            "content": "Academic excellence in university assignments requires a structured methodology, critical analysis, and meticulous adherence to citation standards.\n\n### 1. Understanding the Assignment Brief\nBegin by breaking down the question prompt. Identify key directives such as \"evaluate\", \"critique\", or \"synthesize\".\n\n### 2. Conducting Rigorous Literature Reviews\nUtilize peer-reviewed journals from JSTOR, IEEE, ScienceDirect, and Google Scholar. Balance theoretical frameworks with empirical findings.\n\n### 3. Maintaining Academic Tone & Referencing\nAlways write in an objective third-person tone. Maintain strict compliance with required referencing manuals (APA 7th, Harvard, Chicago, or OSCOLA).\n\nIf you need tailored assistance or 0% similarity Turnitin reports, submit your order through Ace Assignment Helps!"
         },
         {
             "id": 2,
@@ -533,7 +825,8 @@
             "category": "Computer Science",
             "author": "Dr. Michael Zhang",
             "published_at": "2026-08-25",
-            "image": "blog-ml.jpg"
+            "image": "blog-ml.jpg",
+            "content": "Academic excellence in university assignments requires a structured methodology, critical analysis, and meticulous adherence to citation standards.\n\n### 1. Understanding the Assignment Brief\nBegin by breaking down the question prompt. Identify key directives such as \"evaluate\", \"critique\", or \"synthesize\".\n\n### 2. Conducting Rigorous Literature Reviews\nUtilize peer-reviewed journals from JSTOR, IEEE, ScienceDirect, and Google Scholar. Balance theoretical frameworks with empirical findings.\n\n### 3. Maintaining Academic Tone & Referencing\nAlways write in an objective third-person tone. Maintain strict compliance with required referencing manuals (APA 7th, Harvard, Chicago, or OSCOLA).\n\nIf you need tailored assistance or 0% similarity Turnitin reports, submit your order through Ace Assignment Helps!"
         },
         {
             "id": 3,
@@ -542,7 +835,8 @@
             "category": "Study Tips",
             "author": "Clara Higgins",
             "published_at": "2026-09-01",
-            "image": "blog-referencing.jpg"
+            "image": "blog-referencing.jpg",
+            "content": "Academic excellence in university assignments requires a structured methodology, critical analysis, and meticulous adherence to citation standards.\n\n### 1. Understanding the Assignment Brief\nBegin by breaking down the question prompt. Identify key directives such as \"evaluate\", \"critique\", or \"synthesize\".\n\n### 2. Conducting Rigorous Literature Reviews\nUtilize peer-reviewed journals from JSTOR, IEEE, ScienceDirect, and Google Scholar. Balance theoretical frameworks with empirical findings.\n\n### 3. Maintaining Academic Tone & Referencing\nAlways write in an objective third-person tone. Maintain strict compliance with required referencing manuals (APA 7th, Harvard, Chicago, or OSCOLA).\n\nIf you need tailored assistance or 0% similarity Turnitin reports, submit your order through Ace Assignment Helps!"
         }
     ],
     "support_tickets": [
@@ -711,6 +1005,618 @@
             "action": "Update Coupon",
             "details": "Updated coupon FIRST15 (CPN-2)",
             "timestamp": "2026-09-17 07:05:39"
+        },
+        {
+            "log_id": "LOG-1050",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 09:44:05"
+        },
+        {
+            "log_id": "LOG-1051",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Course",
+            "details": "Created course 'Automated Test Course 1789724852' (CRS-107)",
+            "timestamp": "2026-09-18 09:47:36"
+        },
+        {
+            "log_id": "LOG-1052",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Toggle Course Status",
+            "details": "Set course CRS-107 to Inactive",
+            "timestamp": "2026-09-18 09:47:39"
+        },
+        {
+            "log_id": "LOG-1053",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Course",
+            "details": "Deleted course CRS-107",
+            "timestamp": "2026-09-18 09:47:41"
+        },
+        {
+            "log_id": "LOG-1054",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Settings",
+            "details": "Updated platform system settings",
+            "timestamp": "2026-09-18 09:47:47"
+        },
+        {
+            "log_id": "LOG-1055",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Coupon",
+            "details": "Created coupon TEST332 (CPN-49)",
+            "timestamp": "2026-09-18 09:48:23"
+        },
+        {
+            "log_id": "LOG-1056",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Coupon",
+            "details": "Permanently deleted coupon CPN-49",
+            "timestamp": "2026-09-18 09:48:27"
+        },
+        {
+            "log_id": "LOG-1057",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Expert",
+            "details": "Created expert Dr. Test Professor (EXP-305)",
+            "timestamp": "2026-09-18 09:48:29"
+        },
+        {
+            "log_id": "LOG-1058",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Expert",
+            "details": "Permanently deleted expert EXP-305",
+            "timestamp": "2026-09-18 09:48:32"
+        },
+        {
+            "log_id": "LOG-1059",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 09:53:08"
+        },
+        {
+            "log_id": "LOG-1060",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Course",
+            "details": "Created course 'Data Analytics & Business Intelligence' (CRS-107)",
+            "timestamp": "2026-09-18 10:01:09"
+        },
+        {
+            "log_id": "LOG-1061",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Admin Override Assignment",
+            "details": "Updated ACE-2026-000105 parameters.",
+            "timestamp": "2026-09-18 10:27:35"
+        },
+        {
+            "log_id": "LOG-1062",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Course",
+            "details": "Created course 'Robotics & Embedded Systems' (CRS-108)",
+            "timestamp": "2026-09-18 10:33:21"
+        },
+        {
+            "log_id": "LOG-1063",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Course",
+            "details": "Updated course CRS-108 'Robotics & Embedded Systems'",
+            "timestamp": "2026-09-18 10:35:54"
+        },
+        {
+            "log_id": "LOG-1064",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Toggle Course Status",
+            "details": "Set course CRS-108 to Inactive",
+            "timestamp": "2026-09-18 10:36:55"
+        },
+        {
+            "log_id": "LOG-1065",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Student",
+            "details": "Added student Carlos Mendoza (STU-1005)",
+            "timestamp": "2026-09-18 10:51:11"
+        },
+        {
+            "log_id": "LOG-1066",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Student",
+            "details": "Updated student details for STU-1005",
+            "timestamp": "2026-09-18 10:56:19"
+        },
+        {
+            "log_id": "LOG-1067",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Student",
+            "details": "Updated student details for STU-1005",
+            "timestamp": "2026-09-18 11:07:05"
+        },
+        {
+            "log_id": "LOG-1068",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Student",
+            "details": "Updated student details for STU-1005",
+            "timestamp": "2026-09-18 11:13:12"
+        },
+        {
+            "log_id": "LOG-1069",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 11:39:33"
+        },
+        {
+            "log_id": "LOG-1070",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 11:39:58"
+        },
+        {
+            "log_id": "LOG-1071",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Admin Override Assignment",
+            "details": "Updated ACE-2026-000101 parameters.",
+            "timestamp": "2026-09-18 11:40:23"
+        },
+        {
+            "log_id": "LOG-1072",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Course",
+            "details": "Created course 'Verification Test Course CRS-802' (CRS-109)",
+            "timestamp": "2026-09-18 11:40:25"
+        },
+        {
+            "log_id": "LOG-1073",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Course",
+            "details": "Updated course CRS-802 'Updated Test Course CRS-802'",
+            "timestamp": "2026-09-18 11:40:27"
+        },
+        {
+            "log_id": "LOG-1074",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Toggle Course Status",
+            "details": "Set course CRS-802 to Active",
+            "timestamp": "2026-09-18 11:40:30"
+        },
+        {
+            "log_id": "LOG-1075",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Course",
+            "details": "Deleted course CRS-802",
+            "timestamp": "2026-09-18 11:40:31"
+        },
+        {
+            "log_id": "LOG-1076",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Student",
+            "details": "Added student Student Verification Test (STU-1006)",
+            "timestamp": "2026-09-18 11:40:35"
+        },
+        {
+            "log_id": "LOG-1077",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Student Access Status",
+            "details": "BLOCKED access for student STU-1006",
+            "timestamp": "2026-09-18 11:40:39"
+        },
+        {
+            "log_id": "LOG-1078",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Student",
+            "details": "Permanently deleted student STU-1006",
+            "timestamp": "2026-09-18 11:40:42"
+        },
+        {
+            "log_id": "LOG-1079",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Expert",
+            "details": "Created expert Dr. Expert Test (EXP-305)",
+            "timestamp": "2026-09-18 11:40:45"
+        },
+        {
+            "log_id": "LOG-1080",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Expert",
+            "details": "Permanently deleted expert EXP-305",
+            "timestamp": "2026-09-18 11:40:49"
+        },
+        {
+            "log_id": "LOG-1081",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Allocator",
+            "details": "Created allocator Staff Allocator Test (ALL-503)",
+            "timestamp": "2026-09-18 11:40:55"
+        },
+        {
+            "log_id": "LOG-1082",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Allocator",
+            "details": "Permanently deleted allocator ALL-503",
+            "timestamp": "2026-09-18 11:40:56"
+        },
+        {
+            "log_id": "LOG-1083",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Admin",
+            "details": "Created administrator Admin Verification User (ADM-002)",
+            "timestamp": "2026-09-18 11:41:00"
+        },
+        {
+            "log_id": "LOG-1084",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Admin",
+            "details": "Permanently deleted administrator ADM-002",
+            "timestamp": "2026-09-18 11:41:02"
+        },
+        {
+            "log_id": "LOG-1085",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Coupon",
+            "details": "Created coupon CPN6137 (CPN-42)",
+            "timestamp": "2026-09-18 11:41:08"
+        },
+        {
+            "log_id": "LOG-1086",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Coupon",
+            "details": "Permanently deleted coupon CPN-42",
+            "timestamp": "2026-09-18 11:41:11"
+        },
+        {
+            "log_id": "LOG-1087",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Blog",
+            "details": "Published article 'Audit Blog Article 4226'",
+            "timestamp": "2026-09-18 11:41:14"
+        },
+        {
+            "log_id": "LOG-1088",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Blog",
+            "details": "Deleted article #4",
+            "timestamp": "2026-09-18 11:41:18"
+        },
+        {
+            "log_id": "LOG-1089",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Broadcast Notification",
+            "details": "Sent notification: 'Audit Alert' to All",
+            "timestamp": "2026-09-18 11:41:24"
+        },
+        {
+            "log_id": "LOG-1090",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Update Settings",
+            "details": "Updated platform system settings",
+            "timestamp": "2026-09-18 11:41:36"
+        },
+        {
+            "log_id": "LOG-1092",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 11:44:41"
+        },
+        {
+            "log_id": "LOG-1094",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Student",
+            "details": "Permanently deleted student STU-1005",
+            "timestamp": "2026-09-18 11:51:22"
+        },
+        {
+            "log_id": "LOG-1095",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Student",
+            "details": "Permanently deleted student STU-1004",
+            "timestamp": "2026-09-18 11:51:30"
+        },
+        {
+            "log_id": "LOG-1096",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 11:54:00"
+        },
+        {
+            "log_id": "LOG-1097",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 12:03:51"
+        },
+        {
+            "log_id": "LOG-1098",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 12:08:07"
+        },
+        {
+            "log_id": "LOG-1099",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Payment Received",
+            "details": "Paid $178.50 for ACE-2026-000103",
+            "timestamp": "2026-09-18 12:15:18"
+        },
+        {
+            "log_id": "LOG-1062",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Clinical Ethics in Geriatric Palliative Care (USD 7.15)",
+            "timestamp": "2026-09-18 12:22:00"
+        },
+        {
+            "log_id": "LOG-1063",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Clinical Ethics in Geriatric Palliative Care (USD 7.15)",
+            "timestamp": "2026-09-18 12:32:03"
+        },
+        {
+            "log_id": "LOG-1064",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Clinical Ethics in Geriatric Palliative Care (USD 7.15)",
+            "timestamp": "2026-09-18 12:38:22"
+        },
+        {
+            "log_id": "LOG-1065",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Clinical Ethics in Geriatric Palliative Care (USD 7.15)",
+            "timestamp": "2026-09-18 12:45:51"
+        },
+        {
+            "log_id": "LOG-1100",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-18 12:48:17"
+        },
+        {
+            "log_id": "LOG-1067",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: test (USD 7.15)",
+            "timestamp": "2026-09-18 12:49:21"
+        },
+        {
+            "log_id": "LOG-1068",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Clinical Ethics in Geriatric Palliative Care (USD 7.15)",
+            "timestamp": "2026-09-18 12:57:23"
+        },
+        {
+            "log_id": "LOG-1069",
+            "user_role": "Student",
+            "user_id": "STU-8201",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000106: Test Clinical Ethics (USD 11)",
+            "timestamp": "2026-09-18 13:02:19"
+        }
+    ],
+    "courses": [
+        {
+            "course_id": "CRS-101",
+            "title": "Computer Science & Artificial Intelligence",
+            "category": "Engineering & Technology",
+            "icon": "fa-laptop-code",
+            "description": "Advanced computing assistance covering AI, algorithm optimization, cloud infrastructure, and full-stack software development.",
+            "topics": [
+                "Machine Learning & AI",
+                "Data Structures & Algorithms",
+                "Full-Stack Web Development",
+                "Database Schema SQL\/NoSQL",
+                "Cyber Security & Encryption",
+                "Python \/ Java \/ C++"
+            ],
+            "status": "Active"
+        },
+        {
+            "course_id": "CRS-102",
+            "title": "Business Administration & MBA",
+            "category": "Business & Management",
+            "icon": "fa-chart-pie",
+            "description": "Executive business coursework support including financial modelling, strategic audits, supply chain, and global marketing.",
+            "topics": [
+                "Strategic Management",
+                "Global Supply Chain Logistics",
+                "Corporate Finance & Auditing",
+                "Digital Marketing Strategy",
+                "Human Resource Management",
+                "Executive Leadership"
+            ],
+            "status": "Active"
+        },
+        {
+            "course_id": "CRS-103",
+            "title": "Nursing & Clinical Healthcare",
+            "category": "Health & Medical Sciences",
+            "icon": "fa-user-nurse",
+            "description": "Comprehensive medical and nursing writing covering evidence-based care plans, pharmacological reviews, and clinical safety.",
+            "topics": [
+                "Evidence-Based Nursing",
+                "Clinical Risk Assessment",
+                "Pathophysiology & Pharmacology",
+                "Public Health Policy",
+                "Healthcare Ethics",
+                "SOAP Notes & Care Plans"
+            ],
+            "status": "Active"
+        },
+        {
+            "course_id": "CRS-104",
+            "title": "Law & Legal Studies",
+            "category": "Law & Jurisprudence",
+            "icon": "fa-scale-balanced",
+            "description": "Rigorous legal research and case analysis strictly styled to OSCOLA, Bluebook, and Harvard legal referencing frameworks.",
+            "topics": [
+                "International Trade Law",
+                "Corporate Governance",
+                "Criminal & Constitutional Law",
+                "Intellectual Property Rights",
+                "OSCOLA Legal Briefs & Case Critiques"
+            ],
+            "status": "Active"
+        },
+        {
+            "course_id": "CRS-105",
+            "title": "Data Science & Applied Statistics",
+            "category": "Mathematics & Analytics",
+            "icon": "fa-chart-line",
+            "description": "Statistical computing and data analytics assistance using R Studio, SPSS, MATLAB, STATA, and Python pandas.",
+            "topics": [
+                "Predictive Modelling & Regression",
+                "R & Python Statistical Analysis",
+                "SPSS & STATA Datasets",
+                "Hypothesis Testing & ANOVA",
+                "Big Data Analytics & BI"
+            ],
+            "status": "Active"
+        },
+        {
+            "course_id": "CRS-106",
+            "title": "Engineering & Physical Sciences",
+            "category": "Engineering & Technology",
+            "icon": "fa-gear",
+            "description": "Technical calculations, CAD schematics, simulation reports, and laboratory writeups for Civil, Mechanical, and Electrical disciplines.",
+            "topics": [
+                "Thermodynamics & Heat Transfer",
+                "Structural Mechanics & FEA",
+                "MATLAB & Simulink",
+                "AutoCAD Design Projects",
+                "Circuit Analysis & Embedded Systems"
+            ],
+            "status": "Active"
+        },
+        {
+            "course_id": "CRS-107",
+            "title": "Data Analytics & Business Intelligence",
+            "category": "Mathematics & Analytics",
+            "icon": "fa-book-open",
+            "description": "Applied data visualization and enterprise business intelligence coursework help.",
+            "topics": [
+                "Power BI",
+                "Tableau",
+                "SQL Analytics",
+                "Python Pandas",
+                "Data Warehousing"
+            ],
+            "status": "Active",
+            "created_at": "2026-09-18 10:01:09"
+        },
+        {
+            "course_id": "CRS-108",
+            "title": "Robotics & Embedded Systems",
+            "category": "Engineering & Technology",
+            "icon": "fa-book-open",
+            "description": "Robotics and embedded systems co Advanced modules.ursework.",
+            "topics": [
+                "Arduino",
+                "ROS",
+                "Microcontrollers"
+            ],
+            "status": "Inactive",
+            "created_at": "2026-09-18 10:33:20"
+        },
+        {
+            "course_id": "CRS-109",
+            "title": "Verification Test Course CRS-802",
+            "category": "Engineering & Technology",
+            "icon": "fa-robot",
+            "description": "Test course description",
+            "topics": [
+                "Robotics",
+                "Automation"
+            ],
+            "status": "Active",
+            "created_at": "2026-09-18 11:40:25"
+        }
+    ],
+    "settings": [
+        {
+            "setting_key": "site_name",
+            "setting_value": "Ace Assignment Helps"
+        },
+        {
+            "setting_key": "contact_email",
+            "setting_value": "support@aceassign.com"
+        },
+        {
+            "setting_key": "whatsapp_phone",
+            "setting_value": "+1 (555) 987-6543"
+        },
+        {
+            "setting_key": "default_currency",
+            "setting_value": "USD"
+        },
+        {
+            "setting_key": "base_price",
+            "setting_value": "15.00"
+        },
+        {
+            "setting_key": "tagline",
+            "setting_value": "#1 University Assignment Assistance (UK, USA, Ireland, Australia, Canada & India)"
         }
     ]
 }

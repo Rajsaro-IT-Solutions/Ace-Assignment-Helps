@@ -257,7 +257,12 @@ function executeSimulatedPayment() {
     if (data.success) {
       msgDiv.innerHTML = `<div class="badge badge-success">${data.message}</div>`;
       setTimeout(() => { window.location.reload(); }, 1200);
+    } else {
+      msgDiv.innerHTML = `<div class="badge badge-danger">${data.message || 'Payment processing failed.'}</div>`;
     }
+  })
+  .catch(err => {
+    msgDiv.innerHTML = `<div class="badge badge-danger">Connection error while processing payment.</div>`;
   });
 }
 
@@ -292,7 +297,12 @@ function executeRevisionRequest() {
     if (data.success) {
       msgDiv.innerHTML = `<div class="badge badge-success">${data.message}</div>`;
       setTimeout(() => { window.location.reload(); }, 1200);
+    } else {
+      msgDiv.innerHTML = `<div class="badge badge-danger">${data.message || 'Revision request failed.'}</div>`;
     }
+  })
+  .catch(err => {
+    msgDiv.innerHTML = `<div class="badge badge-danger">Connection error while submitting revision.</div>`;
   });
 }
 

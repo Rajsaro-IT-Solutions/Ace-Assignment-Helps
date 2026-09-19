@@ -10,6 +10,7 @@ if ($getWords < 250)
   $getWords = 1000;
 $getDeadline = (int) ($_GET['deadline'] ?? 120);
 $getCoupon = strtoupper(trim($_GET['coupon'] ?? 'ACE20'));
+$getSubject = trim($_GET['subject'] ?? '');
 ?>
 
 <div class="container" style="padding-top: 3rem; padding-bottom: 5rem; max-width: 960px;">
@@ -97,13 +98,26 @@ $getCoupon = strtoupper(trim($_GET['coupon'] ?? 'ACE20'));
       <div class="form-group">
         <label>Subject Discipline *</label>
         <select name="subject" id="formSubject" class="form-control">
-          <option value="Computer Science">Computer Science & IT</option>
-          <option value="Business Management">Business & Management</option>
-          <option value="Nursing & Healthcare">Nursing & Healthcare</option>
-          <option value="Law & Legal Studies">Law & Legal Studies</option>
-          <option value="Engineering">Engineering & Physics</option>
-          <option value="Finance">Finance & Accounting</option>
-          <option value="General">General Academic</option>
+          <?php 
+          $allCourses = DataStore::getCollection('courses');
+          $activeCourses = array_filter($allCourses, function($c) { return ($c['status'] ?? 'Active') === 'Active'; });
+          if (!empty($activeCourses)):
+            foreach ($activeCourses as $c):
+              $sel = (!empty($getSubject) && (strcasecmp($getSubject, $c['title']) === 0 || stripos($c['title'], $getSubject) !== false)) ? 'selected' : '';
+          ?>
+            <option value="<?php echo htmlspecialchars($c['title']); ?>" <?php echo $sel; ?>><?php echo htmlspecialchars($c['title']); ?></option>
+          <?php 
+            endforeach;
+          else: 
+          ?>
+            <option value="Computer Science">Computer Science & IT</option>
+            <option value="Business Management">Business & Management</option>
+            <option value="Nursing & Healthcare">Nursing & Healthcare</option>
+            <option value="Law & Legal Studies">Law & Legal Studies</option>
+            <option value="Engineering">Engineering & Physics</option>
+            <option value="Finance">Finance & Accounting</option>
+          <?php endif; ?>
+          <option value="Other">Other / Custom Topic</option>
         </select>
       </div>
 

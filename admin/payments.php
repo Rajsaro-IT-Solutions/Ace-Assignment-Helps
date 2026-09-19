@@ -51,6 +51,7 @@ $payments = DataStore::getCollection('payments');
   </div>
 </div>
 
+<script src="/assets/js/portal.js"></script>
 </div>
 </div>
 </body>

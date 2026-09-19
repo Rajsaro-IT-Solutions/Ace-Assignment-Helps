@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim($_POST['title'] ?? '');
         $category = trim($_POST['category'] ?? 'Academic Writing');
         $excerpt = trim($_POST['excerpt'] ?? '');
+        $content = trim($_POST['content'] ?? '');
         $author = trim($_POST['author'] ?? 'Admin Team');
 
         $img = 'blog-sample.jpg';
@@ -37,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'id' => $newId,
                 'title' => $title,
                 'excerpt' => $excerpt,
+                'content' => $content,
                 'category' => $category,
                 'author' => $author ?: 'Ace Assignment Team',
                 'published_at' => date('Y-m-d'),
@@ -54,12 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = trim($_POST['title'] ?? '');
         $category = trim($_POST['category'] ?? 'Academic Writing');
         $excerpt = trim($_POST['excerpt'] ?? '');
+        $content = trim($_POST['content'] ?? '');
         $author = trim($_POST['author'] ?? 'Admin Team');
 
         if ($id && $title) {
             $updates = [
                 'title' => $title,
                 'excerpt' => $excerpt,
+                'content' => $content,
                 'category' => $category,
                 'author' => $author
             ];
@@ -114,17 +118,30 @@ $blogs = DataStore::getCollection('blogs');
   </div>
 <?php endif; ?>
 
+<!-- Quick Search and Category Filter -->
+<div class="filter-bar">
+  <input type="text" id="tableSearchInput" class="form-control" placeholder="Search articles by title, author, or excerpt...">
+  <select id="tableCategoryFilter" class="form-control" onchange="filterBlogCategory(this.value)">
+    <option value="">All Categories</option>
+    <option value="Academic Writing">Academic Writing</option>
+    <option value="Computer Science">Computer Science</option>
+    <option value="Study Tips">Study Tips</option>
+    <option value="Research & Citations">Research & Citations</option>
+    <option value="Nursing & Healthcare">Nursing & Healthcare</option>
+  </select>
+</div>
+
 <div class="table-card">
   <div class="table-responsive">
     <table class="data-table">
       <thead>
         <tr>
           <th>ID</th>
-          <th>Article Title</th>
+          <th>Article Details</th>
           <th>Category</th>
           <th>Author</th>
           <th>Published Date</th>
-          <th style="text-align:center; min-width:160px;">Actions</th>
+          <th style="text-align:center; min-width:200px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -134,17 +151,22 @@ $blogs = DataStore::getCollection('blogs');
           </tr>
         <?php endif; ?>
         <?php foreach ($blogs as $b): ?>
-          <tr>
+          <tr data-category="<?php echo htmlspecialchars($b['category'] ?? ''); ?>">
             <td><strong>#<?php echo $b['id']; ?></strong></td>
             <td>
-              <strong style="color:var(--text-main); display:block;"><?php echo htmlspecialchars($b['title']); ?></strong>
-              <small style="color:var(--text-muted);"><?php echo htmlspecialchars(substr($b['excerpt'] ?? '', 0, 80)); ?>...</small>
+              <strong style="color:var(--text-main); display:block; font-size:0.98rem;"><?php echo htmlspecialchars($b['title']); ?></strong>
+              <small style="color:var(--text-muted);"><?php echo htmlspecialchars(substr($b['excerpt'] ?? '', 0, 95)); ?>...</small>
             </td>
             <td><span class="badge badge-info"><?php echo htmlspecialchars($b['category']); ?></span></td>
             <td><?php echo htmlspecialchars($b['author']); ?></td>
             <td><?php echo htmlspecialchars($b['published_at']); ?></td>
             <td style="text-align:center;">
               <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                <!-- View Live Article on Main Site -->
+                <a href="/blog-detail.php?id=<?php echo $b['id']; ?>" target="_blank" class="btn btn-outline btn-sm" title="View Article on Main Website">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Live
+                </a>
+
                 <!-- Edit Button -->
                 <button type="button" class="btn btn-outline btn-sm" onclick='editBlog(<?php echo json_encode($b); ?>)' title="Edit Article">
                   <i class="fa-solid fa-pen-to-square"></i> Edit
@@ -155,7 +177,7 @@ $blogs = DataStore::getCollection('blogs');
                   <input type="hidden" name="action" value="delete_blog">
                   <input type="hidden" name="id" value="<?php echo $b['id']; ?>">
                   <button type="submit" class="btn btn-danger btn-sm" title="Delete Article">
-                    <i class="fa-solid fa-trash"></i> Delete
+                    <i class="fa-solid fa-trash"></i>
                   </button>
                 </form>
               </div>
@@ -169,7 +191,7 @@ $blogs = DataStore::getCollection('blogs');
 
 <!-- Add Modal -->
 <div id="addBlogModal" class="modal-overlay">
-  <div class="modal-box" style="padding:2rem;">
+  <div class="modal-box" style="padding:2rem; max-width:680px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
       <h3 style="margin:0; color:var(--text-main);"><i class="fa-solid fa-newspaper" style="color:var(--primary);"></i> Publish New Blog Article</h3>
       <button type="button" onclick="closeModal('addBlogModal')" style="background:none; border:none; font-size:1.3rem; color:var(--text-muted); cursor:pointer;">&times;</button>
@@ -178,7 +200,7 @@ $blogs = DataStore::getCollection('blogs');
       <input type="hidden" name="action" value="create_blog">
       <div class="form-group">
         <label>Article Title *</label>
-        <input type="text" name="title" class="form-control" required placeholder="10 Tips for Academic Writing">
+        <input type="text" name="title" class="form-control" required placeholder="e.g. 10 Essential Tips for University Dissertation Success">
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
         <div class="form-group">
@@ -188,6 +210,7 @@ $blogs = DataStore::getCollection('blogs');
             <option value="Computer Science">Computer Science</option>
             <option value="Study Tips">Study Tips</option>
             <option value="Research & Citations">Research & Citations</option>
+            <option value="Nursing & Healthcare">Nursing & Healthcare</option>
           </select>
         </div>
         <div class="form-group">
@@ -196,8 +219,12 @@ $blogs = DataStore::getCollection('blogs');
         </div>
       </div>
       <div class="form-group">
-        <label>Excerpt Summary *</label>
-        <textarea name="excerpt" class="form-control" rows="3" required placeholder="Brief summary for preview..."></textarea>
+        <label>Excerpt Summary * (Short preview shown on blog cards)</label>
+        <textarea name="excerpt" class="form-control" rows="2" required placeholder="Brief 1-2 sentence preview summary..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Full Article Content (Markdown or HTML supported)</label>
+        <textarea name="content" class="form-control" rows="8" placeholder="Write full article body here with paragraphs, headings, and tips..."></textarea>
       </div>
       <div class="form-group">
         <label><i class="fa-solid fa-cloud-arrow-up"></i> Featured Image / Attachment (Any Format)</label>
@@ -216,7 +243,7 @@ $blogs = DataStore::getCollection('blogs');
 
 <!-- Edit Modal -->
 <div id="editBlogModal" class="modal-overlay">
-  <div class="modal-box" style="padding:2rem;">
+  <div class="modal-box" style="padding:2rem; max-width:680px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
       <h3 style="margin:0; color:var(--text-main);"><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> Edit Blog Article</h3>
       <button type="button" onclick="closeModal('editBlogModal')" style="background:none; border:none; font-size:1.3rem; color:var(--text-muted); cursor:pointer;">&times;</button>
@@ -236,6 +263,7 @@ $blogs = DataStore::getCollection('blogs');
             <option value="Computer Science">Computer Science</option>
             <option value="Study Tips">Study Tips</option>
             <option value="Research & Citations">Research & Citations</option>
+            <option value="Nursing & Healthcare">Nursing & Healthcare</option>
           </select>
         </div>
         <div class="form-group">
@@ -245,7 +273,11 @@ $blogs = DataStore::getCollection('blogs');
       </div>
       <div class="form-group">
         <label>Excerpt Summary *</label>
-        <textarea name="excerpt" id="edit_blog_excerpt" class="form-control" rows="3" required></textarea>
+        <textarea name="excerpt" id="edit_blog_excerpt" class="form-control" rows="2" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>Full Article Content (Markdown or HTML supported)</label>
+        <textarea name="content" id="edit_blog_content" class="form-control" rows="8"></textarea>
       </div>
       <div class="form-group">
         <label><i class="fa-solid fa-cloud-arrow-up"></i> Change Featured Image / Attachment (Any Format)</label>
@@ -266,7 +298,20 @@ function editBlog(data) {
   document.getElementById('edit_blog_category').value = data.category || 'Academic Writing';
   document.getElementById('edit_blog_author').value = data.author || '';
   document.getElementById('edit_blog_excerpt').value = data.excerpt || '';
+  document.getElementById('edit_blog_content').value = data.content || '';
   openModal('editBlogModal');
+}
+
+function filterBlogCategory(cat) {
+  const rows = document.querySelectorAll('.data-table tbody tr');
+  rows.forEach(r => {
+    const rowCat = r.dataset.category || '';
+    if (!cat || rowCat.toLowerCase() === cat.toLowerCase()) {
+      r.style.display = '';
+    } else {
+      r.style.display = 'none';
+    }
+  });
 }
 </script>
 

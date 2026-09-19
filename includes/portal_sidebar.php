@@ -1,6 +1,6 @@
 <?php
 $role = $currentUser['role'] ?? 'Student';
-$currUri = $_SERVER['REQUEST_URI'];
+$currUri = $_SERVER['REQUEST_URI'] ?? '';
 ?>
 <aside class="portal-sidebar">
   <div class="sidebar-brand">
@@ -66,6 +66,9 @@ $currUri = $_SERVER['REQUEST_URI'];
       <a href="/admin/assignments.php" class="sidebar-link <?php echo strpos($currUri, 'assignments') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-folder-tree"></i> Master Assignments
       </a>
+      <a href="/admin/courses.php" class="sidebar-link <?php echo strpos($currUri, 'courses') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-graduation-cap"></i> Courses & Subjects
+      </a>
       <a href="/admin/students.php" class="sidebar-link <?php echo strpos($currUri, 'students') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-users"></i> Registered Students
       </a>
@@ -99,6 +102,9 @@ $currUri = $_SERVER['REQUEST_URI'];
       </a>
       <a href="/admin/logs.php" class="sidebar-link <?php echo strpos($currUri, 'logs') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-list-check"></i> Audit Trail
+      </a>
+      <a href="/admin/settings.php" class="sidebar-link <?php echo strpos($currUri, 'settings') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-sliders"></i> Site Settings
       </a>
       <a href="/admin/backup.php" class="sidebar-link <?php echo strpos($currUri, 'backup') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-database"></i> Backup & Export

@@ -5,7 +5,8 @@
 
 require_once __DIR__ . '/db.php';
 
-function get_sla_status($deadline_str) {
+function get_sla_status($deadline_str)
+{
     if (empty($deadline_str)) {
         return [
             'level' => 'green',
@@ -51,11 +52,12 @@ function get_sla_status($deadline_str) {
     }
 }
 
-function render_word_count_options($selectedWords = 1000) {
-    $selectedWords = (int)$selectedWords ?: 1000;
+function render_word_count_options($selectedWords = 1000)
+{
+    $selectedWords = (int) $selectedWords ?: 1000;
     $html = '';
     for ($w = 250; $w <= 20000; $w += 250) {
-        $pages = (int)($w / 250);
+        $pages = (int) ($w / 250);
         $pageText = ($pages === 1) ? '1 Page' : number_format($pages) . ' Pages';
         $selected = ($w === $selectedWords) ? ' selected' : '';
         $formattedWords = number_format($w);
@@ -64,10 +66,11 @@ function render_word_count_options($selectedWords = 1000) {
     return $html;
 }
 
-function calculate_assignment_price($word_count, $deadline_hours, $academic_level = 'Undergraduate', $subject = 'General', $coupon_code = '', $currency = 'USD') {
-    $word_count = max(250, (int)$word_count);
+function calculate_assignment_price($word_count, $deadline_hours, $academic_level = 'Undergraduate', $subject = 'General', $coupon_code = '', $currency = 'USD')
+{
+    $word_count = max(250, (int) $word_count);
     $pages = ceil($word_count / 250);
-    $deadline_hours = max(1, (float)$deadline_hours);
+    $deadline_hours = max(1, (float) $deadline_hours);
     $currency = strtoupper(trim($currency ?: 'USD'));
 
     // Exact tiered rate schedule:
@@ -114,12 +117,12 @@ function calculate_assignment_price($word_count, $deadline_hours, $academic_leve
         } elseif (!empty($coupon['expires_at']) && strtotime($coupon['expires_at'] . ' 23:59:59') < time()) {
             $coupon_valid = false;
             $coupon_msg = "Coupon '{$clean_code}' expired on " . htmlspecialchars($coupon['expires_at']) . ".";
-        } elseif (!empty($coupon['max_uses']) && (int)($coupon['current_uses'] ?? 0) >= (int)$coupon['max_uses']) {
+        } elseif (!empty($coupon['max_uses']) && (int) ($coupon['current_uses'] ?? 0) >= (int) $coupon['max_uses']) {
             $coupon_valid = false;
             $coupon_msg = "Coupon '{$clean_code}' has reached its maximum usage limit.";
         } else {
             $coupon_valid = true;
-            $discount_percent = (float)$coupon['discount_percent'];
+            $discount_percent = (float) $coupon['discount_percent'];
             $discount_amount = round(($subtotal * $discount_percent) / 100, 2);
             $coupon_msg = "Coupon {$coupon['code']} Applied! {$discount_percent}% Discount Activated.";
         }
@@ -148,7 +151,8 @@ function calculate_assignment_price($word_count, $deadline_hours, $academic_leve
     ];
 }
 
-function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Student', $isInternal = false) {
+function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Student', $isInternal = false)
+{
     $uploadedRecords = [];
 
     // Find all matching keys in $_FILES (exact match, array bracketed, or indexed keys)
@@ -218,7 +222,7 @@ function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Stu
                 'file_type' => $ext ?: 'file',
                 'uploaded_by' => $uploadedBy,
                 'upload_date' => date('Y-m-d H:i:s'),
-                'is_internal' => (bool)$isInternal
+                'is_internal' => (bool) $isInternal
             ];
             DataStore::insert('files', $rec);
             $uploadedRecords[] = $rec;
@@ -228,22 +232,26 @@ function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Stu
     return $uploadedRecords;
 }
 
-function generate_assignment_id() {
+function generate_assignment_id()
+{
     $year = date('Y');
     $assignments = DataStore::getCollection('assignments');
     $next_num = count($assignments) + 101;
     return sprintf("ACE-%s-%06d", $year, $next_num);
 }
 
-function mask_student_name($name) {
-    if (empty($name)) return "Student [Masked]";
+function mask_student_name($name)
+{
+    if (empty($name))
+        return "Student [Masked]";
     $parts = explode(' ', trim($name));
     $first = $parts[0];
     $last_initial = isset($parts[1]) ? mb_substr($parts[1], 0, 1) . '.' : '';
     return $first . ' ' . $last_initial . ' [Privacy Protected]';
 }
 
-function add_audit_log($role, $user_id, $action, $details) {
+function add_audit_log($role, $user_id, $action, $details)
+{
     $assignments = DataStore::getCollection('audit_logs');
     $log_id = 'LOG-' . (count($assignments) + 1001);
     DataStore::insert('audit_logs', [
@@ -256,7 +264,8 @@ function add_audit_log($role, $user_id, $action, $details) {
     ]);
 }
 
-function get_status_badge_class($status) {
+function get_status_badge_class($status)
+{
     switch ($status) {
         case 'New':
         case 'Pending Review':
@@ -283,7 +292,8 @@ function get_status_badge_class($status) {
     }
 }
 
-function add_notification($user_role, $user_id, $title, $message, $type = 'info', $link = '') {
+function add_notification($user_role, $user_id, $title, $message, $type = 'info', $link = '')
+{
     $notifs = DataStore::getCollection('notifications');
     $notif_id = 'NTF-' . (count($notifs) + 1);
     return DataStore::insert('notifications', [
@@ -297,9 +307,10 @@ function add_notification($user_role, $user_id, $title, $message, $type = 'info'
     ]);
 }
 
-function get_user_notifications($user_id, $user_role) {
+function get_user_notifications($user_id, $user_role)
+{
     $all = DataStore::getCollection('notifications');
-    $filtered = array_filter($all, function($n) use ($user_id, $user_role) {
+    $filtered = array_filter($all, function ($n) use ($user_id, $user_role) {
         $targetRole = $n['user_role'] ?? '';
         $targetUser = $n['user_id'] ?? '';
 
@@ -309,22 +320,26 @@ function get_user_notifications($user_id, $user_role) {
         }
 
         // Target to role or broadcast 'All'
-        if ($targetRole === 'All') return true;
-        if ($targetRole === $user_role) return true;
-        if ($user_role === 'Admin') return true; // Admins can monitor alerts
+        if ($targetRole === 'All')
+            return true;
+        if ($targetRole === $user_role)
+            return true;
+        if ($user_role === 'Admin')
+            return true; // Admins can monitor alerts
 
         return false;
     });
 
     // Sort descending by created_at or id
-    usort($filtered, function($a, $b) {
+    usort($filtered, function ($a, $b) {
         return strtotime($b['created_at'] ?? '0') - strtotime($a['created_at'] ?? '0');
     });
 
     return array_values($filtered);
 }
 
-function get_unread_notifications_count($user_id, $user_role) {
+function get_unread_notifications_count($user_id, $user_role)
+{
     $notifs = get_user_notifications($user_id, $user_role);
     $count = 0;
     foreach ($notifs as $n) {
@@ -335,11 +350,13 @@ function get_unread_notifications_count($user_id, $user_role) {
     return $count;
 }
 
-function mark_notification_read($notif_id) {
+function mark_notification_read($notif_id)
+{
     return DataStore::update('notifications', 'id', $notif_id, ['is_read' => true]);
 }
 
-function mark_all_notifications_read($user_id, $user_role) {
+function mark_all_notifications_read($user_id, $user_role)
+{
     $notifs = get_user_notifications($user_id, $user_role);
     foreach ($notifs as $n) {
         if (empty($n['is_read']) && isset($n['id'])) {
@@ -349,6 +366,7 @@ function mark_all_notifications_read($user_id, $user_role) {
     return true;
 }
 
-function delete_notification($notif_id) {
+function delete_notification($notif_id)
+{
     return DataStore::delete('notifications', 'id', $notif_id);
 }

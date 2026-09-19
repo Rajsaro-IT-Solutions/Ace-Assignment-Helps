@@ -11,8 +11,15 @@ if (!$asm) {
     exit;
 }
 
+$currentUser = Auth::currentUser();
+if ($currentUser && $currentUser['role'] === 'Student' && $asm['student_id'] !== $currentUser['id']) {
+    echo "<div style='padding:2rem; text-align:center; font-family:sans-serif;'><h2>Access Denied</h2><p>You do not have permission to view this invoice.</p></div>";
+    exit;
+}
+
 $student = DataStore::findOne('students', 'student_id', $asm['student_id']);
 $payment = DataStore::findOne('payments', 'assignment_id', $id);
+$isPaid = ($payment && ($payment['status'] ?? '') === 'Paid') || in_array($asm['status'] ?? '', ['Confirmed', 'Allocated', 'In Progress', 'Quality Check', 'Completed', 'Delivered']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -76,9 +83,15 @@ $payment = DataStore::findOne('payments', 'assignment_id', $id);
 
     <div class="info-block" style="text-align:right;">
       <h4>Payment Status</h4>
-      <div style="margin-bottom:8px;"><span class="badge-paid">PAID IN FULL</span></div>
-      <p>Transaction ID: <?php echo htmlspecialchars($payment['transaction_id'] ?? 'TRX-SIMULATED-99'); ?></p>
-      <p>Payment Method: <?php echo htmlspecialchars($payment['payment_method'] ?? 'Online Credit Card'); ?></p>
+      <div style="margin-bottom:8px;">
+        <?php if ($isPaid): ?>
+          <span class="badge-paid">PAID IN FULL</span>
+        <?php else: ?>
+          <span class="badge-paid" style="background:#fef3c7; color:#b45309;">PAYMENT PENDING / PROFORMA</span>
+        <?php endif; ?>
+      </div>
+      <p>Transaction ID: <?php echo htmlspecialchars($payment['transaction_id'] ?? ($isPaid ? 'TRX-SIMULATED-99' : 'Awaiting Settlement')); ?></p>
+      <p>Payment Method: <?php echo htmlspecialchars($payment['payment_method'] ?? ($isPaid ? 'Online Credit Card' : 'Pending')); ?></p>
     </div>
   </div>
 

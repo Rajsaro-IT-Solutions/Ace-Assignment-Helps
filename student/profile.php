@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
 $msg = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $country = trim($_POST['country'] ?? '');
@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['user']['name'] = $name;
     $_SESSION['user']['phone'] = $phone;
     $_SESSION['user']['country'] = $country;
+    $user = Auth::currentUser();
     $msg = "Profile updated successfully!";
 }
 ?>

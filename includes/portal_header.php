@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/helpers.php';
 Auth::checkLoggedIn();
 $currentUser = Auth::currentUser();
 $userRole = $currentUser['role'];
@@ -17,6 +18,7 @@ $userRole = $currentUser['role'];
   <link rel="stylesheet" href="/assets/css/portal.css">
   <link rel="icon" type="image/png" href="/assets/image/logo.png">
   <link rel="apple-touch-icon" href="/assets/image/logo.png">
+  <script src="/assets/js/portal.js" defer></script>
 </head>
 <body class="portal-body">
 

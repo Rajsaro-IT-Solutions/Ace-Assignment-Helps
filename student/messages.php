@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
 
 $msg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $subject = trim($_POST['subject'] ?? '');
     $message = trim($_POST['message'] ?? '');
     $assignment_id = trim($_POST['assignment_id'] ?? '');

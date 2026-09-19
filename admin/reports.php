@@ -79,6 +79,7 @@ foreach ($assignments as $a) {
   </div>
 </div>
 
+<script src="/assets/js/portal.js"></script>
 </div>
 </div>
 </body>

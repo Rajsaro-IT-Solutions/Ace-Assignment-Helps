@@ -41,6 +41,7 @@ $logs = DataStore::getCollection('audit_logs');
   </div>
 </div>
 
+<script src="/assets/js/portal.js"></script>
 </div>
 </div>
 </body>

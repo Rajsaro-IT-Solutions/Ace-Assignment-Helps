@@ -48,6 +48,7 @@ include __DIR__ . '/../includes/portal_header.php';
   </div>
 </div>
 
+<script src="/assets/js/portal.js"></script>
 </div>
 </div>
 </body>

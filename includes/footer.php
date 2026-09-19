@@ -32,7 +32,8 @@
       <div class="footer-col">
         <h5>Quick Links</h5>
         <ul class="footer-links">
-          <li><a href="/about.php">About Our Mission</a></li>
+          <li><a href="/subjects.php">Courses & Subjects</a></li>
+          <li><a href="/blog.php">Study Guides & Blog</a></li>
           <li><a href="/pricing.php">Transparent Pricing</a></li>
           <li><a href="/how-it-works.php">4-Step Workflow</a></li>
           <li><a href="/reviews.php">Verified Reviews</a></li>
