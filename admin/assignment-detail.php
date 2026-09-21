@@ -4,16 +4,115 @@ require_once __DIR__ . '/../includes/auth.php';
 Auth::checkRole('Admin');
 $user = Auth::currentUser();
 require_once __DIR__ . '/../includes/helpers.php';
-include __DIR__ . '/../includes/portal_header.php';
 
-$id = $_GET['id'] ?? '';
-$asm = DataStore::findOne('assignments', 'assignment_id', $id);
-if (!$asm) {
-    echo "<div class='badge badge-danger'>Assignment not found.</div>";
-    echo "</div></div></body></html>";
-    exit;
+$id = trim($_GET['id'] ?? ($_POST['assignment_id'] ?? ''));
+
+// Handle POST actions BEFORE sending any headers/HTML
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $targetId = trim($_POST['assignment_id'] ?? $id);
+
+    if ($action === 'delete_assignment') {
+        if ($targetId) {
+            DataStore::update('assignments', 'assignment_id', $targetId, [
+                'status' => 'Deleted',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+            DataStore::update('payments', 'assignment_id', $targetId, [
+                'status' => 'Cancelled'
+            ]);
+            add_audit_log('Admin', $user['id'], 'Delete Assignment', "Moved assignment $targetId to History (Soft Delete)");
+            $_SESSION['flash_msg'] = "Assignment $targetId moved to History / Trash (Soft Delete).";
+            $_SESSION['flash_type'] = 'warning';
+        }
+        header('Location: /admin/assignments.php');
+        echo "<script>window.location.href='/admin/assignments.php';</script>";
+        exit;
+    } elseif ($action === 'permanent_delete_assignment') {
+        if ($targetId) {
+            DataStore::purgeAssignment($targetId);
+            add_audit_log('Admin', $user['id'], 'Permanent Delete Assignment', "Permanently wiped assignment $targetId from everywhere");
+            $_SESSION['flash_msg'] = "Assignment $targetId has been PERMANENTLY deleted from everywhere (removed from history, payments, files, and database).";
+            $_SESSION['flash_type'] = 'danger';
+        }
+        header('Location: /admin/assignments.php');
+        echo "<script>window.location.href='/admin/assignments.php';</script>";
+        exit;
+    } elseif ($action === 'restore_assignment') {
+        if ($targetId) {
+            DataStore::update('assignments', 'assignment_id', $targetId, [
+                'status' => 'Pending Review',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+            add_audit_log('Admin', $user['id'], 'Restore Assignment', "Restored assignment $targetId to Pending Review");
+            $_SESSION['flash_msg'] = "Assignment $targetId restored from History to active status.";
+            $_SESSION['flash_type'] = 'success';
+        }
+        header("Location: /admin/assignment-detail.php?id=" . urlencode($targetId));
+        echo "<script>window.location.href='/admin/assignment-detail.php?id=" . urlencode($targetId) . "';</script>";
+        exit;
+    } elseif (isset($_POST['update_assignment']) && $targetId) {
+        $asm = DataStore::findOne('assignments', 'assignment_id', $targetId);
+        $status = $_POST['status'] ?? ($asm['status'] ?? 'New');
+        $price = (float)($_POST['final_price'] ?? ($asm['final_price'] ?? 0));
+        $expert_id = $_POST['expert_id'] ?? ($asm['expert_id'] ?? '');
+        $allocator_id = $_POST['allocator_id'] ?? ($asm['allocator_id'] ?? '');
+
+        DataStore::update('assignments', 'assignment_id', $targetId, [
+            'status' => $status,
+            'final_price' => $price,
+            'expert_id' => $expert_id,
+            'allocator_id' => $allocator_id,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        // Handle Uploading Final Solution File
+        if (isset($_FILES['solution_file']) && $_FILES['solution_file']['error'] === UPLOAD_ERR_OK) {
+            $origName = basename($_FILES['solution_file']['name']);
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            $targetDir = __DIR__ . '/../assets/uploads/';
+            if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
+            $safePrefix = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($origName, PATHINFO_FILENAME));
+            $uniqueName = time() . '_SOLUTION_' . rand(100, 999) . '_' . $safePrefix . ($ext ? '.' . $ext : '');
+            $targetPath = $targetDir . $uniqueName;
+
+            if (move_uploaded_file($_FILES['solution_file']['tmp_name'], $targetPath)) {
+                DataStore::insert('files', [
+                    'file_id' => 'FILE-' . rand(8000, 9999),
+                    'assignment_id' => $targetId,
+                    'file_name' => $origName,
+                    'path' => 'assets/uploads/' . $uniqueName,
+                    'file_type' => $ext ?: 'file',
+                    'uploaded_by' => 'Admin (' . $user['name'] . ')',
+                    'upload_date' => date('Y-m-d H:i:s'),
+                    'is_internal' => 0
+                ]);
+            }
+        }
+
+        $_SESSION['flash_msg'] = "Assignment updated successfully.";
+        $_SESSION['flash_type'] = 'success';
+        header("Location: /admin/assignment-detail.php?id=" . urlencode($targetId));
+        echo "<script>window.location.href='/admin/assignment-detail.php?id=" . urlencode($targetId) . "';</script>";
+        exit;
+    }
 }
 
+$asm = DataStore::findOne('assignments', 'assignment_id', $id);
+include __DIR__ . '/../includes/portal_header.php';
+
+$flashMsg = $_SESSION['flash_msg'] ?? '';
+$flashType = $_SESSION['flash_type'] ?? 'info';
+unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
+
+if (!$asm) {
+    echo "<div class='table-card' style='padding:2rem; text-align:center;'>";
+    echo "<div class='badge badge-danger' style='font-size:1rem; padding:10px 16px; margin-bottom:1rem;'><i class='fa-solid fa-circle-exclamation'></i> Assignment not found or has been permanently deleted.</div>";
+    echo "<p style='color:var(--text-muted);'>This assignment does not exist in the database.</p>";
+    echo "<a href='/admin/assignments.php' class='btn btn-primary btn-sm'><i class='fa-solid fa-folder-tree'></i> Return to Master Assignments</a>";
+    echo "</div></div></div></body></html>";
+    exit;
+}
 $currency = $asm['currency'] ?? 'USD';
 $currencySymbol = '$';
 if ($currency === 'INR') $currencySymbol = '₹';
@@ -26,55 +125,6 @@ $student = DataStore::findOne('students', 'student_id', $asm['student_id']);
 $experts = DataStore::getCollection('experts');
 $allocators = DataStore::getCollection('allocators');
 $files = DataStore::filter('files', function($f) use ($id) { return isset($f['assignment_id']) && $f['assignment_id'] === $id; });
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_assignment'])) {
-    $status = $_POST['status'] ?? $asm['status'];
-    $price = (float)($_POST['final_price'] ?? $asm['final_price']);
-    $expert_id = $_POST['expert_id'] ?? $asm['expert_id'];
-    $allocator_id = $_POST['allocator_id'] ?? $asm['allocator_id'];
-
-    DataStore::update('assignments', 'assignment_id', $id, [
-        'status' => $status,
-        'final_price' => $price,
-        'expert_id' => $expert_id,
-        'allocator_id' => $allocator_id,
-        'updated_at' => date('Y-m-d H:i:s')
-    ]);
-
-    // Handle Uploading Final Solution File (Any Format Accepted)
-    if (isset($_FILES['solution_file']) && $_FILES['solution_file']['error'] === UPLOAD_ERR_OK) {
-        $origName = basename($_FILES['solution_file']['name']);
-        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
-        $targetDir = __DIR__ . '/../assets/uploads/';
-        if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-        $safePrefix = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($origName, PATHINFO_FILENAME));
-        $uniqueName = time() . '_SOLUTION_' . rand(100, 999) . '_' . $safePrefix . ($ext ? '.' . $ext : '');
-        $targetPath = $targetDir . $uniqueName;
-
-        if (move_uploaded_file($_FILES['solution_file']['tmp_name'], $targetPath)) {
-            DataStore::insert('files', [
-                'file_id' => 'FILE-' . rand(8000, 9999),
-                'assignment_id' => $id,
-                'file_name' => $origName,
-                'path' => 'assets/uploads/' . $uniqueName,
-                'file_type' => $ext ?: 'file',
-                'uploaded_by' => 'Admin (Completed Solution)',
-                'upload_date' => date('Y-m-d H:i:s'),
-                'is_internal' => false
-            ]);
-            DataStore::update('assignments', 'assignment_id', $id, ['status' => 'Completed']);
-        }
-    }
-
-    // Handle Additional General Files (Any Format Accepted)
-    if (isset($_FILES['assignment_files'])) {
-        handle_uploaded_files('assignment_files', $id, 'Admin', !empty($_POST['is_internal']));
-    }
-
-    add_audit_log('Admin', $user['id'], 'Admin Override Assignment', "Updated $id parameters.");
-    header("Location: /admin/assignment-detail.php?id=" . urlencode($id) . "&msg=Updated");
-    exit;
-}
 ?>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
@@ -229,16 +279,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_assignment']))
     </div>
 
     <!-- Student Instructions -->
-    <div class="table-card" style="padding:1.5rem;">
+    <div class="table-card" style="padding:1.5rem; margin-bottom:1.5rem;">
       <h3 style="font-size:1.1rem; color:#fff; margin-bottom:0.8rem;"><i class="fa-solid fa-align-left" style="color:var(--secondary);"></i> Assignment Requirements</h3>
       <p style="color:var(--text-main); font-size:0.92rem; white-space:pre-line; line-height:1.6; margin:0;">
         <?php echo htmlspecialchars($asm['instructions'] ?? 'None'); ?>
       </p>
     </div>
+
+    <!-- Danger Zone Card: Dual Delete & History Controls -->
+    <div class="table-card" style="padding:1.5rem; border:1px solid rgba(239, 68, 68, 0.4); background:rgba(239, 68, 68, 0.04);">
+      <h3 style="font-size:1.05rem; color:#ef4444; margin-bottom:0.6rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Danger Zone & Deletion Controls
+      </h3>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+        Choose between soft-deleting (stays in archives/history) or permanently wiping this assignment from everywhere.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <?php if ($asm['status'] === 'Deleted'): ?>
+          <div class="badge badge-warning" style="display:block; text-align:center; padding:8px; margin-bottom:4px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> Currently Archived in History
+          </div>
+          <form method="POST" onsubmit="return confirm('Restore assignment <?php echo addslashes($id); ?> to Active (Pending Review)?');">
+            <input type="hidden" name="action" value="restore_assignment">
+            <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($id); ?>">
+            <button type="submit" class="btn btn-sm" style="width:100%; background:#10b981; color:#fff; border:none; padding:8px;">
+              <i class="fa-solid fa-rotate-left"></i> Restore to Active Status
+            </button>
+          </form>
+        <?php else: ?>
+          <form method="POST" onsubmit="return confirm('Move assignment <?php echo addslashes($id); ?> to History? (It will stay in History and can be restored)');">
+            <input type="hidden" name="action" value="delete_assignment">
+            <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($id); ?>">
+            <button type="submit" class="btn btn-sm" style="width:100%; background:#f59e0b; color:#fff; border:none; padding:8px;" title="Soft Delete">
+              <i class="fa-solid fa-box-archive"></i> Move to History (Soft Delete)
+            </button>
+          </form>
+        <?php endif; ?>
+
+        <!-- Permanent Delete Button (Triggers In-Page Modal) -->
+        <button type="button" class="btn btn-danger btn-sm" onclick="openPermDeleteModal('<?php echo htmlspecialchars($id, ENT_QUOTES); ?>')" style="width:100%; padding:9px; background:#b91c1c;" title="Permanent Delete">
+          <i class="fa-solid fa-trash-can"></i> Permanently Delete from Everywhere (Wipe)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modern In-Page Confirmation Modal for Permanent Deletion -->
+<div id="permanentDeleteModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box" style="padding:1.8rem; border-top:4px solid #ef4444; max-width:480px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+      <h3 style="margin:0; font-size:1.2rem; color:#ef4444; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Permanent Wipe Confirmation
+      </h3>
+      <button type="button" class="modal-close" onclick="closePermDeleteModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+    
+    <p style="color:var(--text-main); font-size:0.95rem; margin-bottom:0.8rem;">
+      Are you sure you want to permanently delete assignment:
+    </p>
+    <div style="background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.3); border-radius:6px; padding:0.8rem 1rem; margin-bottom:1.2rem; text-align:center;">
+      <strong id="permModalAsmId" style="font-size:1.2rem; color:#ef4444; font-family:monospace;"><?php echo htmlspecialchars($id); ?></strong>
+    </div>
+
+    <div style="font-size:0.88rem; color:#b91c1c; background:#fee2e2; border-radius:6px; padding:0.85rem; margin-bottom:1.5rem; line-height:1.45;">
+      <i class="fa-solid fa-circle-exclamation"></i> <strong>IRREVERSIBLE ACTION:</strong> This will completely remove this assignment from the database, uploaded solution/brief files, payment logs, allocation records, and History. It CANNOT be recovered!
+    </div>
+
+    <form method="POST" id="permDeleteForm" action="/admin/assignments.php">
+      <input type="hidden" name="action" value="permanent_delete_assignment">
+      <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($id); ?>">
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closePermDeleteModal()">Cancel</button>
+        <button type="submit" class="btn btn-danger btn-sm" style="background:#b91c1c; padding:8px 16px;">
+          <i class="fa-solid fa-trash-can"></i> Yes, Permanently Delete Everywhere
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
+function openPermDeleteModal(asmId) {
+  document.getElementById('permanentDeleteModal').style.display = 'flex';
+}
+function closePermDeleteModal() {
+  document.getElementById('permanentDeleteModal').style.display = 'none';
+}
+
 function deleteFile(fileId) {
   if (!confirm('Are you sure you want to delete this file permanently?')) return;
 

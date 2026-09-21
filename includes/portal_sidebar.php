@@ -22,6 +22,9 @@ $currUri = $_SERVER['REQUEST_URI'] ?? '';
       <a href="/student/assignments.php" class="sidebar-link <?php echo strpos($currUri, '/student/assignments.php') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-book-open"></i> My Assignments
       </a>
+      <a href="/student/history.php" class="sidebar-link <?php echo strpos($currUri, 'history') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-clock-rotate-left"></i> Assignment History
+      </a>
       <a href="/student/payments.php" class="sidebar-link <?php echo strpos($currUri, 'payments') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-credit-card"></i> Invoices & Payments
       </a>
@@ -65,6 +68,9 @@ $currUri = $_SERVER['REQUEST_URI'] ?? '';
       </a>
       <a href="/admin/assignments.php" class="sidebar-link <?php echo strpos($currUri, 'assignments') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-folder-tree"></i> Master Assignments
+      </a>
+      <a href="/admin/history.php" class="sidebar-link <?php echo strpos($currUri, 'history') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-clock-rotate-left"></i> Assignment History & Trash
       </a>
       <a href="/admin/courses.php" class="sidebar-link <?php echo strpos($currUri, 'courses') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-graduation-cap"></i> Courses & Subjects

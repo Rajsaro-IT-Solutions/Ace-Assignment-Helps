@@ -239,11 +239,31 @@ $getSubject = trim($_GET['subject'] ?? '');
       </label>
     </div>
 
+    <!-- Accepted Payment Gateways Strip -->
+    <div style="margin-top:1.5rem; padding:1rem 1.2rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div style="font-size:0.85rem; color:#475569; font-weight:600;">
+        <i class="fa-solid fa-lock" style="color:#10b981;"></i> Accepted Gateways & Cards:
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; color:#64748b; font-size:1.3rem;">
+        <i class="fa-brands fa-cc-visa" title="Visa"></i>
+        <i class="fa-brands fa-cc-mastercard" title="Mastercard"></i>
+        <i class="fa-brands fa-cc-amex" title="Amex"></i>
+        <i class="fa-solid fa-bolt" title="Razorpay UPI" style="color:#059669; font-size:1.1rem;"></i>
+        <i class="fa-brands fa-google-pay" title="Google Pay"></i>
+        <i class="fa-brands fa-paypal" title="PayPal" style="color:#2563eb;"></i>
+      </div>
+    </div>
+
     <div id="submitResultMsg" style="margin-top:1.2rem;"></div>
 
-    <button type="submit" class="btn btn-primary btn-lg" style="width:100%; margin-top:1.5rem;">
-      <i class="fa-solid fa-paper-plane"></i> Confirm & Submit Assignment Order
-    </button>
+    <div style="display:flex; gap:12px; margin-top:1.5rem; flex-wrap:wrap;">
+      <button type="submit" id="btnSubmitAndPay" name="pay_flow" value="pay_now" class="btn btn-primary btn-lg" style="flex:1.4; font-weight:700; font-size:1rem; padding:0.95rem; background:linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);">
+        <i class="fa-solid fa-lock"></i> Pay Now & Fast-Track Allocation (Instant Match)
+      </button>
+      <button type="submit" id="btnSubmitPayLater" name="pay_flow" value="pay_later" class="btn btn-outline btn-lg" style="flex:1; font-weight:600; font-size:0.95rem; padding:0.95rem;">
+        <i class="fa-solid fa-clock"></i> Submit & Pay Later
+      </button>
+    </div>
   </form>
 </div>
 
@@ -341,6 +361,12 @@ $getSubject = trim($_GET['subject'] ?? '');
     btnApplyCoupon.addEventListener('click', updatePrice);
     updatePrice();
 
+    let chosenFlow = 'pay_now';
+    const btnPayNow = document.getElementById('btnSubmitAndPay');
+    const btnPayLater = document.getElementById('btnSubmitPayLater');
+    if (btnPayNow) btnPayNow.addEventListener('click', () => { chosenFlow = 'pay_now'; });
+    if (btnPayLater) btnPayLater.addEventListener('click', () => { chosenFlow = 'pay_later'; });
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       submitResultMsg.innerHTML = '<div class="badge badge-info" style="display:block; padding:0.8rem;"><i class="fa-solid fa-spinner fa-spin"></i> Submitting assignment order and uploading files...</div>';
@@ -354,10 +380,17 @@ $getSubject = trim($_GET['subject'] ?? '');
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            submitResultMsg.innerHTML = `<div class="badge badge-success" style="font-size:1rem; padding:1rem; display:block;"><i class="fa-solid fa-circle-check"></i> ${data.message} Redirecting to your assignments...</div>`;
-            setTimeout(() => {
-              window.location.href = `/student/assignments.php`;
-            }, 1500);
+            if (chosenFlow === 'pay_now') {
+              submitResultMsg.innerHTML = `<div class="badge badge-success" style="font-size:1rem; padding:1rem; display:block;"><i class="fa-solid fa-circle-check"></i> ${data.message} Opening secure payment checkout...</div>`;
+              setTimeout(() => {
+                window.location.href = `/checkout.php?assignment_id=${encodeURIComponent(data.assignment_id)}`;
+              }, 900);
+            } else {
+              submitResultMsg.innerHTML = `<div class="badge badge-success" style="font-size:1rem; padding:1rem; display:block;"><i class="fa-solid fa-circle-check"></i> ${data.message} Redirecting to your assignments...</div>`;
+              setTimeout(() => {
+                window.location.href = `/student/assignments.php`;
+              }, 1200);
+            }
           } else {
             submitResultMsg.innerHTML = `<div class="badge badge-danger" style="display:block; padding:0.8rem;">${data.message || 'Submission error'}</div>`;
           }

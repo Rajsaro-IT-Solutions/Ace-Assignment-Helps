@@ -268,13 +268,13 @@
             "price": 1500,
             "discount_code": "",
             "final_price": 1500,
-            "status": "Pending Review",
+            "status": "Confirmed",
             "allocator_id": "",
             "expert_id": "",
             "country": "United States",
             "university": "Stanford University",
             "created_at": "2026-09-09 08:56:01",
-            "updated_at": "2026-09-09 08:56:01"
+            "updated_at": "2026-09-21 08:59:02"
         },
         {
             "assignment_id": "ACE-2026-000106",
@@ -509,6 +509,51 @@
             "university": "University of Sydney",
             "created_at": "2026-09-18 13:13:16",
             "updated_at": "2026-09-18 13:13:16"
+        },
+        {
+            "assignment_id": "ACE-2026-000111",
+            "student_id": "STU-1001",
+            "title": "test",
+            "subject": "Data Analytics & Business Intelligence",
+            "assignment_type": "Dissertation",
+            "deadline": "2026-10-01 09:08:10",
+            "timezone": "EST (UTC-5)",
+            "word_count": 750,
+            "pages": 3,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "test 1",
+            "currency": "INR",
+            "price": 750,
+            "discount_code": "ACE20",
+            "final_price": 487.5,
+            "status": "Confirmed",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-09-21 09:08:11",
+            "updated_at": "2026-09-21 09:09:12"
+        },
+        {
+            "assignment_id": "ACE-TEST-PERM-100",
+            "student_id": "STU-1001",
+            "title": "Browser Test for Permanent Delete InPage Modal",
+            "subject": "Cloud Computing Architecture",
+            "assignment_type": "Research Paper",
+            "deadline": "2026-09-25 11:10:12",
+            "word_count": 1200,
+            "pages": 4,
+            "priority": "Normal",
+            "currency": "INR",
+            "price": 1200,
+            "final_price": 1000,
+            "status": "Pending Review",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-09-21 11:10:12",
+            "updated_at": "2026-09-21 11:14:02"
         }
     ],
     "files": [
@@ -597,6 +642,28 @@
             "payment_method": "Stripe Credit Card",
             "transaction_id": "ch_119a09bf16c0daf8",
             "payment_date": "2026-09-18 12:15:17"
+        },
+        {
+            "payment_id": "PAY-9557",
+            "assignment_id": "ACE-2026-000106",
+            "student_id": "STU-1003",
+            "amount": 11,
+            "currency": "USD",
+            "status": "Paid",
+            "payment_method": "Stripe Credit Card",
+            "transaction_id": "pi_stripe_efac9e3936af6d",
+            "payment_date": "2026-09-21 08:59:02"
+        },
+        {
+            "payment_id": "PAY-9097",
+            "assignment_id": "ACE-2026-000111",
+            "student_id": "STU-1001",
+            "amount": 487.5,
+            "currency": "INR",
+            "status": "Paid",
+            "payment_method": "Razorpay UPI \/ NetBanking",
+            "transaction_id": "pay_rzp_2178a2ad8dbe62",
+            "payment_date": "2026-09-21 09:09:11"
         }
     ],
     "allocation": [
@@ -688,15 +755,6 @@
             "created_at": "2026-09-09 08:56:02"
         },
         {
-            "id": "NTF-7",
-            "user_id": "",
-            "user_role": "Allocator",
-            "title": "New Assignment Received",
-            "message": "Assignment ACE-2026-000106 (Test 24h USD Assignment) has been submitted and awaits allocation.",
-            "is_read": false,
-            "created_at": "2026-09-09 08:56:18"
-        },
-        {
             "id": "NTF-3",
             "user_id": "STU-1003",
             "user_role": "Student",
@@ -769,13 +827,22 @@
             "created_at": "2026-09-18 12:57:23"
         },
         {
-            "id": "NTF-15",
-            "user_id": "",
-            "user_role": "Allocator",
-            "title": "New Assignment Received",
-            "message": "Assignment ACE-2026-000106 (Test Clinical Ethics) has been submitted and awaits allocation.",
+            "id": "NTF-8",
+            "user_id": "STU-1003",
+            "user_role": "Student",
+            "title": "Payment Confirmed - Order ACE-2026-000106",
+            "message": "Thank you! Your payment of $11.00 has been verified. Your assignment is now Confirmed and allocated to a subject specialist.",
             "is_read": false,
-            "created_at": "2026-09-18 13:02:19"
+            "created_at": "2026-09-21 08:59:05"
+        },
+        {
+            "id": "NTF-17",
+            "user_id": "STU-1001",
+            "user_role": "Student",
+            "title": "Payment Confirmed - Order ACE-2026-000111",
+            "message": "Thank you! Your payment of \u20b9488 has been verified. Your assignment is now Confirmed and allocated to a subject specialist.",
+            "is_read": false,
+            "created_at": "2026-09-21 09:09:15"
         }
     ],
     "coupons": [
@@ -784,7 +851,7 @@
             "code": "ACE20",
             "discount_percent": 35,
             "max_uses": 100,
-            "current_uses": 30,
+            "current_uses": 29,
             "expires_at": "2026-12-31",
             "status": "Active"
         },
@@ -1453,6 +1520,334 @@
             "action": "Submit Assignment",
             "details": "Created ACE-2026-000106: Test Clinical Ethics (USD 11)",
             "timestamp": "2026-09-18 13:02:19"
+        },
+        {
+            "log_id": "LOG-1106",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 06:15:34"
+        },
+        {
+            "log_id": "LOG-1107",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000107: adv eng AIML (INR 650)",
+            "timestamp": "2026-09-21 06:16:53"
+        },
+        {
+            "log_id": "LOG-1108",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Payment Received",
+            "details": "Paid $650.00 for ACE-2026-000107",
+            "timestamp": "2026-09-21 06:17:24"
+        },
+        {
+            "log_id": "LOG-1109",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000108: test 1 (EUR 1.62)",
+            "timestamp": "2026-09-21 06:33:31"
+        },
+        {
+            "log_id": "LOG-1110",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Payment Received",
+            "details": "Paid \u20ac1.62 (EUR) for ACE-2026-000108",
+            "timestamp": "2026-09-21 06:34:02"
+        },
+        {
+            "log_id": "LOG-1111",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 06:39:35"
+        },
+        {
+            "log_id": "LOG-1112",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Assignment",
+            "details": "Deleted assignment ACE-2026-000107",
+            "timestamp": "2026-09-21 06:43:07"
+        },
+        {
+            "log_id": "LOG-1113",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Assignment",
+            "details": "Deleted assignment ACE-2026-000108",
+            "timestamp": "2026-09-21 06:43:24"
+        },
+        {
+            "log_id": "LOG-1114",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 06:43:48"
+        },
+        {
+            "log_id": "LOG-1115",
+            "user_role": "Student",
+            "user_id": "STU-1002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 07:23:46"
+        },
+        {
+            "log_id": "LOG-1116",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 08:14:02"
+        },
+        {
+            "log_id": "LOG-1117",
+            "user_role": "Student",
+            "user_id": "STU-1003",
+            "action": "Payment Received",
+            "details": "Paid $11.00 (USD) via Stripe Credit Card for ACE-2026-000106 (TX: pi_stripe_efac9e3936af6d)",
+            "timestamp": "2026-09-21 08:59:03"
+        },
+        {
+            "log_id": "LOG-1118",
+            "user_role": "Student",
+            "user_id": "STU-5510",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000109: Deep Learning Neural Networks Paper (INR 1500)",
+            "timestamp": "2026-09-21 08:59:56"
+        },
+        {
+            "log_id": "LOG-1119",
+            "user_role": "Student",
+            "user_id": "STU-5510",
+            "action": "Payment Received",
+            "details": "Paid \u20b91,500 (INR) via Razorpay UPI for ACE-2026-000109 (TX: pay_rzp_729be34b8e34f8)",
+            "timestamp": "2026-09-21 09:00:34"
+        },
+        {
+            "log_id": "LOG-1120",
+            "user_role": "Student",
+            "user_id": "STU-9692",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000110: Business Ethics Case Study (INR 1000)",
+            "timestamp": "2026-09-21 09:05:23"
+        },
+        {
+            "log_id": "LOG-1121",
+            "user_role": "Student",
+            "user_id": "STU-9692",
+            "action": "Razorpay Payment Confirmed",
+            "details": "Paid \u20b91,000 (INR) via Razorpay (TX: pay_TedCFakePayment99)",
+            "timestamp": "2026-09-21 09:06:12"
+        },
+        {
+            "log_id": "LOG-1122",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 09:07:32"
+        },
+        {
+            "log_id": "LOG-1123",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000111: test (INR 487.5)",
+            "timestamp": "2026-09-21 09:08:14"
+        },
+        {
+            "log_id": "LOG-1124",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Payment Received",
+            "details": "Paid \u20b9488 (INR) via Razorpay UPI \/ NetBanking for ACE-2026-000111 (TX: pay_rzp_2178a2ad8dbe62)",
+            "timestamp": "2026-09-21 09:09:13"
+        },
+        {
+            "log_id": "LOG-1125",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 09:19:10"
+        },
+        {
+            "log_id": "LOG-1126",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000112: Cloud Computing & Distributed Systems Paper (INR 650)",
+            "timestamp": "2026-09-21 09:30:07"
+        },
+        {
+            "log_id": "LOG-1127",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Payment Received",
+            "details": "Paid \u20b9650 (INR) via Stripe Credit Card for ACE-2026-000112 (TX: pi_stripe_2a07615e24f95c)",
+            "timestamp": "2026-09-21 09:37:19"
+        },
+        {
+            "log_id": "LOG-1128",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000113: TEST_01 (INR 1300)",
+            "timestamp": "2026-09-21 09:45:24"
+        },
+        {
+            "log_id": "LOG-1129",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Payment Received",
+            "details": "Paid \u20b91,300 (INR) via Stripe Credit Card for ACE-2026-000113 (TX: pi_stripe_c94b1ce465c901)",
+            "timestamp": "2026-09-21 09:45:58"
+        },
+        {
+            "log_id": "LOG-1130",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 09:47:59"
+        },
+        {
+            "log_id": "LOG-1131",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 09:52:48"
+        },
+        {
+            "log_id": "LOG-1132",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Assignment",
+            "details": "Deleted assignment ACE-2026-000109 (archived in History)",
+            "timestamp": "2026-09-21 09:53:30"
+        },
+        {
+            "log_id": "LOG-1133",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Assignment",
+            "details": "Deleted assignment ACE-2026-000113 (archived in History)",
+            "timestamp": "2026-09-21 09:53:45"
+        },
+        {
+            "log_id": "LOG-1134",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Assignment",
+            "details": "Deleted assignment ACE-2026-000112 (archived in History)",
+            "timestamp": "2026-09-21 09:54:17"
+        },
+        {
+            "log_id": "LOG-1135",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 10:08:02"
+        },
+        {
+            "log_id": "LOG-1136",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Assignment",
+            "details": "Moved assignment ACE-2026-000112 to History (Soft Delete)",
+            "timestamp": "2026-09-21 10:13:03"
+        },
+        {
+            "log_id": "LOG-1137",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 10:39:08"
+        },
+        {
+            "log_id": "LOG-1138",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:08:29"
+        },
+        {
+            "log_id": "LOG-1139",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Permanent Delete Assignment",
+            "details": "Permanently wiped assignment ACE-TEST-PERM-99 from everywhere",
+            "timestamp": "2026-09-21 11:09:15"
+        },
+        {
+            "log_id": "LOG-1140",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Permanent Delete Assignment",
+            "details": "Permanently wiped assignment ACE-2026-000113 from everywhere (database, history, files, payments)",
+            "timestamp": "2026-09-21 11:11:15"
+        },
+        {
+            "log_id": "LOG-1141",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Permanent Delete Assignment",
+            "details": "Permanently wiped assignment ACE-2026-000108 from everywhere (database, history, files, payments)",
+            "timestamp": "2026-09-21 11:11:45"
+        },
+        {
+            "log_id": "LOG-1142",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Permanent Delete Assignment",
+            "details": "Permanently wiped assignment ACE-2026-000107 from everywhere (database, history, files, payments)",
+            "timestamp": "2026-09-21 11:12:04"
+        },
+        {
+            "log_id": "LOG-1143",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Permanent Delete Assignment",
+            "details": "Permanently wiped assignment ACE-2026-000110 from everywhere (database, history, files, payments)",
+            "timestamp": "2026-09-21 11:12:31"
+        },
+        {
+            "log_id": "LOG-1144",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Permanent Delete Assignment",
+            "details": "Permanently wiped assignment ACE-2026-000109 from everywhere (database, history, files, payments)",
+            "timestamp": "2026-09-21 11:12:51"
+        },
+        {
+            "log_id": "LOG-1145",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Delete Assignment",
+            "details": "Moved assignment ACE-TEST-PERM-100 to History (Soft Delete)",
+            "timestamp": "2026-09-21 11:13:44"
+        },
+        {
+            "log_id": "LOG-1146",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Restore Assignment",
+            "details": "Restored assignment ACE-TEST-PERM-100 from History to Pending Review",
+            "timestamp": "2026-09-21 11:14:03"
         }
     ],
     "courses": [
@@ -1604,7 +1999,7 @@
         },
         {
             "setting_key": "whatsapp_phone",
-            "setting_value": "+1 (555) 987-6543"
+            "setting_value": "+91 8233432123"
         },
         {
             "setting_key": "default_currency",
@@ -1617,6 +2012,50 @@
         {
             "setting_key": "tagline",
             "setting_value": "#1 University Assignment Assistance (UK, USA, Ireland, Australia, Canada & India)"
+        },
+        {
+            "setting_key": "payment_gateway_mode",
+            "setting_value": "test"
+        },
+        {
+            "setting_key": "stripe_enabled",
+            "setting_value": "1"
+        },
+        {
+            "setting_key": "stripe_publishable_key",
+            "setting_value": "pk_test_51MockStripeKey123456789AceAssign"
+        },
+        {
+            "setting_key": "stripe_secret_key",
+            "setting_value": "sk_test_51MockStripeSecretKey123456789AceAssign"
+        },
+        {
+            "setting_key": "razorpay_enabled",
+            "setting_value": "1"
+        },
+        {
+            "setting_key": "razorpay_key_id",
+            "setting_value": "rzp_test_Tecy1ILChaRE40"
+        },
+        {
+            "setting_key": "razorpay_key_secret",
+            "setting_value": "01ZQdknc3c61eOg4DoZd7skA"
+        },
+        {
+            "setting_key": "razorpay_upi_id",
+            "setting_value": "aceassignment@okhdfcbank"
+        },
+        {
+            "setting_key": "paypal_enabled",
+            "setting_value": "1"
+        },
+        {
+            "setting_key": "paypal_client_id",
+            "setting_value": "sb_mock_client_id_aceassignment"
+        },
+        {
+            "setting_key": "paypal_mode",
+            "setting_value": "sandbox"
         }
     ]
 }

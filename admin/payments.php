@@ -35,8 +35,8 @@ $payments = DataStore::getCollection('payments');
             <td><strong style="color:var(--secondary);"><?php echo htmlspecialchars($pay['transaction_id']); ?></strong></td>
             <td><?php echo htmlspecialchars($pay['assignment_id']); ?></td>
             <td><strong><?php echo htmlspecialchars($student['name'] ?? 'Student'); ?></strong></td>
-            <td><strong style="color:var(--success);">$<?php echo number_format($pay['amount'], 2); ?> <?php echo $pay['currency']; ?></strong></td>
-            <td><?php echo htmlspecialchars($pay['payment_method']); ?></td>
+            <td><strong style="color:var(--success);"><?php echo format_currency_amount($pay['amount'], $pay['currency'] ?? 'USD'); ?> (<?php echo htmlspecialchars($pay['currency'] ?? 'USD'); ?>)</strong></td>
+            <td><?php echo format_payment_method_badge($pay['payment_method']); ?></td>
             <td><span class="badge badge-success"><?php echo htmlspecialchars($pay['status']); ?></span></td>
             <td><?php echo htmlspecialchars($pay['payment_date']); ?></td>
             <td>

@@ -88,8 +88,13 @@ $userRole = $currentUser['role'];
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
+      <?php
+      $portalWa = class_exists('DataStore') ? DataStore::getSetting('whatsapp_phone', '+91 8233432123') : '+91 8233432123';
+      $portalWaClean = preg_replace('/[^0-9]/', '', $portalWa);
+      if (empty($portalWaClean)) $portalWaClean = '918233432123';
+      ?>
       <!-- Optional external link button ONLY if requested -->
-      <a href="https://wa.me/15559876543?text=Hi%20AceAssignment!%20I%20am%20chatting%20from%20the%20portal." target="_blank" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:none; padding:4px 8px; font-size:0.75rem;" title="Open in external WhatsApp App/Web">
+      <a href="https://wa.me/<?php echo $portalWaClean; ?>?text=Hi%20AceAssignment!%20I%20am%20chatting%20from%20the%20portal." target="_blank" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:none; padding:4px 8px; font-size:0.75rem;" title="Open in external WhatsApp (<?php echo htmlspecialchars($portalWa); ?>)">
         <i class="fa-solid fa-arrow-up-right-from-square"></i> App
       </a>
       <button id="closePortalChatDrawer" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">&times;</button>

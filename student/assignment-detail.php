@@ -59,9 +59,9 @@ $workflow = [
 
   <div style="display:flex; gap:10px;">
     <?php if (!$isPaid): ?>
-      <button class="btn btn-primary" onclick="triggerPaymentModal('<?php echo $asm['assignment_id']; ?>', <?php echo $asm['final_price']; ?>)">
-        <i class="fa-solid fa-credit-card"></i> Pay Now (<?php echo $currencySymbol . number_format($asm['final_price'], ($currency === 'INR' ? 0 : 2)); ?>)
-      </button>
+      <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-primary" style="font-weight:700;">
+        <i class="fa-solid fa-lock"></i> Pay Now (<?php echo format_currency_amount($asm['final_price'], $currency); ?>)
+      </a>
     <?php endif; ?>
     <?php if (in_array($asm['status'], ['Completed', 'Delivered'])): ?>
       <button class="btn btn-warning" onclick="openModal('revisionModal')">
@@ -236,9 +236,9 @@ $workflow = [
 <script>
 let currentPayAsmId = '';
 
-function triggerPaymentModal(asmId, amount) {
+function triggerPaymentModal(asmId, formattedAmount) {
   currentPayAsmId = asmId;
-  document.getElementById('modalPayAmount').textContent = '$' + amount.toFixed(2);
+  document.getElementById('modalPayAmount').textContent = formattedAmount;
   openModal('paymentModal');
 }
 

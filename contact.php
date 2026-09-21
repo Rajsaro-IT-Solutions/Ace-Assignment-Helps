@@ -31,13 +31,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <p style="color:var(--text-muted); margin-bottom:2rem;">Have questions before placing your assignment order? We're available 24/7 via Email, WhatsApp, and live web chat.</p>
 
       <div style="display:flex; flex-direction:column; gap:1.5rem;">
+        <?php 
+        $siteWhatsapp = class_exists('DataStore') ? DataStore::getSetting('whatsapp_phone', '+91 8233432123') : '+91 8233432123';
+        $siteWhatsappClean = preg_replace('/[^0-9]/', '', $siteWhatsapp);
+        if (empty($siteWhatsappClean)) $siteWhatsappClean = '918233432123';
+        ?>
         <div style="display:flex; align-items:center; gap:15px;">
           <div class="feature-icon" style="margin-bottom:0; width:46px; height:46px; font-size:1.2rem; background:rgba(37, 211, 102, 0.15); color:#25D366;">
             <i class="fa-brands fa-whatsapp"></i>
           </div>
           <div>
             <h5 style="color:#fff;">WhatsApp Quick Helpline</h5>
-            <a href="https://wa.me/15559876543" target="_blank" style="color:#25D366; font-weight:700;">+1 (555) 987-6543</a>
+            <a href="https://wa.me/<?php echo $siteWhatsappClean; ?>?text=Hi%20Ace%20Assignment%20Helps%2C%20I%20need%20assistance%20with%20my%20assignment." target="_blank" style="color:#25D366; font-weight:700;"><?php echo htmlspecialchars($siteWhatsapp); ?></a>
           </div>
         </div>
 

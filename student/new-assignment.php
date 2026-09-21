@@ -251,8 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(res => res.json())
     .then(data => {
       if (data.success) {
-        pSubmitMsg.innerHTML = `<div class="badge badge-success" style="display:block; padding:0.8rem; font-size:0.95rem;"><i class="fa-solid fa-circle-check"></i> ${data.message} Redirecting...</div>`;
-        setTimeout(() => { window.location.href = '/student/assignments.php'; }, 1200);
+        pSubmitMsg.innerHTML = `<div class="badge badge-success" style="display:block; padding:0.8rem; font-size:0.95rem;"><i class="fa-solid fa-circle-check"></i> ${data.message} Opening payment checkout...</div>`;
+        setTimeout(() => { window.location.href = `/checkout.php?assignment_id=${encodeURIComponent(data.assignment_id)}`; }, 900);
       } else {
         pSubmitMsg.innerHTML = `<div class="badge badge-danger" style="display:block; padding:0.8rem;">${data.message || 'Submission error'}</div>`;
       }

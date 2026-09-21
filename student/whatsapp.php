@@ -27,9 +27,14 @@ $chatMessages = DataStore::filter('chat_messages', function($m) use ($user) {
           <div style="font-weight:700; color:var(--text-main); font-size:0.95rem; margin-top:2px;"><?php echo htmlspecialchars($user['phone'] ?? '+1 555-234-5678'); ?></div>
         </div>
 
+        <?php
+        $supportWa = class_exists('DataStore') ? DataStore::getSetting('whatsapp_phone', '+91 8233432123') : '+91 8233432123';
+        $supportWaClean = preg_replace('/[^0-9]/', '', $supportWa);
+        if (empty($supportWaClean)) $supportWaClean = '918233432123';
+        ?>
         <!-- Optional External Redirection Button -->
-        <a href="https://wa.me/15559876543?text=Hi%20AceAssignment!%20Chatting%20from%20Student%20Portal." target="_blank" class="btn btn-outline btn-sm" style="width:100%; text-align:center; display:block;">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in External WhatsApp Web/App
+        <a href="https://wa.me/<?php echo $supportWaClean; ?>?text=Hi%20AceAssignment!%20Chatting%20from%20Student%20Portal." target="_blank" class="btn btn-outline btn-sm" style="width:100%; text-align:center; display:block;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in External WhatsApp (<?php echo htmlspecialchars($supportWa); ?>)
         </a>
       </div>
     </div>

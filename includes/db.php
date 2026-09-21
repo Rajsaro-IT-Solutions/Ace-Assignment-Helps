@@ -350,5 +350,75 @@ class DataStore {
             return self::insert('settings', ['setting_key' => $key, 'setting_value' => $value]);
         }
     }
+
+    public static function purgeAssignment($assignment_id) {
+        $assignment_id = trim((string)$assignment_id);
+        if (!$assignment_id) return false;
+
+        // 1. Delete associated physical files on disk
+        $files = self::filter('files', function($f) use ($assignment_id) {
+            return isset($f['assignment_id']) && (string)$f['assignment_id'] === $assignment_id;
+        });
+        foreach ($files as $f) {
+            if (!empty($f['path'])) {
+                $filePath = __DIR__ . '/../' . ltrim($f['path'], '/');
+                if (file_exists($filePath) && is_file($filePath)) {
+                    @unlink($filePath);
+                }
+            }
+        }
+
+        // 2. MySQL purge across all tables (independent execution so one error never blocks others)
+        $pdo = self::getPdo();
+        if ($pdo) {
+            // Delete assignment first
+            try {
+                $stmt = $pdo->prepare("DELETE FROM `assignments` WHERE `assignment_id` = ?");
+                $stmt->execute([$assignment_id]);
+            } catch (Throwable $e) {}
+
+            // Delete associated records
+            $tables = ['payments', 'files', 'allocation', 'notes', 'support_tickets'];
+            foreach ($tables as $tbl) {
+                try {
+                    $stmt = $pdo->prepare("DELETE FROM `$tbl` WHERE `assignment_id` = ?");
+                    $stmt->execute([$assignment_id]);
+                } catch (Throwable $e) {}
+            }
+
+            try {
+                $stmt = $pdo->prepare("DELETE FROM `notifications` WHERE `message` LIKE ? OR `title` LIKE ?");
+                $stmt->execute(['%' . $assignment_id . '%', '%' . $assignment_id . '%']);
+            } catch (Throwable $e) {}
+        }
+
+        // 3. Purge from JSON datastore
+        try {
+            $jsonData = self::getJsonData();
+            $collectionsToPurge = ['assignments', 'files', 'payments', 'allocation', 'notes', 'support_tickets'];
+            foreach ($collectionsToPurge as $col) {
+                if (isset($jsonData[$col]) && is_array($jsonData[$col])) {
+                    $jsonData[$col] = array_values(array_filter($jsonData[$col], function($item) use ($assignment_id) {
+                        return !isset($item['assignment_id']) || (string)$item['assignment_id'] !== $assignment_id;
+                    }));
+                }
+            }
+            if (isset($jsonData['chat_messages']) && is_array($jsonData['chat_messages'])) {
+                $jsonData['chat_messages'] = array_values(array_filter($jsonData['chat_messages'], function($item) use ($assignment_id) {
+                    return !isset($item['assignment_id']) || (string)$item['assignment_id'] !== $assignment_id;
+                }));
+            }
+            if (isset($jsonData['notifications']) && is_array($jsonData['notifications'])) {
+                $jsonData['notifications'] = array_values(array_filter($jsonData['notifications'], function($item) use ($assignment_id) {
+                    $m = ($item['message'] ?? '') . ' ' . ($item['title'] ?? '');
+                    return strpos($m, $assignment_id) === false;
+                }));
+            }
+            self::saveJsonData($jsonData);
+        } catch (Throwable $e) {}
+
+        return true;
+    }
 }
+
 

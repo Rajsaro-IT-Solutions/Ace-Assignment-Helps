@@ -66,6 +66,29 @@ function render_word_count_options($selectedWords = 1000)
     return $html;
 }
 
+function get_currency_symbol($currency = 'USD')
+{
+    $c = strtoupper(trim((string)$currency ?: 'USD'));
+    switch ($c) {
+        case 'INR': return '₹';
+        case 'GBP': return '£';
+        case 'EUR': return '€';
+        case 'AUD': return 'A$';
+        case 'CAD': return 'C$';
+        case 'USD':
+        default:
+            return '$';
+    }
+}
+
+function format_currency_amount($amount, $currency = 'USD')
+{
+    $c = strtoupper(trim((string)$currency ?: 'USD'));
+    $symbol = get_currency_symbol($c);
+    $decimals = ($c === 'INR') ? 0 : 2;
+    return $symbol . number_format((float)$amount, $decimals);
+}
+
 function calculate_assignment_price($word_count, $deadline_hours, $academic_level = 'Undergraduate', $subject = 'General', $coupon_code = '', $currency = 'USD')
 {
     $word_count = max(250, (int) $word_count);
@@ -286,6 +309,7 @@ function get_status_badge_class($status)
             return 'badge-amber';
         case 'Cancelled':
         case 'Refunded':
+        case 'Deleted':
             return 'badge-danger';
         default:
             return 'badge-secondary';
@@ -370,3 +394,118 @@ function delete_notification($notif_id)
 {
     return DataStore::delete('notifications', 'id', $notif_id);
 }
+
+/**
+ * Payment Gateway Configuration & Helpers
+ */
+function get_gateway_config()
+{
+    return [
+        'mode' => DataStore::getSetting('payment_gateway_mode', 'test'), // 'test' or 'live'
+        'stripe' => [
+            'enabled' => DataStore::getSetting('stripe_enabled', '1') === '1',
+            'publishable_key' => DataStore::getSetting('stripe_publishable_key', 'pk_test_51MockStripeKey123456789AceAssign'),
+            'secret_key' => DataStore::getSetting('stripe_secret_key', 'sk_test_51MockStripeSecretKey123456789AceAssign'),
+        ],
+        'razorpay' => [
+            'enabled' => DataStore::getSetting('razorpay_enabled', '1') === '1',
+            'key_id' => DataStore::getSetting('razorpay_key_id', 'rzp_test_AceAssignment2026'),
+            'key_secret' => DataStore::getSetting('razorpay_key_secret', 'mock_rzp_secret_key_2026'),
+            'upi_id' => DataStore::getSetting('razorpay_upi_id', 'aceassignment@okhdfcbank'),
+        ],
+        'paypal' => [
+            'enabled' => DataStore::getSetting('paypal_enabled', '1') === '1',
+            'client_id' => DataStore::getSetting('paypal_client_id', 'sb_mock_client_id_aceassignment'),
+            'mode' => DataStore::getSetting('paypal_mode', 'sandbox'),
+        ]
+    ];
+}
+
+function format_payment_method_badge($method)
+{
+    $m = strtolower((string)$method);
+    if (strpos($m, 'stripe') !== false || strpos($m, 'card') !== false) {
+        return '<span class="badge" style="background:#e0e7ff; color:#3730a3;"><i class="fa-brands fa-stripe"></i> Card (Stripe)</span>';
+    } elseif (strpos($m, 'razorpay') !== false || strpos($m, 'upi') !== false || strpos($m, 'netbanking') !== false) {
+        return '<span class="badge" style="background:#dcfce7; color:#166534;"><i class="fa-solid fa-bolt"></i> Razorpay / UPI</span>';
+    } elseif (strpos($m, 'paypal') !== false) {
+        return '<span class="badge" style="background:#dbeafe; color:#1e40af;"><i class="fa-brands fa-paypal"></i> PayPal</span>';
+    } elseif (strpos($m, 'bank') !== false || strpos($m, 'wire') !== false) {
+        return '<span class="badge" style="background:#fef3c7; color:#92400e;"><i class="fa-solid fa-building-columns"></i> Bank Wire</span>';
+    }
+    return '<span class="badge badge-secondary"><i class="fa-solid fa-credit-card"></i> ' . htmlspecialchars($method) . '</span>';
+}
+
+function create_razorpay_order_api($assignment_id)
+{
+    $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+    if (!$asm) {
+        return ['success' => false, 'message' => 'Assignment not found'];
+    }
+
+    $gw = get_gateway_config();
+    $keyId = $gw['razorpay']['key_id'];
+    $keySecret = $gw['razorpay']['key_secret'];
+
+    if (empty($keyId) || empty($keySecret)) {
+        return ['success' => false, 'message' => 'Razorpay API credentials not configured'];
+    }
+
+    $currency = strtoupper($asm['currency'] ?? 'INR');
+    $amount = (float)($asm['final_price'] ?? $asm['price']);
+    $amountSubunits = (int)round($amount * 100);
+    $receipt = substr('rec_' . $assignment_id . '_' . time(), 0, 40);
+
+    $payload = [
+        'amount' => $amountSubunits,
+        'currency' => $currency,
+        'receipt' => $receipt,
+        'notes' => [
+            'assignment_id' => $assignment_id,
+            'title' => substr($asm['title'] ?? 'Assignment', 0, 50)
+        ]
+    ];
+
+    $ch = curl_init('https://api.razorpay.com/v1/orders');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_USERPWD, $keyId . ':' . $keySecret);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+    $res = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+
+    if ($err) {
+        return ['success' => false, 'message' => 'Curl connection error: ' . $err];
+    }
+
+    $data = json_decode($res, true);
+    if ($httpCode === 200 && isset($data['id'])) {
+        return [
+            'success' => true,
+            'order_id' => $data['id'],
+            'amount' => $data['amount'],
+            'currency' => $data['currency'],
+            'key_id' => $keyId,
+            'assignment_id' => $assignment_id
+        ];
+    }
+
+    $errorMsg = $data['error']['description'] ?? 'Failed to create Razorpay order';
+    return ['success' => false, 'message' => $errorMsg, 'raw' => $data];
+}
+
+function verify_razorpay_signature($order_id, $payment_id, $signature)
+{
+    $gw = get_gateway_config();
+    $keySecret = $gw['razorpay']['key_secret'];
+    if (empty($keySecret)) return false;
+    $expected = hash_hmac('sha256', $order_id . '|' . $payment_id, $keySecret);
+    return hash_equals($expected, $signature);
+}
+
+

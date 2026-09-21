@@ -602,10 +602,10 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          quickMsg.innerHTML = `<div class="badge badge-success" style="display:block; padding:0.8rem;"><i class="fa-solid fa-circle-check"></i> ${data.message} Redirecting to your portal...</div>`;
+          quickMsg.innerHTML = `<div class="badge badge-success" style="display:block; padding:0.8rem;"><i class="fa-solid fa-circle-check"></i> ${data.message} Opening secure payment checkout...</div>`;
           setTimeout(() => {
-            window.location.href = '/student/assignments.php';
-          }, 1200);
+            window.location.href = `/checkout.php?assignment_id=${encodeURIComponent(data.assignment_id)}`;
+          }, 900);
         } else {
           quickMsg.innerHTML = `<div class="badge badge-danger" style="display:block; padding:0.6rem;">${data.message || 'Submission error'}</div>`;
         }

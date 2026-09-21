@@ -125,7 +125,7 @@ $pendingPayments = count(array_filter($assignments, function($a) { return $a['st
             <td><?php echo htmlspecialchars($expert['name'] ?? 'Unassigned'); ?></td>
             <td><span class="badge <?php echo $sla['badge_class']; ?>"><?php echo $sla['label']; ?></span></td>
             <td><span class="badge <?php echo get_status_badge_class($asm['status']); ?>"><?php echo htmlspecialchars($asm['status']); ?></span></td>
-            <td><strong>$<?php echo number_format($asm['final_price'], 2); ?></strong></td>
+            <td><strong><?php echo format_currency_amount($asm['final_price'], $asm['currency'] ?? 'USD'); ?></strong></td>
             <td>
               <a href="/admin/assignment-detail.php?id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-outline btn-sm">
                 Control &rarr;

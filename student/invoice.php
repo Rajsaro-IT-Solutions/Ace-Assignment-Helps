@@ -1,7 +1,6 @@
 <?php
 $pageTitle = "Official Tax Invoice";
 require_once __DIR__ . '/../includes/auth.php';
-Auth::checkLoggedIn();
 require_once __DIR__ . '/../includes/helpers.php';
 
 $id = $_GET['id'] ?? '';
@@ -20,6 +19,8 @@ if ($currentUser && $currentUser['role'] === 'Student' && $asm['student_id'] !==
 $student = DataStore::findOne('students', 'student_id', $asm['student_id']);
 $payment = DataStore::findOne('payments', 'assignment_id', $id);
 $isPaid = ($payment && ($payment['status'] ?? '') === 'Paid') || in_array($asm['status'] ?? '', ['Confirmed', 'Allocated', 'In Progress', 'Quality Check', 'Completed', 'Delivered']);
+$currency = $asm['currency'] ?? ($payment['currency'] ?? 'USD');
+$currencySymbol = get_currency_symbol($currency);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -111,20 +112,23 @@ $isPaid = ($payment && ($payment['status'] ?? '') === 'Paid') || in_array($asm['
           <small style="color:#64748b;">Subject: <?php echo htmlspecialchars($asm['subject']); ?> &bull; Type: <?php echo htmlspecialchars($asm['assignment_type']); ?></small>
         </td>
         <td><?php echo $asm['word_count']; ?> words (<?php echo $asm['pages']; ?> pages)</td>
-        <td>$15.00</td>
-        <td style="text-align:right;">$<?php echo number_format($asm['price'], 2); ?></td>
+        <td><?php 
+          $pageRate = (!empty($asm['pages']) && (int)$asm['pages'] > 0) ? ((float)$asm['price'] / (int)$asm['pages']) : 15;
+          echo format_currency_amount($pageRate, $currency); 
+        ?></td>
+        <td style="text-align:right;"><?php echo format_currency_amount($asm['price'], $currency); ?></td>
       </tr>
       <?php if (!empty($asm['discount_code'])): ?>
         <tr>
           <td colspan="3" style="text-align:right; color:#047857; font-weight:700;">Promotional Discount (<?php echo htmlspecialchars($asm['discount_code']); ?>)</td>
-          <td style="text-align:right; color:#047857; font-weight:700;">-$<?php echo number_format($asm['price'] - $asm['final_price'], 2); ?></td>
+          <td style="text-align:right; color:#047857; font-weight:700;">-<?php echo format_currency_amount($asm['price'] - $asm['final_price'], $currency); ?></td>
         </tr>
       <?php endif; ?>
     </tbody>
   </table>
 
   <div class="total-box">
-    Grand Total Paid: $<?php echo number_format($asm['final_price'], 2); ?> USD
+    Grand Total Paid: <?php echo format_currency_amount($asm['final_price'], $currency); ?> <?php echo htmlspecialchars($currency); ?>
   </div>
 
   <div style="margin-top:40px; padding-top:20px; border-top:1px solid #e2e8f0; text-align:center; color:#94a3b8; font-size:0.8rem;">

@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
 
 $assignments = DataStore::filter('assignments', function($a) use ($user) {
-    return isset($a['student_id']) && $a['student_id'] === $user['id'];
+    return isset($a['student_id']) && $a['student_id'] === $user['id'] && ($a['status'] ?? '') !== 'Deleted';
 });
 ?>
 
@@ -78,11 +78,18 @@ $assignments = DataStore::filter('assignments', function($a) use ($user) {
               <td><span class="badge badge-secondary"><?php echo htmlspecialchars($asm['priority']); ?></span></td>
               <td><span class="badge <?php echo $sla['badge_class']; ?>"><i class="fa-solid fa-clock"></i> <?php echo $sla['label']; ?></span></td>
               <td><span class="badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($asm['status']); ?></span></td>
-              <td><strong>$<?php echo number_format($asm['final_price'], 2); ?></strong></td>
+              <td><strong><?php echo format_currency_amount($asm['final_price'], $asm['currency'] ?? 'USD'); ?></strong></td>
               <td>
-                <a href="/student/assignment-detail.php?id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-outline btn-sm">
-                  Details &rarr;
-                </a>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <?php if (in_array($asm['status'], ['Pending Review', 'Waiting for Payment', 'New'])): ?>
+                    <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-primary btn-sm" style="font-weight:700; white-space:nowrap; background:#059669; border-color:#059669;">
+                      <i class="fa-solid fa-credit-card"></i> Pay Now
+                    </a>
+                  <?php endif; ?>
+                  <a href="/student/assignment-detail.php?id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-outline btn-sm">
+                    Details &rarr;
+                  </a>
+                </div>
               </td>
             </tr>
           <?php endforeach; ?>

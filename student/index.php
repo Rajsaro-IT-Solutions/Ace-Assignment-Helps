@@ -7,21 +7,35 @@ require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
 
 $studentAssignments = DataStore::filter('assignments', function($a) use ($user) {
-    return isset($a['student_id']) && $a['student_id'] === $user['id'];
+    return isset($a['student_id']) && $a['student_id'] === $user['id'] && ($a['status'] ?? '') !== 'Deleted';
 });
 
 $totalAssigned = count($studentAssignments);
 $pendingAssigned = count(array_filter($studentAssignments, function($a) {
-    return in_array($a['status'], ['New', 'Pending Review', 'Waiting for Payment', 'Allocated', 'In Progress', 'Quality Check']);
+    return in_array($a['status'], ['New', 'Pending Review', 'Waiting for Payment', 'Confirmed', 'Allocated', 'In Progress', 'Quality Check', 'Revision Requested']);
 }));
 $completedAssigned = count(array_filter($studentAssignments, function($a) {
     return in_array($a['status'], ['Completed', 'Delivered']);
 }));
 
-$studentPayments = DataStore::filter('payments', function($p) use ($user) {
-    return isset($p['student_id']) && $p['student_id'] === $user['id'];
+// Only calculate investment for existing, non-deleted assignments
+$activeAssignmentIds = array_column($studentAssignments, 'assignment_id');
+$studentPayments = DataStore::filter('payments', function($p) use ($user, $activeAssignmentIds) {
+    return isset($p['student_id']) 
+        && $p['student_id'] === $user['id']
+        && in_array($p['assignment_id'], $activeAssignmentIds)
+        && in_array($p['status'] ?? '', ['Paid', 'Completed']);
 });
-$totalSpent = array_reduce($studentPayments, function($sum, $p) { return $sum + (float)$p['amount']; }, 0);
+$spentByCurrency = [];
+foreach ($studentPayments as $p) {
+    $c = strtoupper(trim($p['currency'] ?? 'USD'));
+    $spentByCurrency[$c] = ($spentByCurrency[$c] ?? 0) + (float)$p['amount'];
+}
+$investedDisplayParts = [];
+foreach ($spentByCurrency as $c => $amt) {
+    $investedDisplayParts[] = format_currency_amount($amt, $c);
+}
+$investedDisplay = !empty($investedDisplayParts) ? implode(' + ', $investedDisplayParts) : '$0.00';
 ?>
 
 <div class="metrics-grid">
@@ -52,7 +66,7 @@ $totalSpent = array_reduce($studentPayments, function($sum, $p) { return $sum + 
   <div class="metric-card">
     <div class="metric-icon icon-cyan"><i class="fa-solid fa-wallet"></i></div>
     <div class="metric-info">
-      <div class="m-val">$<?php echo number_format($totalSpent, 2); ?></div>
+      <div class="m-val" style="font-size:1.35rem; line-height:1.2;" title="<?php echo htmlspecialchars($investedDisplay); ?>"><?php echo htmlspecialchars($investedDisplay); ?></div>
       <div class="m-lbl">Total Invested</div>
     </div>
   </div>
@@ -95,7 +109,7 @@ $totalSpent = array_reduce($studentPayments, function($sum, $p) { return $sum + 
               <td><?php echo htmlspecialchars($asm['assignment_type']); ?></td>
               <td><span class="badge <?php echo $sla['badge_class']; ?>"><i class="fa-solid fa-clock"></i> <?php echo $sla['label']; ?></span></td>
               <td><span class="badge <?php echo $badgeClass; ?>"><?php echo htmlspecialchars($asm['status']); ?></span></td>
-              <td><strong>$<?php echo number_format($asm['final_price'], 2); ?></strong></td>
+              <td><strong><?php echo format_currency_amount($asm['final_price'], $asm['currency'] ?? 'USD'); ?></strong></td>
               <td>
                 <a href="/student/assignment-detail.php?id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-outline btn-sm">
                   View <i class="fa-solid fa-arrow-right"></i>

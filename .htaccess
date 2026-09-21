@@ -1,0 +1,50 @@
+# ==============================================================================
+# Ace Assignment Helps - Apache / Hostinger Web Server Configuration
+# ==============================================================================
+
+# 1. Default Directory Index
+DirectoryIndex index.php index.html
+
+# 2. Block direct HTTP access to sensitive data and config files
+<FilesMatch "^(database\.json|vercel\.json|\.git|\.env|setup_mysql\.php)">
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
+# 3. Disable Directory Browsing
+Options -Indexes
+
+# 4. Follow Symbolic Links
+Options +FollowSymLinks
+
+# 5. Enable Mod Rewrite for Clean URLs
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Block access to the data directory completely
+    RewriteRule ^data/.*$ - [F,L]
+
+    # Don't rewrite actual files or directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Check if a matching .php file exists (e.g. /about -> /about.php)
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L,QSA]
+</IfModule>
+
+# 6. Set Proper MIME Types for Web Fonts & Modern Assets
+<IfModule mod_mime.c>
+    AddType application/font-woff .woff
+    AddType application/font-woff2 .woff2
+    AddType application/x-font-ttf .ttf
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
+</IfModule>

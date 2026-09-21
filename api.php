@@ -173,6 +173,58 @@ switch ($action) {
         echo json_encode(['success' => false, 'message' => 'File ID required.']);
         exit;
 
+    case 'permanent_delete_assignment':
+        Auth::checkRole('Admin');
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        if ($assignment_id) {
+            $purged = DataStore::purgeAssignment($assignment_id);
+            if ($purged) {
+                add_audit_log('Admin', $user['id'], 'Permanent Delete Assignment', "Permanently wiped assignment $assignment_id from everywhere via API");
+                echo json_encode(['success' => true, 'message' => "Assignment $assignment_id permanently deleted from everywhere."]);
+                exit;
+            }
+            echo json_encode(['success' => false, 'message' => "Failed to permanently delete assignment $assignment_id."]);
+            exit;
+        }
+        echo json_encode(['success' => false, 'message' => 'Assignment ID required.']);
+        exit;
+
+    case 'delete_assignment':
+        Auth::checkRole('Admin');
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        if ($assignment_id) {
+            DataStore::update('assignments', 'assignment_id', $assignment_id, [
+                'status' => 'Deleted',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+            DataStore::update('payments', 'assignment_id', $assignment_id, [
+                'status' => 'Cancelled'
+            ]);
+            add_audit_log('Admin', $user['id'], 'Delete Assignment', "Moved assignment $assignment_id to History via API");
+            echo json_encode(['success' => true, 'message' => "Assignment $assignment_id moved to History."]);
+            exit;
+        }
+        echo json_encode(['success' => false, 'message' => 'Assignment ID required.']);
+        exit;
+
+    case 'restore_assignment':
+        Auth::checkRole('Admin');
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        if ($assignment_id) {
+            DataStore::update('assignments', 'assignment_id', $assignment_id, [
+                'status' => 'Pending Review',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+            add_audit_log('Admin', $user['id'], 'Restore Assignment', "Restored assignment $assignment_id from History via API");
+            echo json_encode(['success' => true, 'message' => "Assignment $assignment_id restored to active status."]);
+            exit;
+        }
+        echo json_encode(['success' => false, 'message' => 'Assignment ID required.']);
+        exit;
+
     case 'allocate_expert':
         Auth::checkRole(['Allocator', 'Admin']);
         $user = Auth::currentUser();
@@ -237,38 +289,239 @@ switch ($action) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters']);
         exit;
 
-    case 'pay_now':
-        Auth::checkRole(['Student', 'Admin']);
-        $user = Auth::currentUser();
-        $assignment_id = $_POST['assignment_id'] ?? '';
-        $method = $_POST['payment_method'] ?? 'Stripe Credit Card';
-
-        $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
-        if ($asm) {
-            $tx_id = 'ch_' . substr(md5(uniqid()), 0, 16);
-            DataStore::insert('payments', [
-                'payment_id' => 'PAY-' . rand(8900, 9999),
-                'assignment_id' => $assignment_id,
-                'student_id' => $asm['student_id'],
-                'amount' => (float)$asm['final_price'],
-                'currency' => 'USD',
-                'status' => 'Paid',
-                'payment_method' => $method,
-                'transaction_id' => $tx_id,
-                'payment_date' => date('Y-m-d H:i:s')
-            ]);
-
-            DataStore::update('assignments', 'assignment_id', $assignment_id, [
-                'status' => 'Confirmed',
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
-
-            add_audit_log($user['role'], $user['id'], 'Payment Received', "Paid \${$asm['final_price']} for $assignment_id");
-            echo json_encode(['success' => true, 'message' => 'Payment successful! Status changed to Confirmed.']);
+    case 'create_razorpay_order':
+        $assignment_id = trim($_POST['assignment_id'] ?? $_GET['assignment_id'] ?? '');
+        if (!$assignment_id) {
+            echo json_encode(['success' => false, 'message' => 'Missing assignment ID']);
             exit;
         }
-        echo json_encode(['success' => false, 'message' => 'Assignment not found']);
+        $res = create_razorpay_order_api($assignment_id);
+        echo json_encode($res);
         exit;
+
+    case 'verify_razorpay_payment':
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        $order_id = trim($_POST['razorpay_order_id'] ?? '');
+        $payment_id = trim($_POST['razorpay_payment_id'] ?? '');
+        $signature = trim($_POST['razorpay_signature'] ?? '');
+
+        if (!$assignment_id || !$payment_id) {
+            echo json_encode(['success' => false, 'message' => 'Missing payment verification data']);
+            exit;
+        }
+
+        $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+        if (!$asm) {
+            echo json_encode(['success' => false, 'message' => 'Assignment not found']);
+            exit;
+        }
+
+        // Verify signature if provided
+        $isValid = true;
+        if (!empty($signature) && !empty($order_id)) {
+            $isValid = verify_razorpay_signature($order_id, $payment_id, $signature);
+        }
+
+        if (!$isValid) {
+            echo json_encode(['success' => false, 'message' => 'Razorpay payment signature verification failed']);
+            exit;
+        }
+
+        $user = Auth::currentUser();
+        if (!$user) {
+            $student = DataStore::findOne('students', 'student_id', $asm['student_id']);
+            if ($student) {
+                if (session_status() === PHP_SESSION_NONE) session_start();
+                $_SESSION['user'] = [
+                    'id' => $student['student_id'],
+                    'name' => $student['name'],
+                    'email' => $student['email'],
+                    'role' => 'Student',
+                    'country' => $student['country'] ?? 'India'
+                ];
+                $user = $_SESSION['user'];
+            }
+        }
+
+        $asmCurrency = $asm['currency'] ?? 'INR';
+        $paymentAmount = (float)($asm['final_price'] ?? $asm['price']);
+        $paymentId = 'PAY-' . rand(8900, 9999);
+
+        // Check duplicate
+        $existingPayment = DataStore::findOne('payments', 'assignment_id', $assignment_id);
+        if ($existingPayment && $existingPayment['status'] === 'Paid') {
+            echo json_encode([
+                'success' => true,
+                'already_paid' => true,
+                'transaction_id' => $existingPayment['transaction_id'],
+                'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
+                'message' => 'Assignment already paid in full.'
+            ]);
+            exit;
+        }
+
+        DataStore::insert('payments', [
+            'payment_id' => $paymentId,
+            'assignment_id' => $assignment_id,
+            'student_id' => $asm['student_id'],
+            'amount' => $paymentAmount,
+            'currency' => $asmCurrency,
+            'status' => 'Paid',
+            'payment_method' => 'Razorpay Gateway',
+            'transaction_id' => $payment_id,
+            'payment_date' => date('Y-m-d H:i:s')
+        ]);
+
+        DataStore::update('assignments', 'assignment_id', $assignment_id, [
+            'status' => 'Confirmed',
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $formattedPaid = format_currency_amount($paymentAmount, $asmCurrency);
+        add_audit_log('Student', $user['id'] ?? $asm['student_id'], 'Razorpay Payment Confirmed', "Paid {$formattedPaid} ({$asmCurrency}) via Razorpay (TX: {$payment_id})");
+
+        add_notification('Allocator', '', "Razorpay Payment Settled: $assignment_id", "Order $assignment_id settled via Razorpay ({$formattedPaid}). Ready for expert allocation.", 'success', "/allocator/assignment-detail.php?id=$assignment_id");
+        add_notification('Student', $asm['student_id'], "Payment Confirmed - Order $assignment_id", "Your Razorpay payment of {$formattedPaid} is confirmed! Expert allocation started.", 'success', "/student/assignment-detail.php?id=$assignment_id");
+
+        echo json_encode([
+            'success' => true,
+            'transaction_id' => $payment_id,
+            'order_id' => $order_id,
+            'assignment_id' => $assignment_id,
+            'amount' => $paymentAmount,
+            'currency' => $asmCurrency,
+            'formatted_amount' => $formattedPaid,
+            'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
+            'message' => "Razorpay payment verified successfully! Order $assignment_id is Confirmed."
+        ]);
+        exit;
+
+    case 'pay_now':
+    case 'process_payment':
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        $method = trim($_POST['payment_method'] ?? 'Stripe Credit Card');
+        $cardLast4 = trim($_POST['card_last4'] ?? '');
+        $cardBrand = trim($_POST['card_brand'] ?? '');
+        $upiVpa = trim($_POST['upi_vpa'] ?? '');
+
+        if (!$assignment_id) {
+            echo json_encode(['success' => false, 'message' => 'Missing assignment ID']);
+            exit;
+        }
+
+        $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+        if (!$asm) {
+            echo json_encode(['success' => false, 'message' => 'Assignment not found']);
+            exit;
+        }
+
+        // If user not in session, attempt to auto-login the student matching the assignment
+        if (!$user) {
+            $student = DataStore::findOne('students', 'student_id', $asm['student_id']);
+            if ($student) {
+                if (session_status() === PHP_SESSION_NONE) session_start();
+                $_SESSION['user'] = [
+                    'id' => $student['student_id'],
+                    'name' => $student['name'],
+                    'email' => $student['email'],
+                    'role' => 'Student',
+                    'country' => $student['country'] ?? 'United States'
+                ];
+                $user = $_SESSION['user'];
+            } else {
+                $user = [
+                    'id' => $asm['student_id'],
+                    'name' => 'Student',
+                    'email' => 'student@aceassign.com',
+                    'role' => 'Student'
+                ];
+            }
+        }
+
+        // Generate provider-specific transaction ID
+        $randHex = substr(md5(uniqid(mt_rand(), true)), 0, 14);
+        if (stripos($method, 'stripe') !== false || stripos($method, 'card') !== false) {
+            $tx_id = 'pi_stripe_' . $randHex;
+        } elseif (stripos($method, 'razorpay') !== false || stripos($method, 'upi') !== false) {
+            $tx_id = 'pay_rzp_' . $randHex;
+        } elseif (stripos($method, 'paypal') !== false) {
+            $tx_id = 'PAYID-' . strtoupper($randHex);
+        } else {
+            $tx_id = 'TRX-' . strtoupper($randHex);
+        }
+
+        $asmCurrency = $asm['currency'] ?? 'USD';
+        $paymentAmount = (float)$asm['final_price'];
+        $paymentId = 'PAY-' . rand(8900, 9999);
+
+        // Check if a payment for this assignment already exists to prevent duplicate insertion
+        $existingPayment = DataStore::findOne('payments', 'assignment_id', $assignment_id);
+        if ($existingPayment && $existingPayment['status'] === 'Paid') {
+            echo json_encode([
+                'success' => true,
+                'already_paid' => true,
+                'transaction_id' => $existingPayment['transaction_id'],
+                'payment_id' => $existingPayment['payment_id'],
+                'assignment_id' => $assignment_id,
+                'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
+                'message' => 'This assignment is already paid in full.'
+            ]);
+            exit;
+        }
+
+        DataStore::insert('payments', [
+            'payment_id' => $paymentId,
+            'assignment_id' => $assignment_id,
+            'student_id' => $asm['student_id'],
+            'amount' => $paymentAmount,
+            'currency' => $asmCurrency,
+            'status' => 'Paid',
+            'payment_method' => $method,
+            'transaction_id' => $tx_id,
+            'payment_date' => date('Y-m-d H:i:s')
+        ]);
+
+        DataStore::update('assignments', 'assignment_id', $assignment_id, [
+            'status' => 'Confirmed',
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $formattedPaid = format_currency_amount($paymentAmount, $asmCurrency);
+        add_audit_log($user['role'] ?? 'Student', $user['id'] ?? $asm['student_id'], 'Payment Received', "Paid {$formattedPaid} ({$asmCurrency}) via {$method} for {$assignment_id} (TX: {$tx_id})");
+
+        // Trigger in-portal notifications
+        add_notification(
+            'Allocator',
+            '',
+            "Order Confirmed & Paid: $assignment_id",
+            "Payment of {$formattedPaid} ({$asmCurrency}) received via {$method}. Assignment is ready for expert allocation.",
+            'success',
+            "/allocator/assignment-detail.php?id=$assignment_id"
+        );
+
+        add_notification(
+            'Student',
+            $asm['student_id'],
+            "Payment Confirmed - Order $assignment_id",
+            "Thank you! Your payment of {$formattedPaid} has been verified. Your assignment is now Confirmed and allocated to a subject specialist.",
+            'success',
+            "/student/assignment-detail.php?id=$assignment_id"
+        );
+
+        echo json_encode([
+            'success' => true,
+            'transaction_id' => $tx_id,
+            'payment_id' => $paymentId,
+            'assignment_id' => $assignment_id,
+            'amount' => $paymentAmount,
+            'currency' => $asmCurrency,
+            'formatted_amount' => $formattedPaid,
+            'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
+            'message' => "Payment authorized successfully! Your assignment $assignment_id is now Confirmed."
+        ]);
+        exit;
+
 
     case 'send_chat_message':
         $user = Auth::currentUser();
