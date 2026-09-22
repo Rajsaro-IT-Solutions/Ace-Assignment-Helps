@@ -25,21 +25,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $topics = array_values(array_filter(array_map('trim', preg_split('/[,\n\r]+/', $topicsRaw))));
 
         if (!empty($title)) {
-            $courses = DataStore::getCollection('courses');
-            $newId = 'CRS-' . (count($courses) + 101);
-            DataStore::insert('courses', [
-                'course_id' => $newId,
-                'title' => $title,
-                'category' => $category,
-                'icon' => $icon ?: 'fa-book-open',
-                'description' => $description,
-                'topics' => $topics,
-                'status' => $status,
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
-            add_audit_log('Admin', $adminUser['id'], 'Create Course', "Created course '$title' ($newId)");
-            $msg = "New course '$title' ($newId) created successfully!";
-            $msgType = 'success';
+            try {
+                $newId = DataStore::generateNextId('courses', 'course_id', 'CRS-', 3, 101);
+                DataStore::insert('courses', [
+                    'course_id' => $newId,
+                    'title' => $title,
+                    'category' => $category,
+                    'icon' => $icon ?: 'fa-book-open',
+                    'description' => $description,
+                    'topics' => $topics,
+                    'status' => $status,
+                    'created_at' => date('Y-m-d H:i:s')
+                ]);
+                add_audit_log('Admin', $adminUser['id'], 'Create Course', "Created course '$title' ($newId)");
+                $msg = "New course '$title' ($newId) created successfully!";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to create course: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         } else {
             $msg = "Course title is required.";
             $msgType = 'danger';
@@ -92,10 +96,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_course') {
         $course_id = trim($_POST['course_id'] ?? '');
         if ($course_id) {
-            DataStore::delete('courses', 'course_id', $course_id);
-            add_audit_log('Admin', $adminUser['id'], 'Delete Course', "Deleted course $course_id");
-            $msg = "Course $course_id deleted successfully.";
-            $msgType = 'danger';
+            try {
+                DataStore::delete('courses', 'course_id', $course_id);
+                add_audit_log('Admin', $adminUser['id'], 'Delete Course', "Deleted course $course_id");
+                $msg = "Course $course_id deleted successfully.";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to delete course: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 }

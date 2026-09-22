@@ -32,23 +32,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = "A student with email '$email' already exists!";
                 $msgType = 'danger';
             } else {
-                $count = count(DataStore::getCollection('students')) + 1001;
-                $newId = 'STU-' . $count;
-                DataStore::insert('students', [
-                    'student_id' => $newId,
-                    'name' => $name,
-                    'email' => $email,
-                    'phone' => $phone,
-                    'password' => password_hash($password, PASSWORD_DEFAULT),
-                    'country' => $country ?: 'United Kingdom',
-                    'university' => $university ?: 'University',
-                    'course' => $course ?: 'Academic Studies',
-                    'status' => $status,
-                    'created_at' => date('Y-m-d H:i:s')
-                ]);
-                add_audit_log('Admin', $adminUser['id'], 'Create Student', "Added student $name ($newId)");
-                $msg = "New student account created successfully for $name ($newId)!";
-                $msgType = 'success';
+                try {
+                    $newId = DataStore::generateNextId('students', 'student_id', 'STU-', 4, 1001);
+                    DataStore::insert('students', [
+                        'student_id' => $newId,
+                        'name' => $name,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'password' => password_hash($password, PASSWORD_DEFAULT),
+                        'country' => $country ?: 'United Kingdom',
+                        'university' => $university ?: 'University',
+                        'course' => $course ?: 'Academic Studies',
+                        'status' => $status,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
+                    add_audit_log('Admin', $adminUser['id'], 'Create Student', "Added student $name ($newId)");
+                    $msg = "New student account created successfully for $name ($newId)!";
+                    $msgType = 'success';
+                } catch (Throwable $e) {
+                    $msg = "Failed to create student: " . $e->getMessage();
+                    $msgType = 'danger';
+                }
             }
         }
     }
@@ -105,10 +109,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_student') {
         $student_id = trim($_POST['student_id'] ?? '');
         if ($student_id) {
-            DataStore::delete('students', 'student_id', $student_id);
-            add_audit_log('Admin', $adminUser['id'], 'Delete Student', "Permanently deleted student $student_id");
-            $msg = "Student $student_id has been permanently deleted from the system.";
-            $msgType = 'danger';
+            try {
+                DataStore::delete('students', 'student_id', $student_id);
+                add_audit_log('Admin', $adminUser['id'], 'Delete Student', "Permanently deleted student $student_id");
+                $msg = "Student $student_id has been permanently deleted from the system.";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to delete student: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 }

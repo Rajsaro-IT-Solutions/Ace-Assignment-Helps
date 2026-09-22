@@ -25,22 +25,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = $_POST['status'] ?? 'Available';
 
         if (!empty($name)) {
-            $idCount = count(DataStore::getCollection('experts')) + 301;
-            $expId = 'EXP-' . $idCount;
-            DataStore::insert('experts', [
-                'expert_id' => $expId,
-                'name' => $name,
-                'email' => $email,
-                'phone' => $phone,
-                'password' => password_hash($rawPass, PASSWORD_DEFAULT),
-                'subjects' => array_values($subjects),
-                'rating' => $rating,
-                'completed_count' => 0,
-                'status' => $status
-            ]);
-            add_audit_log('Admin', $adminUser['id'], 'Create Expert', "Created expert $name ($expId)");
-            $msg = "New Expert account created successfully for $name ($expId)!";
-            $msgType = 'success';
+            try {
+                if (!empty($email)) {
+                    $existing = DataStore::findOne('experts', 'email', $email);
+                    if ($existing) {
+                        $msg = "An expert with this email already exists!";
+                        $msgType = 'danger';
+                    }
+                }
+                if (empty($msg)) {
+                    $expId = DataStore::generateNextId('experts', 'expert_id', 'EXP-', 3, 301);
+                    DataStore::insert('experts', [
+                        'expert_id' => $expId,
+                        'name' => $name,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'password' => password_hash($rawPass, PASSWORD_DEFAULT),
+                        'subjects' => array_values($subjects),
+                        'rating' => $rating,
+                        'completed_count' => 0,
+                        'status' => $status
+                    ]);
+                    add_audit_log('Admin', $adminUser['id'], 'Create Expert', "Created expert $name ($expId)");
+                    $msg = "New Expert account created successfully for $name ($expId)!";
+                    $msgType = 'success';
+                }
+            } catch (Throwable $e) {
+                $msg = "Failed to create expert: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         } else {
             $msg = "Expert name is required!";
             $msgType = 'danger';
@@ -117,10 +130,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_expert') {
         $expert_id = trim($_POST['expert_id'] ?? '');
         if ($expert_id) {
-            DataStore::delete('experts', 'expert_id', $expert_id);
-            add_audit_log('Admin', $adminUser['id'], 'Delete Expert', "Permanently deleted expert $expert_id");
-            $msg = "Expert $expert_id has been permanently deleted.";
-            $msgType = 'danger';
+            try {
+                DataStore::delete('experts', 'expert_id', $expert_id);
+                add_audit_log('Admin', $adminUser['id'], 'Delete Expert', "Permanently deleted expert $expert_id");
+                $msg = "Expert $expert_id has been permanently deleted.";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to delete expert: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 }

@@ -27,20 +27,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = "An allocator with this email address already exists!";
                 $msgType = 'danger';
             } else {
-                $idCount = count(DataStore::getCollection('allocators')) + 501;
-                $allocId = 'ALL-' . $idCount;
-                DataStore::insert('allocators', [
-                    'allocator_id' => $allocId,
-                    'name' => $name,
-                    'email' => $email,
-                    'phone' => $phone,
-                    'password' => password_hash($pass, PASSWORD_DEFAULT),
-                    'status' => $status,
-                    'performance_score' => $score
-                ]);
-                add_audit_log('Admin', $adminUser['id'], 'Create Allocator', "Created allocator $name ($allocId)");
-                $msg = "New Allocator Account created successfully for $name ($allocId)!";
-                $msgType = 'success';
+                try {
+                    $allocId = DataStore::generateNextId('allocators', 'allocator_id', 'ALL-', 3, 501);
+                    DataStore::insert('allocators', [
+                        'allocator_id' => $allocId,
+                        'name' => $name,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'password' => password_hash($pass, PASSWORD_DEFAULT),
+                        'status' => $status,
+                        'performance_score' => $score
+                    ]);
+                    add_audit_log('Admin', $adminUser['id'], 'Create Allocator', "Created allocator $name ($allocId)");
+                    $msg = "New Allocator Account created successfully for $name ($allocId)!";
+                    $msgType = 'success';
+                } catch (Throwable $e) {
+                    $msg = "Failed to create allocator: " . $e->getMessage();
+                    $msgType = 'danger';
+                }
             }
         } else {
             $msg = "Allocator Name and Work Email are required!";
@@ -96,10 +100,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_allocator') {
         $allocator_id = trim($_POST['allocator_id'] ?? '');
         if ($allocator_id) {
-            DataStore::delete('allocators', 'allocator_id', $allocator_id);
-            add_audit_log('Admin', $adminUser['id'], 'Delete Allocator', "Permanently deleted allocator $allocator_id");
-            $msg = "Allocator $allocator_id has been permanently deleted.";
-            $msgType = 'danger';
+            try {
+                DataStore::delete('allocators', 'allocator_id', $allocator_id);
+                add_audit_log('Admin', $adminUser['id'], 'Delete Allocator', "Permanently deleted allocator $allocator_id");
+                $msg = "Allocator $allocator_id has been permanently deleted.";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to delete allocator: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 }

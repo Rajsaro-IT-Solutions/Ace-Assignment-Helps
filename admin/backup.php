@@ -3,12 +3,14 @@ require_once __DIR__ . '/../includes/auth.php';
 Auth::checkRole('Admin');
 require_once __DIR__ . '/../includes/helpers.php';
 
-if (isset($_GET['download']) && $_GET['download'] === 'json') {
-    $dbFile = __DIR__ . '/../data/database.json';
-    header('Content-Type: application/json');
-    header('Content-Disposition: attachment; filename="database_backup_' . date('Y-m-d_H-i-s') . '.json"');
-    readfile($dbFile);
-    exit;
+if (isset($_GET['download']) && $_GET['download'] === 'sql') {
+    $sqlFile = __DIR__ . '/../database.sql';
+    if (file_exists($sqlFile)) {
+        header('Content-Type: application/sql');
+        header('Content-Disposition: attachment; filename="database_backup_' . date('Y-m-d_H-i-s') . '.sql"');
+        readfile($sqlFile);
+        exit;
+    }
 }
 
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
@@ -34,11 +36,11 @@ include __DIR__ . '/../includes/portal_header.php';
       <i class="fa-solid fa-database"></i>
     </div>
     <h2 style="font-size:1.8rem; color:#fff; margin-bottom:0.5rem;">Database Backup & Data Exporter</h2>
-    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:2rem;">Export raw JSON datastore snapshots or download structured CSV business reports.</p>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:2rem;">Export raw MySQL database snapshots (.sql) or download structured CSV business reports.</p>
 
     <div style="display:flex; flex-direction:column; gap:1.2rem;">
-      <a href="/admin/backup.php?download=json" class="btn btn-primary btn-lg" style="padding:1rem;">
-        <i class="fa-solid fa-download"></i> Download Full JSON Data Store Backup (.json)
+      <a href="/admin/backup.php?download=sql" class="btn btn-primary btn-lg" style="padding:1rem;">
+        <i class="fa-solid fa-download"></i> Download Full MySQL Database Backup (.sql)
       </a>
 
       <a href="/admin/backup.php?export=csv" class="btn btn-outline btn-lg" style="padding:1rem;">

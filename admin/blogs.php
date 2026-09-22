@@ -32,21 +32,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!empty($title)) {
-            $blogs = DataStore::getCollection('blogs');
-            $newId = count($blogs) + 1;
-            DataStore::insert('blogs', [
-                'id' => $newId,
-                'title' => $title,
-                'excerpt' => $excerpt,
-                'content' => $content,
-                'category' => $category,
-                'author' => $author ?: 'Ace Assignment Team',
-                'published_at' => date('Y-m-d'),
-                'image' => $img
-            ]);
-            add_audit_log('Admin', $adminUser['id'], 'Create Blog', "Published article '$title'");
-            $msg = "New article '$title' published successfully!";
-            $msgType = 'success';
+            try {
+                DataStore::insert('blogs', [
+                    'title' => $title,
+                    'excerpt' => $excerpt,
+                    'content' => $content,
+                    'category' => $category,
+                    'author' => $author ?: 'Ace Assignment Team',
+                    'published_at' => date('Y-m-d'),
+                    'image' => $img
+                ]);
+                add_audit_log('Admin', $adminUser['id'], 'Create Blog', "Published article '$title'");
+                $msg = "New article '$title' published successfully!";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to publish article: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 
@@ -89,10 +91,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_blog') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id) {
-            DataStore::delete('blogs', 'id', $id);
-            add_audit_log('Admin', $adminUser['id'], 'Delete Blog', "Deleted article #$id");
-            $msg = "Article #$id deleted successfully.";
-            $msgType = 'danger';
+            try {
+                DataStore::delete('blogs', 'id', $id);
+                add_audit_log('Admin', $adminUser['id'], 'Delete Blog', "Deleted article #$id");
+                $msg = "Article #$id deleted successfully.";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to delete article: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 }

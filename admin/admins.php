@@ -26,19 +26,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = "An administrator with this email already exists!";
                 $msgType = 'danger';
             } else {
-                $idCount = count(DataStore::getCollection('admins')) + 1;
-                $newAdminId = 'ADM-' . sprintf('%03d', $idCount);
-                DataStore::insert('admins', [
-                    'admin_id' => $newAdminId,
-                    'name' => $name,
-                    'email' => $email,
-                    'phone' => $phone,
-                    'password' => password_hash($pass, PASSWORD_DEFAULT),
-                    'status' => $status
-                ]);
-                add_audit_log('Admin', $adminUser['id'], 'Create Admin', "Created administrator $name ($newAdminId)");
-                $msg = "New Admin Account created successfully for $name ($newAdminId)!";
-                $msgType = 'success';
+                try {
+                    $newAdminId = DataStore::generateNextId('admins', 'admin_id', 'ADM-', 3, 1);
+                    DataStore::insert('admins', [
+                        'admin_id' => $newAdminId,
+                        'name' => $name,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'password' => password_hash($pass, PASSWORD_DEFAULT),
+                        'status' => $status
+                    ]);
+                    add_audit_log('Admin', $adminUser['id'], 'Create Admin', "Created administrator $name ($newAdminId)");
+                    $msg = "New Admin Account created successfully for $name ($newAdminId)!";
+                    $msgType = 'success';
+                } catch (Throwable $e) {
+                    $msg = "Failed to create administrator: " . $e->getMessage();
+                    $msgType = 'danger';
+                }
             }
         } else {
             $msg = "Admin Name and Email are required!";
@@ -110,10 +114,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = "Security Alert: Cannot delete the last remaining platform administrator!";
             $msgType = 'danger';
         } elseif ($admin_id) {
-            DataStore::delete('admins', 'admin_id', $admin_id);
-            add_audit_log('Admin', $adminUser['id'], 'Delete Admin', "Permanently deleted administrator $admin_id");
-            $msg = "Administrator $admin_id has been permanently deleted.";
-            $msgType = 'danger';
+            try {
+                DataStore::delete('admins', 'admin_id', $admin_id);
+                add_audit_log('Admin', $adminUser['id'], 'Delete Admin', "Permanently deleted administrator $admin_id");
+                $msg = "Administrator $admin_id has been permanently deleted.";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to delete administrator: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 }

@@ -1,14 +1,11 @@
 <?php
 /**
- * DataStore Database Engine (AWS RDS MySQL + JSON Local Fallback)
- * Ensures 100% uptime: Uses AWS RDS MySQL when available, automatically 
- * falls back to local JSON database if AWS RDS connection times out or fails.
+ * DataStore Database Engine (Pure AWS RDS MySQL)
+ * Exclusively powered by MySQL for high reliability, ACID compliance, and concurrency.
  */
 
 class DataStore {
     private static $pdo = null;
-    private static $useJsonFallback = false;
-    private static $jsonFilePath = __DIR__ . '/../data/database.json';
 
     private static $dbHost = 'database-1.c1o0ygcs2cex.ap-south-1.rds.amazonaws.com';
     private static $dbPort = 3306;
@@ -17,10 +14,6 @@ class DataStore {
     private static $dbName = 'aceassignmenthelp_db';
 
     public static function getPdo() {
-        if (self::$useJsonFallback) {
-            return null;
-        }
-
         if (self::$pdo === null) {
             try {
                 $dsn = "mysql:host=" . self::$dbHost . ";port=" . self::$dbPort . ";dbname=" . self::$dbName . ";charset=utf8mb4";
@@ -28,27 +21,56 @@ class DataStore {
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::ATTR_TIMEOUT => 3
+                    PDO::ATTR_TIMEOUT => 5
                 ]);
             } catch (Throwable $e) {
-                // Connection failed - enable seamless JSON fallback to prevent HTTP 500
-                self::$useJsonFallback = true;
+                error_log("MySQL Connection Failed: " . $e->getMessage());
                 self::$pdo = null;
+                throw new Exception("Unable to connect to MySQL database: " . $e->getMessage());
             }
         }
         return self::$pdo;
     }
 
-    private static function getJsonData() {
-        if (!file_exists(self::$jsonFilePath)) {
-            return [];
+    /**
+     * Collision-proof Unique ID Generator
+     * Finds the maximum existing numeric suffix in the database and increments it.
+     */
+    public static function generateNextId($collectionName, $idKey, $prefix = '', $pad = 3, $startAt = 1) {
+        $pdo = self::getPdo();
+        if (!$pdo) {
+            throw new Exception("Database connection unavailable.");
         }
-        $content = file_get_contents(self::$jsonFilePath);
-        return json_decode($content, true) ?: [];
-    }
 
-    private static function saveJsonData($data) {
-        file_put_contents(self::$jsonFilePath, json_encode($data, JSON_PRETTY_PRINT));
+        if ($prefix !== '') {
+            $stmt = $pdo->prepare("SELECT `$idKey` FROM `$collectionName` WHERE `$idKey` LIKE ?");
+            $stmt->execute([$prefix . '%']);
+        } else {
+            $stmt = $pdo->query("SELECT `$idKey` FROM `$collectionName`");
+        }
+        $existingRows = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $maxNum = $startAt - 1;
+        $existingMap = [];
+
+        foreach ($existingRows as $val) {
+            $val = (string)$val;
+            $existingMap[$val] = true;
+            $numPart = ($prefix !== '' && strpos($val, $prefix) === 0) ? substr($val, strlen($prefix)) : $val;
+            if (is_numeric($numPart)) {
+                $n = (int)$numPart;
+                if ($n > $maxNum) {
+                    $maxNum = $n;
+                }
+            }
+        }
+
+        do {
+            $maxNum++;
+            $candidate = ($pad > 0) ? ($prefix . sprintf('%0' . $pad . 'd', $maxNum)) : ($prefix . $maxNum);
+        } while (isset($existingMap[$candidate]));
+
+        return $candidate;
     }
 
     private static function formatRecordFromDb($collectionName, $row) {
@@ -91,46 +113,39 @@ class DataStore {
 
     public static function getCollection($collectionName) {
         $pdo = self::getPdo();
-        if ($pdo) {
-            try {
-                $stmt = $pdo->query("SELECT * FROM `$collectionName` ORDER BY id DESC");
-                $rows = $stmt->fetchAll();
-                $result = [];
-                foreach ($rows as $row) {
-                    $result[] = self::formatRecordFromDb($collectionName, $row);
-                }
-                return $result;
-            } catch (Throwable $e) {
-                self::$useJsonFallback = true;
-            }
-        }
+        if (!$pdo) return [];
 
-        // Fallback to JSON
-        $data = self::getJsonData();
-        return $data[$collectionName] ?? [];
+        try {
+            $stmt = $pdo->query("SELECT * FROM `$collectionName` ORDER BY id DESC");
+            $rows = $stmt->fetchAll();
+            $result = [];
+            foreach ($rows as $row) {
+                $result[] = self::formatRecordFromDb($collectionName, $row);
+            }
+            return $result;
+        } catch (Throwable $e) {
+            error_log("DataStore::getCollection error ($collectionName): " . $e->getMessage());
+            return [];
+        }
     }
 
     public static function findOne($collectionName, $key, $value) {
         $pdo = self::getPdo();
-        if ($pdo) {
-            try {
-                $stmt = $pdo->prepare("SELECT * FROM `$collectionName` WHERE `$key` = ? LIMIT 1");
-                $stmt->execute([$value]);
-                $row = $stmt->fetch();
-                if ($row) {
-                    return self::formatRecordFromDb($collectionName, $row);
-                }
-            } catch (Throwable $e) {
-                self::$useJsonFallback = true;
-            }
-        }
+        if (!$pdo) return null;
 
-        // Fallback to JSON
-        $items = self::getCollection($collectionName);
-        foreach ($items as $item) {
-            if (isset($item[$key]) && (string)$item[$key] === (string)$value) {
-                return self::formatRecordFromDb($collectionName, $item);
+        try {
+            $sqlKey = $key;
+            if ($collectionName === 'notifications' && $key === 'id') {
+                $sqlKey = 'notification_id';
             }
+            $stmt = $pdo->prepare("SELECT * FROM `$collectionName` WHERE `$sqlKey` = ? LIMIT 1");
+            $stmt->execute([$value]);
+            $row = $stmt->fetch();
+            if ($row) {
+                return self::formatRecordFromDb($collectionName, $row);
+            }
+        } catch (Throwable $e) {
+            error_log("DataStore::findOne error ($collectionName, $key): " . $e->getMessage());
         }
         return null;
     }
@@ -142,199 +157,113 @@ class DataStore {
 
     public static function insert($collectionName, $record) {
         $pdo = self::getPdo();
-        if ($pdo) {
+        if (!$pdo) {
+            throw new Exception("Cannot insert: Database is not connected.");
+        }
+
+        $dbRecord = $record;
+        if ($collectionName === 'experts' && isset($dbRecord['subjects']) && is_array($dbRecord['subjects'])) {
+            $dbRecord['subjects'] = json_encode($dbRecord['subjects']);
+        }
+        if ($collectionName === 'courses' && isset($dbRecord['topics']) && is_array($dbRecord['topics'])) {
+            $dbRecord['topics'] = json_encode($dbRecord['topics']);
+        }
+        if ($collectionName === 'support_tickets' && isset($dbRecord['replies']) && is_array($dbRecord['replies'])) {
+            $dbRecord['replies'] = json_encode($dbRecord['replies']);
+        }
+        if ($collectionName === 'notifications' && isset($dbRecord['id'])) {
+            $dbRecord['notification_id'] = $dbRecord['id'];
+            unset($dbRecord['id']);
+        }
+
+        // Filter to only columns that actually exist in the table
+        static $columnsCache = [];
+        if (!isset($columnsCache[$collectionName])) {
             try {
-                $dbRecord = $record;
-                if ($collectionName === 'experts' && isset($dbRecord['subjects']) && is_array($dbRecord['subjects'])) {
-                    $dbRecord['subjects'] = json_encode($dbRecord['subjects']);
-                }
-                if ($collectionName === 'courses' && isset($dbRecord['topics']) && is_array($dbRecord['topics'])) {
-                    $dbRecord['topics'] = json_encode($dbRecord['topics']);
-                }
-                if ($collectionName === 'support_tickets' && isset($dbRecord['replies']) && is_array($dbRecord['replies'])) {
-                    $dbRecord['replies'] = json_encode($dbRecord['replies']);
-                }
-                if ($collectionName === 'notifications' && isset($dbRecord['id'])) {
-                    $dbRecord['notification_id'] = $dbRecord['id'];
-                    unset($dbRecord['id']);
-                }
-
-                // Filter to only columns that actually exist in the table
-                static $columnsCache = [];
-                if (!isset($columnsCache[$collectionName])) {
-                    try {
-                        $colStmt = $pdo->query("SHOW COLUMNS FROM `$collectionName`");
-                        $columnsCache[$collectionName] = array_column($colStmt->fetchAll(), 'Field');
-                    } catch (Throwable $ignore) {
-                        $columnsCache[$collectionName] = null;
-                    }
-                }
-                if (!empty($columnsCache[$collectionName])) {
-                    $validCols = array_flip($columnsCache[$collectionName]);
-                    $dbRecord = array_intersect_key($dbRecord, $validCols);
-                }
-
-                $fields = array_keys($dbRecord);
-                $placeholders = array_fill(0, count($fields), '?');
-
-                $sql = "INSERT INTO `$collectionName` (`" . implode("`, `", $fields) . "`) VALUES (" . implode(", ", $placeholders) . ")";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute(array_values($dbRecord));
-                try {
-                    $jsonData = self::getJsonData();
-                    if (!isset($jsonData[$collectionName])) {
-                        $jsonData[$collectionName] = [];
-                    }
-                    $jsonData[$collectionName][] = $record;
-                    self::saveJsonData($jsonData);
-                } catch (Throwable $ignore) {}
-                return $record;
-            } catch (Throwable $e) {
-                self::$useJsonFallback = true;
+                $colStmt = $pdo->query("SHOW COLUMNS FROM `$collectionName`");
+                $columnsCache[$collectionName] = array_column($colStmt->fetchAll(), 'Field');
+            } catch (Throwable $ignore) {
+                $columnsCache[$collectionName] = null;
             }
         }
-
-        // Fallback to JSON insert
-        $data = self::getJsonData();
-        if (!isset($data[$collectionName])) {
-            $data[$collectionName] = [];
+        if (!empty($columnsCache[$collectionName])) {
+            $validCols = array_flip($columnsCache[$collectionName]);
+            $dbRecord = array_intersect_key($dbRecord, $validCols);
         }
-        $data[$collectionName][] = $record;
-        self::saveJsonData($data);
+
+        $fields = array_keys($dbRecord);
+        $placeholders = array_fill(0, count($fields), '?');
+
+        $sql = "INSERT INTO `$collectionName` (`" . implode("`, `", $fields) . "`) VALUES (" . implode(", ", $placeholders) . ")";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(array_values($dbRecord));
+
         return $record;
     }
 
     public static function update($collectionName, $key, $value, $updates) {
         $pdo = self::getPdo();
-        if ($pdo) {
+        if (!$pdo) {
+            throw new Exception("Cannot update: Database is not connected.");
+        }
+
+        $dbUpdates = $updates;
+        if ($collectionName === 'experts' && isset($dbUpdates['subjects']) && is_array($dbUpdates['subjects'])) {
+            $dbUpdates['subjects'] = json_encode($dbUpdates['subjects']);
+        }
+        if ($collectionName === 'courses' && isset($dbUpdates['topics']) && is_array($dbUpdates['topics'])) {
+            $dbUpdates['topics'] = json_encode($dbUpdates['topics']);
+        }
+        if ($collectionName === 'support_tickets' && isset($dbUpdates['replies']) && is_array($dbUpdates['replies'])) {
+            $dbUpdates['replies'] = json_encode($dbUpdates['replies']);
+        }
+
+        // Filter to only columns that actually exist in the table
+        static $updateColsCache = [];
+        if (!isset($updateColsCache[$collectionName])) {
             try {
-                $dbUpdates = $updates;
-                if ($collectionName === 'experts' && isset($dbUpdates['subjects']) && is_array($dbUpdates['subjects'])) {
-                    $dbUpdates['subjects'] = json_encode($dbUpdates['subjects']);
-                }
-                if ($collectionName === 'courses' && isset($dbUpdates['topics']) && is_array($dbUpdates['topics'])) {
-                    $dbUpdates['topics'] = json_encode($dbUpdates['topics']);
-                }
-                if ($collectionName === 'support_tickets' && isset($dbUpdates['replies']) && is_array($dbUpdates['replies'])) {
-                    $dbUpdates['replies'] = json_encode($dbUpdates['replies']);
-                }
-
-                // Filter to only columns that actually exist in the table
-                static $updateColsCache = [];
-                if (!isset($updateColsCache[$collectionName])) {
-                    try {
-                        $colStmt = $pdo->query("SHOW COLUMNS FROM `$collectionName`");
-                        $updateColsCache[$collectionName] = array_column($colStmt->fetchAll(), 'Field');
-                    } catch (Throwable $ignore) {
-                        $updateColsCache[$collectionName] = null;
-                    }
-                }
-                if (!empty($updateColsCache[$collectionName])) {
-                    $validCols = array_flip($updateColsCache[$collectionName]);
-                    $dbUpdates = array_intersect_key($dbUpdates, $validCols);
-                }
-
-                $setParts = [];
-                $params = [];
-                foreach ($dbUpdates as $k => $v) {
-                    $setParts[] = "`$k` = ?";
-                    $params[] = $v;
-                }
-                $params[] = $value;
-
-                $sqlKey = $key;
-                if ($collectionName === 'notifications' && $key === 'id') {
-                    $sqlKey = 'notification_id';
-                }
-
-                $sql = "UPDATE `$collectionName` SET " . implode(", ", $setParts) . " WHERE `$sqlKey` = ?";
-                $stmt = $pdo->prepare($sql);
-                $res = $stmt->execute($params);
-
-                try {
-                    $jsonData = self::getJsonData();
-                    if (isset($jsonData[$collectionName])) {
-                        foreach ($jsonData[$collectionName] as $idx => $item) {
-                            if ((isset($item[$key]) && (string)$item[$key] === (string)$value) ||
-                                (isset($item['id']) && (string)$item['id'] === (string)$value) ||
-                                (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) ||
-                                (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value)) {
-                                $jsonData[$collectionName][$idx] = array_merge($item, $updates);
-                                self::saveJsonData($jsonData);
-                                break;
-                            }
-                        }
-                    }
-                } catch (Throwable $ignore) {}
-
-                return $res;
-            } catch (Throwable $e) {
-                self::$useJsonFallback = true;
+                $colStmt = $pdo->query("SHOW COLUMNS FROM `$collectionName`");
+                $updateColsCache[$collectionName] = array_column($colStmt->fetchAll(), 'Field');
+            } catch (Throwable $ignore) {
+                $updateColsCache[$collectionName] = null;
             }
         }
-
-        // Fallback to JSON update
-        $data = self::getJsonData();
-        if (isset($data[$collectionName])) {
-            foreach ($data[$collectionName] as $idx => $item) {
-                if ((isset($item[$key]) && (string)$item[$key] === (string)$value) ||
-                    (isset($item['id']) && (string)$item['id'] === (string)$value) ||
-                    (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) ||
-                    (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value)) {
-                    $data[$collectionName][$idx] = array_merge($item, $updates);
-                    self::saveJsonData($data);
-                    return true;
-                }
-            }
+        if (!empty($updateColsCache[$collectionName])) {
+            $validCols = array_flip($updateColsCache[$collectionName]);
+            $dbUpdates = array_intersect_key($dbUpdates, $validCols);
         }
-        return false;
+
+        $setParts = [];
+        $params = [];
+        foreach ($dbUpdates as $k => $v) {
+            $setParts[] = "`$k` = ?";
+            $params[] = $v;
+        }
+        $params[] = $value;
+
+        $sqlKey = $key;
+        if ($collectionName === 'notifications' && $key === 'id') {
+            $sqlKey = 'notification_id';
+        }
+
+        $sql = "UPDATE `$collectionName` SET " . implode(", ", $setParts) . " WHERE `$sqlKey` = ?";
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
     }
 
     public static function delete($collectionName, $key, $value) {
         $pdo = self::getPdo();
-        if ($pdo) {
-            try {
-                $sqlKey = $key;
-                if ($collectionName === 'notifications' && $key === 'id') {
-                    $sqlKey = 'notification_id';
-                }
-                $stmt = $pdo->prepare("DELETE FROM `$collectionName` WHERE `$sqlKey` = ?");
-                $res = $stmt->execute([$value]);
-
-                try {
-                    $jsonData = self::getJsonData();
-                    if (isset($jsonData[$collectionName])) {
-                        $jsonData[$collectionName] = array_values(array_filter($jsonData[$collectionName], function($item) use ($key, $value) {
-                            if (isset($item[$key]) && (string)$item[$key] === (string)$value) return false;
-                            if (isset($item['id']) && (string)$item['id'] === (string)$value) return false;
-                            if (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) return false;
-                            if (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value) return false;
-                            return true;
-                        }));
-                        self::saveJsonData($jsonData);
-                    }
-                } catch (Throwable $ignore) {}
-
-                return $res;
-            } catch (Throwable $e) {
-                self::$useJsonFallback = true;
-            }
+        if (!$pdo) {
+            throw new Exception("Cannot delete: Database is not connected.");
         }
 
-        // Fallback to JSON delete
-        $data = self::getJsonData();
-        if (isset($data[$collectionName])) {
-            $data[$collectionName] = array_values(array_filter($data[$collectionName], function($item) use ($key, $value) {
-                if (isset($item[$key]) && (string)$item[$key] === (string)$value) return false;
-                if (isset($item['id']) && (string)$item['id'] === (string)$value) return false;
-                if (isset($item['coupon_id']) && (string)$item['coupon_id'] === (string)$value) return false;
-                if (isset($item['notification_id']) && (string)$item['notification_id'] === (string)$value) return false;
-                return true;
-            }));
-            self::saveJsonData($data);
-            return true;
+        $sqlKey = $key;
+        if ($collectionName === 'notifications' && $key === 'id') {
+            $sqlKey = 'notification_id';
         }
-        return false;
+
+        $stmt = $pdo->prepare("DELETE FROM `$collectionName` WHERE `$sqlKey` = ?");
+        return $stmt->execute([$value]);
     }
 
     public static function getSetting($key, $default = '') {
@@ -368,16 +297,14 @@ class DataStore {
             }
         }
 
-        // 2. MySQL purge across all tables (independent execution so one error never blocks others)
+        // 2. MySQL purge across all related tables
         $pdo = self::getPdo();
         if ($pdo) {
-            // Delete assignment first
             try {
                 $stmt = $pdo->prepare("DELETE FROM `assignments` WHERE `assignment_id` = ?");
                 $stmt->execute([$assignment_id]);
             } catch (Throwable $e) {}
 
-            // Delete associated records
             $tables = ['payments', 'files', 'allocation', 'notes', 'support_tickets'];
             foreach ($tables as $tbl) {
                 try {
@@ -392,33 +319,6 @@ class DataStore {
             } catch (Throwable $e) {}
         }
 
-        // 3. Purge from JSON datastore
-        try {
-            $jsonData = self::getJsonData();
-            $collectionsToPurge = ['assignments', 'files', 'payments', 'allocation', 'notes', 'support_tickets'];
-            foreach ($collectionsToPurge as $col) {
-                if (isset($jsonData[$col]) && is_array($jsonData[$col])) {
-                    $jsonData[$col] = array_values(array_filter($jsonData[$col], function($item) use ($assignment_id) {
-                        return !isset($item['assignment_id']) || (string)$item['assignment_id'] !== $assignment_id;
-                    }));
-                }
-            }
-            if (isset($jsonData['chat_messages']) && is_array($jsonData['chat_messages'])) {
-                $jsonData['chat_messages'] = array_values(array_filter($jsonData['chat_messages'], function($item) use ($assignment_id) {
-                    return !isset($item['assignment_id']) || (string)$item['assignment_id'] !== $assignment_id;
-                }));
-            }
-            if (isset($jsonData['notifications']) && is_array($jsonData['notifications'])) {
-                $jsonData['notifications'] = array_values(array_filter($jsonData['notifications'], function($item) use ($assignment_id) {
-                    $m = ($item['message'] ?? '') . ' ' . ($item['title'] ?? '');
-                    return strpos($m, $assignment_id) === false;
-                }));
-            }
-            self::saveJsonData($jsonData);
-        } catch (Throwable $e) {}
-
         return true;
     }
 }
-
-

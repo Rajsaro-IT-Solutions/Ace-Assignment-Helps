@@ -26,19 +26,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = "Coupon code '$code' already exists!";
                 $msgType = 'danger';
             } else {
-                $newId = 'CPN-' . rand(10, 99);
-                DataStore::insert('coupons', [
-                    'coupon_id' => $newId,
-                    'code' => $code,
-                    'discount_percent' => $discount,
-                    'max_uses' => $max,
-                    'current_uses' => 0,
-                    'expires_at' => $expires,
-                    'status' => $status
-                ]);
-                add_audit_log('Admin', $adminUser['id'], 'Create Coupon', "Created coupon $code ($newId)");
-                $msg = "New coupon $code created successfully!";
-                $msgType = 'success';
+                try {
+                    $newId = DataStore::generateNextId('coupons', 'coupon_id', 'CPN-', 2, 1);
+                    DataStore::insert('coupons', [
+                        'coupon_id' => $newId,
+                        'code' => $code,
+                        'discount_percent' => $discount,
+                        'max_uses' => $max,
+                        'current_uses' => 0,
+                        'expires_at' => $expires,
+                        'status' => $status
+                    ]);
+                    add_audit_log('Admin', $adminUser['id'], 'Create Coupon', "Created coupon $code ($newId)");
+                    $msg = "New coupon $code created successfully!";
+                    $msgType = 'success';
+                } catch (Throwable $e) {
+                    $msg = "Failed to create coupon: " . $e->getMessage();
+                    $msgType = 'danger';
+                }
             }
         }
     }
@@ -82,10 +87,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_coupon') {
         $coupon_id = trim($_POST['coupon_id'] ?? '');
         if ($coupon_id) {
-            DataStore::delete('coupons', 'coupon_id', $coupon_id);
-            add_audit_log('Admin', $adminUser['id'], 'Delete Coupon', "Permanently deleted coupon $coupon_id");
-            $msg = "Coupon $coupon_id deleted successfully.";
-            $msgType = 'danger';
+            try {
+                DataStore::delete('coupons', 'coupon_id', $coupon_id);
+                add_audit_log('Admin', $adminUser['id'], 'Delete Coupon', "Permanently deleted coupon $coupon_id");
+                $msg = "Coupon $coupon_id deleted successfully.";
+                $msgType = 'success';
+            } catch (Throwable $e) {
+                $msg = "Failed to delete coupon: " . $e->getMessage();
+                $msgType = 'danger';
+            }
         }
     }
 }

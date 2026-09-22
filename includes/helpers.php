@@ -258,9 +258,7 @@ function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Stu
 function generate_assignment_id()
 {
     $year = date('Y');
-    $assignments = DataStore::getCollection('assignments');
-    $next_num = count($assignments) + 101;
-    return sprintf("ACE-%s-%06d", $year, $next_num);
+    return DataStore::generateNextId('assignments', 'assignment_id', 'ACE-' . $year . '-', 6, 101);
 }
 
 function mask_student_name($name)
@@ -275,16 +273,17 @@ function mask_student_name($name)
 
 function add_audit_log($role, $user_id, $action, $details)
 {
-    $assignments = DataStore::getCollection('audit_logs');
-    $log_id = 'LOG-' . (count($assignments) + 1001);
-    DataStore::insert('audit_logs', [
-        'log_id' => $log_id,
-        'user_role' => $role,
-        'user_id' => $user_id,
-        'action' => $action,
-        'details' => $details,
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
+    try {
+        $log_id = DataStore::generateNextId('audit_logs', 'log_id', 'LOG-', 4, 1001);
+        DataStore::insert('audit_logs', [
+            'log_id' => $log_id,
+            'user_role' => $role,
+            'user_id' => $user_id,
+            'action' => $action,
+            'details' => $details,
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    } catch (Throwable $ignore) {}
 }
 
 function is_assignment_paid($assignment_id)
@@ -368,8 +367,7 @@ function get_status_badge_class($status)
 
 function add_notification($user_role, $user_id, $title, $message, $type = 'info', $link = '')
 {
-    $notifs = DataStore::getCollection('notifications');
-    $notif_id = 'NTF-' . (count($notifs) + 1);
+    $notif_id = DataStore::generateNextId('notifications', 'notification_id', 'NTF-', 0, 1);
     return DataStore::insert('notifications', [
         'id' => $notif_id,
         'user_id' => $user_id ?: '',
@@ -442,7 +440,7 @@ function mark_all_notifications_read($user_id, $user_role)
 
 function delete_notification($notif_id)
 {
-    return DataStore::delete('notifications', 'id', $notif_id);
+    return DataStore::delete('notifications', 'notification_id', $notif_id);
 }
 
 /**
