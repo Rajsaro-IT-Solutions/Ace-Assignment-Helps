@@ -51,6 +51,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: /admin/assignment-detail.php?id=" . urlencode($targetId));
         echo "<script>window.location.href='/admin/assignment-detail.php?id=" . urlencode($targetId) . "';</script>";
         exit;
+    } elseif ($action === 'admin_reassign_allocator') {
+        $newAllocatorId = trim($_POST['allocator_id'] ?? '');
+        $adminNotes = trim($_POST['admin_notes'] ?? '');
+        if ($targetId && $newAllocatorId) {
+            $asm = DataStore::findOne('assignments', 'assignment_id', $targetId);
+            $allocatorObj = DataStore::findOne('allocators', 'allocator_id', $newAllocatorId);
+            $allocatorName = $allocatorObj['name'] ?? $newAllocatorId;
+
+            DataStore::update('assignments', 'assignment_id', $targetId, [
+                'allocator_id' => $newAllocatorId,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            if (!empty($adminNotes)) {
+                DataStore::insert('notes', [
+                    'note_id' => 'NOTE-' . rand(100, 999),
+                    'assignment_id' => $targetId,
+                    'user_id' => $user['id'],
+                    'user_role' => 'Admin',
+                    'user_name' => $user['name'],
+                    'message' => "Admin Reassigned Allocator to {$allocatorName}: " . $adminNotes,
+                    'visibility' => 'Internal',
+                    'created_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+
+            add_audit_log('Admin', $user['id'], 'Reassign Allocator', "Admin assigned revision of order $targetId to Allocator $allocatorName");
+            add_notification('Allocator', $newAllocatorId, "Revision Order Assigned - $targetId", "Admin {$user['name']} has assigned you to manage the revision for order $targetId. " . substr($adminNotes, 0, 80), 'warning', "/allocator/assignment-detail.php?id=$targetId");
+
+            $_SESSION['flash_msg'] = "Allocator successfully reassigned to {$allocatorName} for revision.";
+            $_SESSION['flash_type'] = 'success';
+        }
+        header("Location: /admin/assignment-detail.php?id=" . urlencode($targetId));
+        echo "<script>window.location.href='/admin/assignment-detail.php?id=" . urlencode($targetId) . "';</script>";
+        exit;
+    } elseif ($action === 'admin_approve_refund') {
+        if ($targetId) {
+            $asm = DataStore::findOne('assignments', 'assignment_id', $targetId);
+            DataStore::update('assignments', 'assignment_id', $targetId, [
+                'status' => 'Refunded',
+                'payment_status' => 'Refunded',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+            DataStore::update('payments', 'assignment_id', $targetId, [
+                'status' => 'Refunded'
+            ]);
+            DataStore::insert('notes', [
+                'note_id' => 'NOTE-' . rand(100, 999),
+                'assignment_id' => $targetId,
+                'user_id' => $user['id'],
+                'user_role' => 'Admin',
+                'user_name' => $user['name'],
+                'message' => "Refund Approved by Admin for order $targetId. Order and payment set to Refunded.",
+                'visibility' => 'Internal',
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+            add_audit_log('Admin', $user['id'], 'Approve Refund', "Admin approved refund for order $targetId");
+            if (!empty($asm['student_id'])) {
+                add_notification('Student', $asm['student_id'], "Refund Approved - $targetId", "Your refund request for assignment $targetId has been approved and processed.", 'success', "/student/assignment-detail.php?id=$targetId");
+            }
+            $_SESSION['flash_msg'] = "Refund approved! Order $targetId marked as Refunded.";
+            $_SESSION['flash_type'] = 'success';
+        }
+        header("Location: /admin/assignment-detail.php?id=" . urlencode($targetId));
+        echo "<script>window.location.href='/admin/assignment-detail.php?id=" . urlencode($targetId) . "';</script>";
+        exit;
+    } elseif ($action === 'admin_reject_refund') {
+        $rejectReason = trim($_POST['reject_reason'] ?? 'Did not meet refund criteria.');
+        if ($targetId) {
+            $asm = DataStore::findOne('assignments', 'assignment_id', $targetId);
+            $newStatus = in_array($asm['status'], ['Completed', 'Delivered']) ? $asm['status'] : 'In Progress';
+            $oldReason = $asm['refund_reason'] ?? '';
+            DataStore::update('assignments', 'assignment_id', $targetId, [
+                'status' => $newStatus,
+                'refund_reason' => $oldReason . " [DENIED: $rejectReason]",
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+            DataStore::insert('notes', [
+                'note_id' => 'NOTE-' . rand(100, 999),
+                'assignment_id' => $targetId,
+                'user_id' => $user['id'],
+                'user_role' => 'Admin',
+                'user_name' => $user['name'],
+                'message' => "Refund Request Declined: $rejectReason",
+                'visibility' => 'Internal',
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+            add_audit_log('Admin', $user['id'], 'Reject Refund', "Admin declined refund request for $targetId");
+            if (!empty($asm['student_id'])) {
+                add_notification('Student', $asm['student_id'], "Refund Request Declined - $targetId", "Your refund request for order $targetId was reviewed and declined. Reason: $rejectReason", 'warning', "/student/assignment-detail.php?id=$targetId");
+            }
+            $_SESSION['flash_msg'] = "Refund request declined. Order restored to {$newStatus}.";
+            $_SESSION['flash_type'] = 'warning';
+        }
+        header("Location: /admin/assignment-detail.php?id=" . urlencode($targetId));
+        echo "<script>window.location.href='/admin/assignment-detail.php?id=" . urlencode($targetId) . "';</script>";
+        exit;
     } elseif (isset($_POST['update_assignment']) && $targetId) {
         $asm = DataStore::findOne('assignments', 'assignment_id', $targetId);
         $status = $_POST['status'] ?? ($asm['status'] ?? 'New');
@@ -149,6 +246,72 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
   </div>
   <a href="/student/invoice.php?id=<?php echo urlencode($id); ?>" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-print"></i> Print Official Invoice</a>
 </div>
+
+<?php if ($asm['status'] === 'Revision Requested'): ?>
+  <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.18) 100%); border: 1.5px solid #f59e0b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1.25rem;">
+      <div style="max-width:750px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span class="badge badge-warning" style="font-weight:800; font-size:0.85rem; padding:4px 10px;">
+            <i class="fa-solid fa-rotate-left"></i> Revision Requested
+          </span>
+          <span style="color:#fcd34d; font-size:0.85rem; font-weight:700;">Student / QA Revision Workflow Active</span>
+        </div>
+        <h3 style="color:#ffffff; margin:0 0 6px 0; font-size:1.25rem;">
+          Revision Management: Supervise & Reassign Allocator
+        </h3>
+        <p style="color:#fef3c7; margin:0 0 0.75rem 0; font-size:0.9rem; line-height:1.5;">
+          <?php echo htmlspecialchars($asm['revision_notes'] ?: 'Student requested revisions on the delivered solution files.'); ?>
+        </p>
+        <div style="font-size:0.85rem; color:#fde68a;">
+          Current Assigned Allocator: <strong><?php 
+            $currAll = DataStore::findOne('allocators', 'allocator_id', $asm['allocator_id']);
+            echo htmlspecialchars($currAll['name'] ?? 'Unassigned'); 
+          ?></strong>
+        </div>
+      </div>
+      <button type="button" class="btn btn-warning" onclick="document.getElementById('reassignAllocatorModal').style.display='flex';" style="font-weight:800; padding:0.85rem 1.4rem;">
+        <i class="fa-solid fa-user-gear"></i> Change Allocator
+      </button>
+    </div>
+  </div>
+<?php endif; ?>
+
+<?php if ($asm['status'] === 'Refund Requested'): ?>
+  <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.2) 100%); border: 1.5px solid #ef4444; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1.25rem;">
+      <div style="max-width:750px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span class="badge badge-danger" style="font-weight:800; font-size:0.85rem; padding:4px 10px;">
+            <i class="fa-solid fa-hand-holding-dollar"></i> Student Refund Requested
+          </span>
+          <span style="color:#fca5a5; font-size:0.85rem; font-weight:700;">Immediate Administrative Review Required</span>
+        </div>
+        <h3 style="color:#ffffff; margin:0 0 6px 0; font-size:1.25rem;">
+          Refund Claim Filed by Student
+        </h3>
+        <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:0.9rem 1.1rem; margin-bottom:0.75rem; color:#fee2e2; font-size:0.9rem; line-height:1.5;">
+          <strong>Grounds for Refund:</strong> <?php echo htmlspecialchars($asm['refund_reason'] ?: 'No details provided.'); ?>
+        </div>
+        <div style="font-size:0.85rem; color:#fca5a5;">
+          Total Price: <strong><?php echo format_currency_amount($asm['final_price'], $currency); ?></strong> &bull; Amount Paid: <strong><?php echo format_currency_amount($asm['paid_amount'] ?? $asm['final_price'], $currency); ?></strong>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <form method="POST" style="margin:0;">
+          <input type="hidden" name="action" value="admin_approve_refund">
+          <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($id); ?>">
+          <button type="submit" class="btn btn-danger btn-lg" style="font-weight:800; padding:0.85rem 1.6rem; border:none; cursor:pointer;" onclick="return confirm('Approve Refund? This will officially set order status and payment status to Refunded.');">
+            <i class="fa-solid fa-check"></i> Approve & Refund
+          </button>
+        </form>
+        <button type="button" class="btn btn-outline" style="border-color:#ef4444; color:#fee2e2;" onclick="document.getElementById('rejectRefundModal').style.display='flex';">
+          <i class="fa-solid fa-xmark"></i> Reject Refund
+        </button>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
 
 <?php if (in_array($asm['status'], ['Pending Admin Approval', 'Quality Check'])): 
   $isAllocatorApproved = ($asm['status'] === 'Pending Admin Approval');
@@ -271,22 +434,81 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
       <button type="submit" class="btn btn-primary" style="margin-top:1.2rem;"><i class="fa-solid fa-floppy-disk"></i> Save Admin Changes</button>
     </form>
 
-    <!-- Attached Files Table -->
-    <div class="table-card" style="padding:1.5rem;">
-      <h3 style="font-size:1.1rem; color:#fff; margin-bottom:1rem;"><i class="fa-solid fa-paperclip" style="color:var(--success);"></i> All Attached Files (<?php echo count($files); ?>)</h3>
-      <?php if (empty($files)): ?>
-        <p style="color:var(--text-muted); font-size:0.9rem;">No files attached to this assignment yet.</p>
+    <?php 
+      $techFiles = array_values(array_filter($files, function($f) { return is_tech_file($f); }));
+      $docFiles = array_values(array_filter($files, function($f) { return !is_tech_file($f); }));
+    ?>
+
+    <!-- 1. Dedicated Technical Files & Archive Section (.zip, .rar, .7z, scripts) -->
+    <div class="table-card" style="padding:1.5rem; margin-bottom:1.5rem; border:1.5px solid #2563eb; background:linear-gradient(180deg, rgba(30, 58, 138, 0.12) 0%, rgba(13, 21, 39, 0.95) 100%);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+        <h3 style="font-size:1.15rem; color:#fff; margin:0; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-file-zipper" style="color:#60a5fa;"></i> Technical Archives & Code (.ZIP, .RAR, Code) (<?php echo count($techFiles); ?>)
+        </h3>
+        <span class="badge" style="background:#1e3a8a; color:#bfdbfe; font-size:0.75rem; font-weight:700;">
+          <i class="fa-solid fa-box-archive"></i> Archives & Formats
+        </span>
+      </div>
+      <p style="color:#94a3b8; font-size:0.83rem; margin-bottom:1rem;">
+        Dedicated repository for compressed archives (.zip, .rar, .7z, .tar.gz), databases (.sql), and programmatic project source files.
+      </p>
+
+      <?php if (empty($techFiles)): ?>
+        <div style="background:rgba(0,0,0,0.25); border:1px dashed #3b82f6; border-radius:8px; padding:1.2rem; text-align:center; color:#94a3b8; font-size:0.88rem;">
+          <i class="fa-solid fa-file-zipper" style="font-size:1.4rem; color:#60a5fa; margin-bottom:6px; display:block;"></i>
+          No technical archive packages (.zip, .rar, code) uploaded to this assignment yet.
+        </div>
       <?php else: ?>
         <div style="display:flex; flex-direction:column; gap:10px;">
-          <?php foreach ($files as $file): 
+          <?php foreach ($techFiles as $file): 
+            $ext = strtoupper(pathinfo($file['file_name'], PATHINFO_EXTENSION));
+            $isInternal = !empty($file['is_internal']);
+          ?>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#0b1120; border:1px solid #1e3a8a; padding:0.85rem 1.1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.6rem;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="badge" style="background:#1d4ed8; color:#ffffff; font-weight:800; font-size:0.75rem; letter-spacing:0.5px; padding:4px 8px;">
+                  .<?php echo htmlspecialchars($ext ?: 'ZIP'); ?>
+                </span>
+                <div>
+                  <strong style="color:#f8fafc; font-size:0.92rem;"><?php echo htmlspecialchars($file['file_name']); ?></strong>
+                  <?php if ($isInternal): ?>
+                    <span class="badge badge-warning" style="font-size:0.68rem; margin-left:6px;">Staff Only</span>
+                  <?php else: ?>
+                    <span class="badge badge-success" style="font-size:0.68rem; margin-left:6px;">Public / Student</span>
+                  <?php endif; ?>
+                  <small style="color:#94a3b8; display:block; margin-top:2px;">Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?></small>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-primary btn-sm" style="font-weight:700;">
+                  <i class="fa-solid fa-download"></i> Download Tech Package
+                </a>
+                <button type="button" class="btn btn-danger btn-sm" onclick="deleteFile('<?php echo htmlspecialchars($file['file_id']); ?>')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+
+    <!-- 2. Academic Documents & Materials Section (.pdf, .docx, .xlsx, images) -->
+    <div class="table-card" style="padding:1.5rem; margin-bottom:1.5rem;">
+      <h3 style="font-size:1.15rem; color:#fff; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-file-lines" style="color:var(--success);"></i> Academic Documents & Materials (<?php echo count($docFiles); ?>)
+      </h3>
+      <?php if (empty($docFiles)): ?>
+        <p style="color:var(--text-muted); font-size:0.9rem;">No documents or PDF deliverables attached yet.</p>
+      <?php else: ?>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <?php foreach ($docFiles as $file): 
             $ext = strtolower($file['file_type'] ?? '');
             $icon = 'fa-file';
             if (in_array($ext, ['pdf'])) $icon = 'fa-file-pdf';
             elseif (in_array($ext, ['doc', 'docx'])) $icon = 'fa-file-word';
             elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $icon = 'fa-file-excel';
             elseif (in_array($ext, ['ppt', 'pptx'])) $icon = 'fa-file-powerpoint';
-            elseif (in_array($ext, ['zip', 'rar', 'tar', 'gz', '7z'])) $icon = 'fa-file-zipper';
-            elseif (in_array($ext, ['py', 'java', 'cpp', 'c', 'js', 'html', 'css', 'sql', 'php', 'ipynb'])) $icon = 'fa-file-code';
             elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) $icon = 'fa-file-image';
             $isInternal = !empty($file['is_internal']);
           ?>
@@ -409,6 +631,71 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
         <button type="submit" class="btn btn-danger btn-sm" style="background:#b91c1c; padding:8px 16px;">
           <i class="fa-solid fa-trash-can"></i> Yes, Permanently Delete Everywhere
         </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 1: Reassign Allocator on Revision Requested -->
+<div id="reassignAllocatorModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
+  <div class="table-card" style="max-width:520px; width:100%; padding:2rem; background:#0d1527; border:1.5px solid var(--primary); border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+      <h3 style="color:#ffffff; margin:0; font-size:1.25rem; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-user-gear" style="color:var(--primary);"></i> Change Allocator for Revision
+      </h3>
+      <button type="button" onclick="document.getElementById('reassignAllocatorModal').style.display='none';" style="background:none; border:none; color:var(--text-muted); font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+    <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem;">
+      Reassign this revision to a specific allocator to supervise adjustments with the expert team.
+    </p>
+    <form method="POST">
+      <input type="hidden" name="action" value="admin_reassign_allocator">
+      <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($id); ?>">
+      <div class="form-group" style="margin-bottom:1.2rem;">
+        <label style="color:#ffffff; font-weight:700; display:block; margin-bottom:6px;">Select Allocator *</label>
+        <select name="allocator_id" class="form-control" required style="background:#090d16; color:#fff;">
+          <option value="">-- Choose Allocator --</option>
+          <?php foreach ($allocators as $all): ?>
+            <option value="<?php echo htmlspecialchars($all['allocator_id']); ?>" <?php echo ($asm['allocator_id'] === $all['allocator_id']) ? 'selected' : ''; ?>>
+              <?php echo htmlspecialchars($all['name']); ?> (<?php echo htmlspecialchars($all['email']); ?>)
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:1.5rem;">
+        <label style="color:#ffffff; font-weight:700; display:block; margin-bottom:6px;">Revision Instructions / Allocator Remarks</label>
+        <textarea name="admin_notes" class="form-control" rows="3" style="background:#090d16; color:#fff;" placeholder="Guidance for the allocator regarding this revision..."></textarea>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('reassignAllocatorModal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Assign Revision to Allocator</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Reject Refund Request -->
+<div id="rejectRefundModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
+  <div class="table-card" style="max-width:520px; width:100%; padding:2rem; background:#0d1527; border:1.5px solid #ef4444; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
+      <h3 style="color:#ffffff; margin:0; font-size:1.25rem; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i> Decline Refund Request
+      </h3>
+      <button type="button" onclick="document.getElementById('rejectRefundModal').style.display='none';" style="background:none; border:none; color:var(--text-muted); font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+    <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem;">
+      State the formal reason why this assignment does not qualify for a monetary refund. The order will be reverted to active status for further revision or delivery.
+    </p>
+    <form method="POST">
+      <input type="hidden" name="action" value="admin_reject_refund">
+      <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($id); ?>">
+      <div class="form-group" style="margin-bottom:1.5rem;">
+        <label style="color:#ffffff; font-weight:700; display:block; margin-bottom:6px;">Administrative Reason *</label>
+        <textarea name="reject_reason" class="form-control" rows="3" required style="background:#090d16; color:#fff;" placeholder="Explain why the claim does not qualify for refund as per platform guidelines..."></textarea>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('rejectRefundModal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-danger"><i class="fa-solid fa-xmark"></i> Confirm Rejection</button>
       </div>
     </form>
   </div>

@@ -235,8 +235,7 @@ function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Stu
         $moved = is_uploaded_file($f['tmp_name']) ? @move_uploaded_file($f['tmp_name'], $targetPath) : (@copy($f['tmp_name'], $targetPath) || @move_uploaded_file($f['tmp_name'], $targetPath));
 
         if ($moved) {
-            $allFiles = DataStore::getCollection('files');
-            $fileId = 'FILE-' . (count($allFiles) + rand(500, 999));
+            $fileId = DataStore::generateNextId('files', 'file_id', 'FILE-', 4, 1001);
             $rec = [
                 'file_id' => $fileId,
                 'assignment_id' => $assignmentId,
@@ -253,6 +252,35 @@ function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Stu
     }
 
     return $uploadedRecords;
+}
+
+function is_tech_file($file)
+{
+    $ext = '';
+    if (is_array($file)) {
+        $ext = strtolower($file['file_type'] ?? pathinfo($file['file_name'] ?? '', PATHINFO_EXTENSION));
+    } elseif (is_string($file)) {
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    }
+    $techExts = [
+        'zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'iso',
+        'sql', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'js', 'jsx', 'ts', 'tsx',
+        'html', 'css', 'scss', 'ipynb', 'sh', 'bat', 'json', 'xml', 'yaml', 'yml',
+        'r', 'm', 'dockerfile'
+    ];
+    return in_array($ext, $techExts);
+}
+
+function get_tech_file_icon($ext)
+{
+    $ext = strtolower($ext);
+    if (in_array($ext, ['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'iso'])) {
+        return 'fa-solid fa-file-zipper';
+    }
+    if (in_array($ext, ['py', 'java', 'cpp', 'c', 'cs', 'php', 'js', 'ts', 'html', 'css', 'ipynb', 'sh', 'sql'])) {
+        return 'fa-solid fa-file-code';
+    }
+    return 'fa-solid fa-file-lines';
 }
 
 function generate_assignment_id()
@@ -356,10 +384,13 @@ function get_status_badge_class($status)
             return 'badge-success';
         case 'Revision Requested':
             return 'badge-amber';
+        case 'Refund Requested':
         case 'Cancelled':
         case 'Refunded':
         case 'Deleted':
             return 'badge-danger';
+        case 'Partially Paid':
+            return 'badge-info';
         default:
             return 'badge-secondary';
     }
@@ -484,7 +515,7 @@ function format_payment_method_badge($method)
     return '<span class="badge badge-secondary"><i class="fa-solid fa-credit-card"></i> ' . htmlspecialchars($method) . '</span>';
 }
 
-function create_razorpay_order_api($assignment_id)
+function create_razorpay_order_api($assignment_id, $plan = '100%', $isRemaining = false)
 {
     $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
     if (!$asm) {
@@ -500,7 +531,23 @@ function create_razorpay_order_api($assignment_id)
     }
 
     $currency = strtoupper($asm['currency'] ?? 'INR');
-    $amount = (float)($asm['final_price'] ?? $asm['price']);
+    $totalPrice = (float)($asm['final_price'] ?? $asm['price']);
+    $existingPaid = (float)($asm['paid_amount'] ?? 0);
+    $existingRemaining = (float)($asm['remaining_balance'] ?? 0);
+
+    if ($isRemaining || $plan === 'remaining') {
+        $amount = ($existingRemaining > 0) ? $existingRemaining : max(1, round($totalPrice - $existingPaid, 2));
+    } else {
+        switch ($plan) {
+            case '20%': $pct = 0.20; break;
+            case '30%': $pct = 0.30; break;
+            case '50%': $pct = 0.50; break;
+            case '100%':
+            default: $pct = 1.00; break;
+        }
+        $amount = round($totalPrice * $pct, 2);
+    }
+
     $amountSubunits = (int)round($amount * 100);
     $receipt = substr('rec_' . $assignment_id . '_' . time(), 0, 40);
 
@@ -510,6 +557,7 @@ function create_razorpay_order_api($assignment_id)
         'receipt' => $receipt,
         'notes' => [
             'assignment_id' => $assignment_id,
+            'payment_plan' => $plan,
             'title' => substr($asm['title'] ?? 'Assignment', 0, 50)
         ]
     ];
@@ -555,5 +603,43 @@ function verify_razorpay_signature($order_id, $payment_id, $signature)
     $expected = hash_hmac('sha256', $order_id . '|' . $payment_id, $keySecret);
     return hash_equals($expected, $signature);
 }
+
+function calculate_payment_plan($totalPrice, $reqPlan = '100%')
+{
+    $totalPrice = (float)$totalPrice;
+    switch ($reqPlan) {
+        case '20%':
+            $pct = 0.20;
+            $planLabel = '20% Deposit';
+            break;
+        case '30%':
+            $pct = 0.30;
+            $planLabel = '30% Advance';
+            break;
+        case '50%':
+            $pct = 0.50;
+            $planLabel = '50% Milestone';
+            break;
+        case '100%':
+        default:
+            $pct = 1.00;
+            $planLabel = '100% Full Payment';
+            break;
+    }
+
+    $paymentAmount = round($totalPrice * $pct, 2);
+    $remaining = max(0, round($totalPrice - $paymentAmount, 2));
+    $status = ($remaining <= 0.01) ? 'Paid' : 'Partially Paid';
+
+    return [
+        'plan' => $reqPlan,
+        'label' => $planLabel,
+        'percentage' => $pct,
+        'pay_amount' => $paymentAmount,
+        'remaining_balance' => $remaining,
+        'payment_status' => $status
+    ];
+}
+
 
 

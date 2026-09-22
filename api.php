@@ -413,11 +413,13 @@ switch ($action) {
 
     case 'create_razorpay_order':
         $assignment_id = trim($_POST['assignment_id'] ?? $_GET['assignment_id'] ?? '');
+        $plan = trim($_POST['payment_plan'] ?? $_GET['payment_plan'] ?? '100%');
+        $isRemaining = !empty($_POST['pay_remaining']) || !empty($_GET['pay_remaining']) || $plan === 'remaining';
         if (!$assignment_id) {
             echo json_encode(['success' => false, 'message' => 'Missing assignment ID']);
             exit;
         }
-        $res = create_razorpay_order_api($assignment_id);
+        $res = create_razorpay_order_api($assignment_id, $plan, $isRemaining);
         echo json_encode($res);
         exit;
 
@@ -426,6 +428,8 @@ switch ($action) {
         $order_id = trim($_POST['razorpay_order_id'] ?? '');
         $payment_id = trim($_POST['razorpay_payment_id'] ?? '');
         $signature = trim($_POST['razorpay_signature'] ?? '');
+        $reqPlan = trim($_POST['payment_plan'] ?? '100%');
+        $isPayRemaining = !empty($_POST['pay_remaining']) || $reqPlan === 'remaining';
 
         if (!$assignment_id || !$payment_id) {
             echo json_encode(['success' => false, 'message' => 'Missing payment verification data']);
@@ -466,21 +470,31 @@ switch ($action) {
         }
 
         $asmCurrency = $asm['currency'] ?? 'INR';
-        $paymentAmount = (float)($asm['final_price'] ?? $asm['price']);
-        $paymentId = 'PAY-' . rand(8900, 9999);
+        $totalPrice = (float)($asm['final_price'] ?? $asm['price']);
+        $existingPaid = (float)($asm['paid_amount'] ?? 0);
+        $existingRemaining = (float)($asm['remaining_balance'] ?? 0);
 
-        // Check duplicate
-        $existingPayment = DataStore::findOne('payments', 'assignment_id', $assignment_id);
-        if ($existingPayment && $existingPayment['status'] === 'Paid') {
-            echo json_encode([
-                'success' => true,
-                'already_paid' => true,
-                'transaction_id' => $existingPayment['transaction_id'],
-                'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
-                'message' => 'Assignment already paid in full.'
-            ]);
-            exit;
+        if ($isPayRemaining) {
+            $paymentAmount = ($existingRemaining > 0) ? $existingRemaining : max(0, round($totalPrice - $existingPaid, 2));
+            $newPaidAmount = $totalPrice;
+            $newRemaining = 0.0;
+            $newPaymentStatus = 'Paid';
+            $planLabel = 'Remaining Balance (100%)';
+        } else {
+            switch ($reqPlan) {
+                case '20%': $pct = 0.20; $planLabel = '20% Deposit'; break;
+                case '30%': $pct = 0.30; $planLabel = '30% Advance'; break;
+                case '50%': $pct = 0.50; $planLabel = '50% Milestone'; break;
+                case '100%':
+                default: $pct = 1.00; $planLabel = '100% Full Payment'; break;
+            }
+            $paymentAmount = round($totalPrice * $pct, 2);
+            $newPaidAmount = $paymentAmount;
+            $newRemaining = max(0, round($totalPrice - $paymentAmount, 2));
+            $newPaymentStatus = ($newRemaining <= 0.01) ? 'Paid' : 'Partially Paid';
         }
+
+        $paymentId = 'PAY-' . rand(8900, 9999);
 
         DataStore::insert('payments', [
             'payment_id' => $paymentId,
@@ -491,21 +505,26 @@ switch ($action) {
             'status' => 'Paid',
             'payment_method' => 'Razorpay Gateway',
             'transaction_id' => $payment_id,
-            'payment_date' => date('Y-m-d H:i:s')
+            'payment_date' => date('Y-m-d H:i:s'),
+            'payment_plan' => $planLabel
         ]);
 
         $newStatus = in_array($asm['status'], ['New', 'Pending Review', 'Waiting for Payment']) ? 'Confirmed' : $asm['status'];
         DataStore::update('assignments', 'assignment_id', $assignment_id, [
             'status' => $newStatus,
-            'payment_status' => 'Paid',
+            'payment_status' => $newPaymentStatus,
+            'payment_plan' => $planLabel,
+            'paid_amount' => $newPaidAmount,
+            'remaining_balance' => $newRemaining,
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
         $formattedPaid = format_currency_amount($paymentAmount, $asmCurrency);
-        add_audit_log('Student', $user['id'] ?? $asm['student_id'], 'Razorpay Payment Confirmed', "Paid {$formattedPaid} ({$asmCurrency}) via Razorpay (TX: {$payment_id})");
+        $planNote = ($newRemaining > 0) ? " [Part Payment: {$planLabel}, Remaining: " . format_currency_amount($newRemaining, $asmCurrency) . "]" : " [Paid in Full]";
+        add_audit_log('Student', $user['id'] ?? $asm['student_id'], 'Razorpay Payment Confirmed', "Paid {$formattedPaid} ({$asmCurrency}) via Razorpay (TX: {$payment_id}){$planNote}");
 
-        add_notification('Allocator', '', "Razorpay Payment Settled: $assignment_id", "Order $assignment_id settled via Razorpay ({$formattedPaid}). Ready for expert allocation.", 'success', "/allocator/assignment-detail.php?id=$assignment_id");
-        add_notification('Student', $asm['student_id'], "Payment Confirmed - Order $assignment_id", "Your Razorpay payment of {$formattedPaid} is confirmed! Expert allocation started.", 'success', "/student/assignment-detail.php?id=$assignment_id");
+        add_notification('Allocator', '', "Razorpay Payment Settled: $assignment_id", "Order $assignment_id settled via Razorpay ({$formattedPaid}){$planNote}. Ready for expert allocation.", 'success', "/allocator/assignment-detail.php?id=$assignment_id");
+        add_notification('Student', $asm['student_id'], "Payment Confirmed - Order $assignment_id", "Your Razorpay payment of {$formattedPaid} is confirmed! Status: {$newPaymentStatus}{$planNote}.", 'success', "/student/assignment-detail.php?id=$assignment_id");
 
         echo json_encode([
             'success' => true,
@@ -515,8 +534,12 @@ switch ($action) {
             'amount' => $paymentAmount,
             'currency' => $asmCurrency,
             'formatted_amount' => $formattedPaid,
+            'payment_status' => $newPaymentStatus,
+            'payment_plan' => $planLabel,
+            'paid_amount' => $newPaidAmount,
+            'remaining_balance' => $newRemaining,
             'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
-            'message' => "Razorpay payment verified successfully! Order $assignment_id is Confirmed."
+            'message' => "Razorpay payment of {$formattedPaid} verified successfully! Status: {$newPaymentStatus}."
         ]);
         exit;
 
@@ -576,23 +599,68 @@ switch ($action) {
         }
 
         $asmCurrency = $asm['currency'] ?? 'USD';
-        $paymentAmount = (float)$asm['final_price'];
-        $paymentId = 'PAY-' . rand(8900, 9999);
+        $totalPrice = (float)$asm['final_price'];
+        $existingPaid = (float)($asm['paid_amount'] ?? 0);
+        $existingRemaining = (float)($asm['remaining_balance'] ?? 0);
+        $reqPlan = trim($_POST['payment_plan'] ?? '100%');
+        $isPayRemaining = !empty($_POST['pay_remaining']) || $reqPlan === 'remaining';
 
-        // Check if a payment for this assignment already exists to prevent duplicate insertion
-        $existingPayment = DataStore::findOne('payments', 'assignment_id', $assignment_id);
-        if ($existingPayment && $existingPayment['status'] === 'Paid') {
-            echo json_encode([
-                'success' => true,
-                'already_paid' => true,
-                'transaction_id' => $existingPayment['transaction_id'],
-                'payment_id' => $existingPayment['payment_id'],
-                'assignment_id' => $assignment_id,
-                'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
-                'message' => 'This assignment is already paid in full.'
-            ]);
-            exit;
+        if ($isPayRemaining) {
+            $paymentAmount = ($existingRemaining > 0) ? $existingRemaining : max(0, round($totalPrice - $existingPaid, 2));
+            if ($paymentAmount <= 0) {
+                echo json_encode([
+                    'success' => true,
+                    'already_paid' => true,
+                    'message' => 'This assignment is already paid in full.',
+                    'assignment_id' => $assignment_id,
+                    'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id)
+                ]);
+                exit;
+            }
+            $newPaidAmount = $totalPrice;
+            $newRemaining = 0.0;
+            $newPaymentStatus = 'Paid';
+            $planLabel = 'Remaining Balance (100%)';
+        } else {
+            // Check if already paid in full
+            if (($asm['payment_status'] ?? '') === 'Paid' && $existingPaid >= $totalPrice) {
+                echo json_encode([
+                    'success' => true,
+                    'already_paid' => true,
+                    'message' => 'This assignment is already paid in full.',
+                    'assignment_id' => $assignment_id,
+                    'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id)
+                ]);
+                exit;
+            }
+
+            switch ($reqPlan) {
+                case '20%':
+                    $pct = 0.20;
+                    $planLabel = '20% Deposit';
+                    break;
+                case '30%':
+                    $pct = 0.30;
+                    $planLabel = '30% Advance';
+                    break;
+                case '50%':
+                    $pct = 0.50;
+                    $planLabel = '50% Milestone';
+                    break;
+                case '100%':
+                default:
+                    $pct = 1.00;
+                    $planLabel = '100% Full Payment';
+                    break;
+            }
+
+            $paymentAmount = round($totalPrice * $pct, 2);
+            $newPaidAmount = $paymentAmount;
+            $newRemaining = max(0, round($totalPrice - $paymentAmount, 2));
+            $newPaymentStatus = ($newRemaining <= 0.01) ? 'Paid' : 'Partially Paid';
         }
+
+        $paymentId = 'PAY-' . rand(8900, 9999);
 
         DataStore::insert('payments', [
             'payment_id' => $paymentId,
@@ -603,25 +671,30 @@ switch ($action) {
             'status' => 'Paid',
             'payment_method' => $method,
             'transaction_id' => $tx_id,
-            'payment_date' => date('Y-m-d H:i:s')
+            'payment_date' => date('Y-m-d H:i:s'),
+            'payment_plan' => $planLabel
         ]);
 
         $newStatus = in_array($asm['status'], ['New', 'Pending Review', 'Waiting for Payment']) ? 'Confirmed' : $asm['status'];
         DataStore::update('assignments', 'assignment_id', $assignment_id, [
             'status' => $newStatus,
-            'payment_status' => 'Paid',
+            'payment_status' => $newPaymentStatus,
+            'payment_plan' => $planLabel,
+            'paid_amount' => $newPaidAmount,
+            'remaining_balance' => $newRemaining,
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
         $formattedPaid = format_currency_amount($paymentAmount, $asmCurrency);
-        add_audit_log($user['role'] ?? 'Student', $user['id'] ?? $asm['student_id'], 'Payment Received', "Paid {$formattedPaid} ({$asmCurrency}) via {$method} for {$assignment_id} (TX: {$tx_id})");
+        $planNote = ($newRemaining > 0) ? " [Part Payment: {$planLabel}, Remaining: " . format_currency_amount($newRemaining, $asmCurrency) . "]" : " [Paid in Full]";
+        add_audit_log($user['role'] ?? 'Student', $user['id'] ?? $asm['student_id'], 'Payment Received', "Paid {$formattedPaid} ({$asmCurrency}) via {$method} for {$assignment_id} (TX: {$tx_id}){$planNote}");
 
         // Trigger in-portal notifications
         add_notification(
             'Allocator',
             '',
             "Order Confirmed & Paid: $assignment_id",
-            "Payment of {$formattedPaid} ({$asmCurrency}) received via {$method}. Assignment is ready for expert allocation.",
+            "Payment of {$formattedPaid} ({$asmCurrency}) received via {$method}{$planNote}. Assignment is ready for expert allocation.",
             'success',
             "/allocator/assignment-detail.php?id=$assignment_id"
         );
@@ -630,7 +703,7 @@ switch ($action) {
             'Student',
             $asm['student_id'],
             "Payment Confirmed - Order $assignment_id",
-            "Thank you! Your payment of {$formattedPaid} has been verified. Your assignment is now Confirmed and allocated to a subject specialist.",
+            "Thank you! Your payment of {$formattedPaid} has been verified. Status: {$newPaymentStatus}{$planNote}.",
             'success',
             "/student/assignment-detail.php?id=$assignment_id"
         );
@@ -643,8 +716,12 @@ switch ($action) {
             'amount' => $paymentAmount,
             'currency' => $asmCurrency,
             'formatted_amount' => $formattedPaid,
+            'payment_status' => $newPaymentStatus,
+            'payment_plan' => $planLabel,
+            'paid_amount' => $newPaidAmount,
+            'remaining_balance' => $newRemaining,
             'invoice_url' => "/student/invoice.php?id=" . urlencode($assignment_id),
-            'message' => "Payment authorized successfully! Your assignment $assignment_id is now Confirmed."
+            'message' => "Payment of {$formattedPaid} authorized successfully! Order status: {$newStatus} ({$newPaymentStatus})."
         ]);
         exit;
 
@@ -722,6 +799,7 @@ switch ($action) {
 
             DataStore::update('assignments', 'assignment_id', $assignment_id, [
                 'status' => 'Revision Requested',
+                'revision_notes' => $revision_instructions . $fileNote,
                 'updated_at' => date('Y-m-d H:i:s')
             ]);
             DataStore::insert('notes', [
@@ -735,11 +813,65 @@ switch ($action) {
                 'created_at' => date('Y-m-d H:i:s')
             ]);
             add_audit_log('Student', $user['id'], 'Request Revision', "Requested revision for $assignment_id$fileNote");
-            add_notification('Allocator', null, "Revision Requested: $assignment_id", "Student {$user['name']} requested revisions$fileNote", 'warning');
-            echo json_encode(['success' => true, 'message' => 'Revision request submitted! Support and allocator team notified.']);
+            add_notification('Admin', '', "Revision Requested: $assignment_id", "Student {$user['name']} requested revisions on $assignment_id: " . substr($revision_instructions, 0, 80), 'warning', "/admin/assignment-detail.php?id=$assignment_id");
+            add_notification('Allocator', null, "Revision Requested: $assignment_id", "Student {$user['name']} requested revisions on $assignment_id$fileNote", 'warning', "/allocator/assignment-detail.php?id=$assignment_id");
+            echo json_encode(['success' => true, 'message' => 'Revision request submitted! Support, Admin and Allocator team notified.']);
             exit;
         }
         echo json_encode(['success' => false, 'message' => 'Missing revision instructions']);
+        exit;
+
+    case 'request_refund':
+        Auth::checkRole('Student');
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        $reasonCategory = trim($_POST['reason_category'] ?? 'Quality Issues');
+        $reasonDetails = trim($_POST['reason_details'] ?? '');
+
+        if (!$assignment_id || empty($reasonDetails)) {
+            echo json_encode(['success' => false, 'message' => 'Please provide detailed grounds for your refund request.']);
+            exit;
+        }
+
+        $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+        if (!$asm || $asm['student_id'] !== $user['id']) {
+            echo json_encode(['success' => false, 'message' => 'Assignment not found or access denied.']);
+            exit;
+        }
+
+        if ($asm['status'] === 'Refunded') {
+            echo json_encode(['success' => false, 'message' => 'This order has already been marked as Refunded.']);
+            exit;
+        }
+
+        $uploaded = [];
+        if (isset($_FILES['refund_files'])) {
+            $uploaded = handle_uploaded_files('refund_files', $assignment_id, $user['name'] . ' (Refund Evidence)', false);
+        }
+        $fileNote = !empty($uploaded) ? " [" . count($uploaded) . " proof file(s) attached]" : "";
+        $fullReason = "[$reasonCategory] " . $reasonDetails . $fileNote;
+
+        DataStore::update('assignments', 'assignment_id', $assignment_id, [
+            'status' => 'Refund Requested',
+            'refund_reason' => $fullReason,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        DataStore::insert('notes', [
+            'note_id' => 'NOTE-' . rand(100, 999),
+            'assignment_id' => $assignment_id,
+            'user_id' => $user['id'],
+            'user_role' => 'Student',
+            'user_name' => $user['name'],
+            'message' => "Refund Requested by Student: " . $fullReason,
+            'visibility' => 'Internal',
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+
+        add_audit_log('Student', $user['id'], 'Request Refund', "Student requested refund for $assignment_id ($reasonCategory)");
+        add_notification('Admin', '', "Refund Requested: $assignment_id", "Student {$user['name']} has requested a refund on order $assignment_id: $fullReason", 'danger', "/admin/assignment-detail.php?id=$assignment_id");
+
+        echo json_encode(['success' => true, 'message' => 'Refund request submitted! An administrator will review your case.']);
         exit;
 
     default:

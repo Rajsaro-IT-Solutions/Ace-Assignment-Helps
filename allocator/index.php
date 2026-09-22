@@ -20,6 +20,9 @@ $completedToday = DataStore::filter('assignments', function($a) {
 $qaQueue = DataStore::filter('assignments', function($a) {
     return in_array($a['status'], ['Quality Check', 'Pending Admin Approval']);
 });
+$revisionQueue = DataStore::filter('assignments', function($a) {
+    return $a['status'] === 'Revision Requested';
+});
 $expertsAvailable = DataStore::filter('experts', function($e) {
     return $e['status'] === 'Available';
 });
@@ -108,6 +111,56 @@ $expertsAvailable = DataStore::filter('experts', function($e) {
             <td>
               <a href="/allocator/assignment-detail.php?id=<?php echo urlencode($qAsm['assignment_id']); ?>" class="btn btn-primary btn-sm" style="font-weight:700;">
                 <i class="fa-solid fa-microscope"></i> Review QA &rarr;
+              </a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($revisionQueue)): ?>
+<!-- Revisions Queue (Action Required) -->
+<div class="table-card" style="border: 1.5px solid #f59e0b; margin-bottom: 1.75rem;">
+  <div class="table-header" style="background: rgba(245, 158, 11, 0.08);">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="badge badge-warning" style="font-size:0.8rem; font-weight:800;"><i class="fa-solid fa-rotate-left"></i> Revisions Active</span>
+      <h3 style="font-size:1.1rem; color:var(--text-main); margin:0;">Revision Requested Queue — Expert Reassignment Option (<?php echo count($revisionQueue); ?>)</h3>
+    </div>
+    <span style="color:var(--text-muted); font-size:0.85rem;">Assign Expert or Provide Revision Directives</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Assignment ID</th>
+          <th>Student (Masked)</th>
+          <th>Subject & Type</th>
+          <th>Allocated Expert</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($revisionQueue as $rAsm): 
+          $rStudent = DataStore::findOne('students', 'student_id', $rAsm['student_id']);
+          $rExpert = DataStore::findOne('experts', 'expert_id', $rAsm['expert_id']);
+        ?>
+          <tr>
+            <td><strong style="color:var(--secondary);"><?php echo htmlspecialchars($rAsm['assignment_id']); ?></strong></td>
+            <td><span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-user-lock"></i> <?php echo htmlspecialchars(mask_student_name($rStudent['name'] ?? 'Student')); ?></span></td>
+            <td>
+              <div style="font-weight:700; color:var(--text-main);"><?php echo htmlspecialchars($rAsm['subject']); ?></div>
+              <small style="color:var(--text-muted);"><?php echo $rAsm['word_count']; ?> words &bull; <?php echo htmlspecialchars($rAsm['assignment_type']); ?></small>
+            </td>
+            <td><strong><?php echo htmlspecialchars($rExpert['name'] ?? 'None'); ?></strong></td>
+            <td><span class="badge badge-warning"><i class="fa-solid fa-rotate-left"></i> Revision Requested</span></td>
+            <td>
+              <a href="/allocator/assignment-detail.php?id=<?php echo urlencode($rAsm['assignment_id']); ?>" class="btn btn-warning btn-sm" style="font-weight:700;">
+                <i class="fa-solid fa-user-gear"></i> Change / Reassign Expert &rarr;
               </a>
             </td>
           </tr>

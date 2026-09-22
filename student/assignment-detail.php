@@ -29,6 +29,10 @@ $files = DataStore::filter('files', function($f) use ($id) {
     return isset($f['assignment_id']) && $f['assignment_id'] === $id && empty($f['is_internal']);
 });
 
+$techFiles = array_values(array_filter($files, function($f) {
+    return is_tech_file($f);
+}));
+
 // Segregate deliverables from initial student brief files
 $solutionFiles = array_values(array_filter($files, function($f) {
     return is_solution_file($f);
@@ -38,9 +42,20 @@ $studentBriefFiles = array_values(array_filter($files, function($f) {
     return !is_solution_file($f);
 }));
 
+$docSolutionFiles = array_values(array_filter($solutionFiles, function($f) {
+    return !is_tech_file($f);
+}));
+
+$docBriefFiles = array_values(array_filter($studentBriefFiles, function($f) {
+    return !is_tech_file($f);
+}));
+
 // Verification & Payment flags
 $isAdminApproved = in_array($asm['status'], ['Completed', 'Delivered']);
 $isPaid = is_assignment_paid($asm['assignment_id']);
+$isPartiallyPaid = ($asm['payment_status'] === 'Partially Paid') || (!empty($asm['remaining_balance']) && floatval($asm['remaining_balance']) > 0);
+$paidAmount = floatval($asm['paid_amount'] ?? 0);
+$remainingBalance = floatval($asm['remaining_balance'] ?? ($isPaid ? 0 : $asm['final_price']));
 
 // Workflow steps array
 $workflow = [
@@ -66,13 +81,24 @@ $workflow = [
 
   <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
     <?php if (!$isPaid): ?>
-      <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-primary" style="font-weight:700; background:linear-gradient(135deg, #059669, #047857); border-color:#047857;">
-        <i class="fa-solid fa-lock"></i> Pay Now (<?php echo format_currency_amount($asm['final_price'], $currency); ?>)
-      </a>
+      <?php if ($isPartiallyPaid): ?>
+        <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>&pay_remaining=1" class="btn btn-primary" style="font-weight:700; background:linear-gradient(135deg, #0284c7, #0369a1); border-color:#0284c7;">
+          <i class="fa-solid fa-credit-card"></i> Pay Remaining Balance (<?php echo format_currency_amount($remainingBalance, $currency); ?>)
+        </a>
+      <?php else: ?>
+        <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-primary" style="font-weight:700; background:linear-gradient(135deg, #059669, #047857); border-color:#047857;">
+          <i class="fa-solid fa-lock"></i> Pay Now (<?php echo format_currency_amount($asm['final_price'], $currency); ?>)
+        </a>
+      <?php endif; ?>
     <?php endif; ?>
-    <?php if ($isAdminApproved && $isPaid): ?>
+    <?php if ($isAdminApproved && $isPaid && !in_array($asm['status'], ['Revision Requested', 'Refund Requested', 'Refunded'])): ?>
       <button class="btn btn-warning" onclick="openModal('revisionModal')">
         <i class="fa-solid fa-rotate-left"></i> Request Free Revision
+      </button>
+    <?php endif; ?>
+    <?php if (!in_array($asm['status'], ['Refund Requested', 'Refunded'])): ?>
+      <button class="btn btn-outline" style="border-color:#ef4444; color:#ef4444;" onclick="openModal('refundModal')">
+        <i class="fa-solid fa-hand-holding-dollar"></i> Request Refund
       </button>
     <?php endif; ?>
     <a href="/student/invoice.php?id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-outline" target="_blank">
@@ -80,6 +106,86 @@ $workflow = [
     </a>
   </div>
 </div>
+
+<!-- Revision Requested Alert Banner -->
+<?php if ($asm['status'] === 'Revision Requested'): ?>
+  <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.12) 100%); border: 1.5px solid #f59e0b; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display:flex; align-items:center; gap:14px;">
+    <div style="width:44px; height:44px; border-radius:50%; background:#f59e0b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
+      <i class="fa-solid fa-rotate-left"></i>
+    </div>
+    <div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="badge badge-warning" style="font-weight:800; font-size:0.8rem;">Revision In Progress</span>
+        <strong style="color:var(--text-main); font-size:0.95rem;">Academic Adjustments Underway</strong>
+      </div>
+      <p style="color:var(--text-muted); font-size:0.88rem; margin:3px 0 0 0;">
+        Our academic coordinator and expert specialist are reviewing your feedback and making required amendments. Updated files will be published here upon verification.
+      </p>
+      <?php if (!empty($asm['revision_notes'])): ?>
+        <small style="color:var(--text-muted); display:block; margin-top:4px;"><strong>Your instructions:</strong> <?php echo htmlspecialchars($asm['revision_notes']); ?></small>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php endif; ?>
+
+<!-- Refund Requested Alert Banner -->
+<?php if ($asm['status'] === 'Refund Requested'): ?>
+  <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(185, 28, 28, 0.12) 100%); border: 1.5px solid #ef4444; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display:flex; align-items:center; gap:14px;">
+    <div style="width:44px; height:44px; border-radius:50%; background:#ef4444; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
+      <i class="fa-solid fa-hand-holding-dollar"></i>
+    </div>
+    <div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="badge badge-danger" style="font-weight:800; font-size:0.8rem;">Refund Claim Filed</span>
+        <strong style="color:var(--text-main); font-size:0.95rem;">Under Administrative Review</strong>
+      </div>
+      <p style="color:var(--text-muted); font-size:0.88rem; margin:3px 0 0 0;">
+        You have submitted a refund claim for this order. Our administrative disputes team is investigating your claim against the delivery logs and quality reports. You will receive an official decision shortly.
+      </p>
+      <?php if (!empty($asm['refund_reason'])): ?>
+        <small style="color:var(--text-muted); display:block; margin-top:4px;"><strong>Reason provided:</strong> <?php echo htmlspecialchars($asm['refund_reason']); ?></small>
+      <?php endif; ?>
+    </div>
+  </div>
+<?php elseif ($asm['status'] === 'Refunded'): ?>
+  <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(185, 28, 28, 0.12) 100%); border: 1.5px solid #ef4444; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display:flex; align-items:center; gap:14px;">
+    <div style="width:44px; height:44px; border-radius:50%; background:#ef4444; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
+      <i class="fa-solid fa-receipt"></i>
+    </div>
+    <div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="badge badge-danger" style="font-weight:800; font-size:0.8rem;">Refunded</span>
+        <strong style="color:var(--text-main); font-size:0.95rem;">Order Refund Approved & Processed</strong>
+      </div>
+      <p style="color:var(--text-muted); font-size:0.88rem; margin:3px 0 0 0;">
+        This assignment order has been refunded. The refund has been dispatched according to our terms of service.
+      </p>
+    </div>
+  </div>
+<?php endif; ?>
+
+<!-- Partially Paid Milestone Banner -->
+<?php if ($isPartiallyPaid && !$isPaid): ?>
+  <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%); border: 1.5px solid #0284c7; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div style="width:44px; height:44px; border-radius:50%; background:#0284c7; color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
+        <i class="fa-solid fa-chart-pie"></i>
+      </div>
+      <div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge badge-info" style="font-weight:800; font-size:0.8rem;">Milestone Payment Active (<?php echo htmlspecialchars($asm['payment_plan'] ?? 'Part Payment'); ?>)</span>
+          <strong style="color:var(--text-main); font-size:0.95rem;">Deposit Paid: <?php echo format_currency_amount($paidAmount, $currency); ?></strong>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin:3px 0 0 0;">
+          You have secured this assignment with a milestone payment. The remaining balance of <strong><?php echo format_currency_amount($remainingBalance, $currency); ?></strong> is due before final solution file download.
+        </p>
+      </div>
+    </div>
+    <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>&pay_remaining=1" class="btn btn-primary" style="font-weight:800; padding:0.75rem 1.4rem; background:#0284c7; border-color:#0284c7; box-shadow:0 4px 14px rgba(2,132,199,0.35);">
+      <i class="fa-solid fa-credit-card"></i> Pay Remaining <?php echo format_currency_amount($remainingBalance, $currency); ?>
+    </a>
+  </div>
+<?php endif; ?>
 
 <div class="grid-2" style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem;">
   <div>
@@ -205,15 +311,13 @@ $workflow = [
           </div>
 
           <div style="display:flex; flex-direction:column; gap:10px;">
-            <?php foreach ($solutionFiles as $file): 
+            <?php foreach ($docSolutionFiles as $file): 
               $ext = strtolower($file['file_type'] ?? '');
               $icon = 'fa-file';
               if (in_array($ext, ['pdf'])) $icon = 'fa-file-pdf';
               elseif (in_array($ext, ['doc', 'docx'])) $icon = 'fa-file-word';
               elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $icon = 'fa-file-excel';
               elseif (in_array($ext, ['ppt', 'pptx'])) $icon = 'fa-file-powerpoint';
-              elseif (in_array($ext, ['zip', 'rar', 'tar', 'gz', '7z'])) $icon = 'fa-file-zipper';
-              elseif (in_array($ext, ['py', 'java', 'cpp', 'c', 'js', 'html', 'css', 'sql', 'php', 'ipynb'])) $icon = 'fa-file-code';
               elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) $icon = 'fa-file-image';
               $isTurnitin = stripos($file['file_name'], 'turnitin') !== false;
             ?>
@@ -237,6 +341,64 @@ $workflow = [
         </div>
       <?php endif; ?>
     <?php endif; ?>
+
+    <!-- Dedicated Technical Archives & Code Section (.ZIP, .RAR, Code, Scripts) -->
+    <div class="table-card" style="padding:1.5rem; border:1.5px solid #0284c7; background:linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%); margin-bottom:1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <h3 style="font-size:1.15rem; color:#0369a1; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-file-zipper" style="color:#0284c7;"></i> Technical Archives & Code (.ZIP, .RAR, Code) (<?php echo count($techFiles); ?>)
+          </h3>
+          <small style="color:var(--text-muted);">Dedicated portal area for zipped packages, RAR archives, database dumps, and source code</small>
+        </div>
+        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:0.75rem;">
+          <i class="fa-solid fa-box-archive"></i> Technical Repository
+        </span>
+      </div>
+
+      <?php if (empty($techFiles)): ?>
+        <div style="background:#f8fafc; border:1px dashed #93c5fd; border-radius:8px; padding:1.2rem; text-align:center; color:var(--text-muted); font-size:0.88rem;">
+          <i class="fa-solid fa-file-zipper" style="font-size:1.3rem; color:#38bdf8; margin-bottom:6px; display:block;"></i>
+          No technical archive packages (.zip, .rar, code) attached yet. You can attach zip/rar packages using the upload form below.
+        </div>
+      <?php else: ?>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <?php foreach ($techFiles as $file): 
+            $ext = strtoupper(pathinfo($file['file_name'], PATHINFO_EXTENSION));
+            $isSolution = is_solution_file($file);
+            $canDownload = !$isSolution || ($isAdminApproved && $isPaid);
+          ?>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; border:1px solid #bae6fd; padding:0.85rem 1.1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="badge" style="background:#0284c7; color:#ffffff; font-weight:800; font-size:0.75rem; letter-spacing:0.5px; padding:4px 8px;">
+                  .<?php echo htmlspecialchars($ext ?: 'ZIP'); ?>
+                </span>
+                <div>
+                  <strong style="color:var(--text-main); font-size:0.92rem;"><?php echo htmlspecialchars($file['file_name']); ?></strong>
+                  <?php if ($isSolution): ?>
+                    <span class="badge badge-purple" style="font-size:0.7rem; margin-left:6px;"><i class="fa-solid fa-check"></i> Technical Solution Package</span>
+                  <?php else: ?>
+                    <span class="badge badge-success" style="font-size:0.7rem; margin-left:6px;">Student Brief Asset</span>
+                  <?php endif; ?>
+                  <small style="color:var(--text-muted); display:block; margin-top:2px;">Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?></small>
+                </div>
+              </div>
+              <div>
+                <?php if ($canDownload): ?>
+                  <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-primary btn-sm" style="font-weight:700;">
+                    <i class="fa-solid fa-download"></i> Download Package
+                  </a>
+                <?php else: ?>
+                  <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?><?php echo $isPartiallyPaid ? '&pay_remaining=1' : ''; ?>" class="btn btn-warning btn-sm" style="font-weight:700;">
+                    <i class="fa-solid fa-lock"></i> Unlock Download
+                  </a>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
 
     <!-- Workflow Tracker -->
     <div class="table-card" style="padding:1.5rem;">
@@ -267,23 +429,21 @@ $workflow = [
     <div class="table-card" style="padding:1.5rem;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
         <h3 style="font-size:1.1rem; color:var(--text-main); margin:0;">
-          <i class="fa-solid fa-paperclip" style="color:var(--primary);"></i> My Uploaded Brief & Files (<?php echo count($studentBriefFiles); ?>)
+          <i class="fa-solid fa-paperclip" style="color:var(--primary);"></i> My Uploaded Brief & Documents (<?php echo count($docBriefFiles); ?>)
         </h3>
         <span class="badge badge-secondary" style="font-size:0.75rem;">Initial Materials</span>
       </div>
-      <?php if (empty($studentBriefFiles)): ?>
-        <p style="color:var(--text-muted); font-size:0.9rem;">No files uploaded with initial brief.</p>
+      <?php if (empty($docBriefFiles)): ?>
+        <p style="color:var(--text-muted); font-size:0.9rem;">No document files uploaded with initial brief.</p>
       <?php else: ?>
         <div style="display:flex; flex-direction:column; gap:10px;">
-          <?php foreach ($studentBriefFiles as $file): 
+          <?php foreach ($docBriefFiles as $file): 
             $ext = strtolower($file['file_type'] ?? '');
             $icon = 'fa-file';
             if (in_array($ext, ['pdf'])) $icon = 'fa-file-pdf';
             elseif (in_array($ext, ['doc', 'docx'])) $icon = 'fa-file-word';
             elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $icon = 'fa-file-excel';
             elseif (in_array($ext, ['ppt', 'pptx'])) $icon = 'fa-file-powerpoint';
-            elseif (in_array($ext, ['zip', 'rar', 'tar', 'gz', '7z'])) $icon = 'fa-file-zipper';
-            elseif (in_array($ext, ['py', 'java', 'cpp', 'c', 'js', 'html', 'css', 'sql', 'php', 'ipynb'])) $icon = 'fa-file-code';
             elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) $icon = 'fa-file-image';
           ?>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid var(--portal-border); padding:0.8rem 1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
@@ -329,22 +489,34 @@ $workflow = [
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Type:</td><td style="text-align:right; color:var(--text-main);"><?php echo htmlspecialchars($asm['assignment_type']); ?></td></tr>
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Word Count:</td><td style="text-align:right; color:var(--text-main);"><?php echo $asm['word_count']; ?> Words (<?php echo $asm['pages']; ?> Pages)</td></tr>
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Referencing:</td><td style="text-align:right; color:var(--text-main);"><?php echo htmlspecialchars($asm['reference_style']); ?></td></tr>
-        <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Payment:</td><td style="text-align:right; color:var(--text-main); font-weight:700;">
+        <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Payment Status:</td><td style="text-align:right; color:var(--text-main); font-weight:700;">
           <?php if ($isPaid): ?>
             <span class="badge badge-success"><i class="fa-solid fa-check"></i> Paid In Full</span>
+          <?php elseif ($isPartiallyPaid): ?>
+            <span class="badge badge-info"><i class="fa-solid fa-pie-chart"></i> Partially Paid (<?php echo htmlspecialchars($asm['payment_plan'] ?? 'Milestone'); ?>)</span>
           <?php else: ?>
             <span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Payment Pending</span>
           <?php endif; ?>
         </td></tr>
+        <?php if ($isPartiallyPaid): ?>
+          <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Paid Amount:</td><td style="text-align:right; font-weight:700; color:var(--success);"><?php echo format_currency_amount($paidAmount, $currency); ?></td></tr>
+          <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Remaining Balance:</td><td style="text-align:right; font-weight:700; color:#0284c7;"><?php echo format_currency_amount($remainingBalance, $currency); ?></td></tr>
+        <?php endif; ?>
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Timezone:</td><td style="text-align:right; color:var(--text-main);"><?php echo htmlspecialchars($asm['timezone']); ?></td></tr>
-        <tr><td style="padding:12px 0; color:var(--text-muted); font-weight:700;">Final Investment:</td><td style="text-align:right; font-size:1.4rem; font-weight:800; color:var(--secondary);"><?php echo $currencySymbol . number_format($asm['final_price'], ($currency === 'INR' ? 0 : 2)); ?></td></tr>
+        <tr><td style="padding:12px 0; color:var(--text-muted); font-weight:700;">Total Order Value:</td><td style="text-align:right; font-size:1.4rem; font-weight:800; color:var(--secondary);"><?php echo $currencySymbol . number_format($asm['final_price'], ($currency === 'INR' ? 0 : 2)); ?></td></tr>
       </table>
 
       <?php if (!$isPaid): ?>
         <div style="margin-top:1.25rem;">
-          <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-primary" style="width:100%; text-align:center; font-weight:800; padding:0.8rem; box-shadow:0 4px 15px rgba(99,102,241,0.4);">
-            <i class="fa-solid fa-credit-card"></i> Proceed to Pay (<?php echo format_currency_amount($asm['final_price'], $currency); ?>)
-          </a>
+          <?php if ($isPartiallyPaid): ?>
+            <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>&pay_remaining=1" class="btn btn-primary" style="width:100%; text-align:center; font-weight:800; padding:0.8rem; background:#0284c7; border-color:#0284c7; box-shadow:0 4px 15px rgba(2,132,199,0.4);">
+              <i class="fa-solid fa-credit-card"></i> Pay Remaining Balance (<?php echo format_currency_amount($remainingBalance, $currency); ?>)
+            </a>
+          <?php else: ?>
+            <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-primary" style="width:100%; text-align:center; font-weight:800; padding:0.8rem; box-shadow:0 4px 15px rgba(99,102,241,0.4);">
+              <i class="fa-solid fa-credit-card"></i> Proceed to Pay (<?php echo format_currency_amount($asm['final_price'], $currency); ?>)
+            </a>
+          <?php endif; ?>
         </div>
       <?php endif; ?>
     </div>
@@ -385,7 +557,74 @@ $workflow = [
   </div>
 </div>
 
+<!-- Refund Request Modal -->
+<div id="refundModal" class="modal-overlay">
+  <div class="modal-box" style="padding:2rem; max-width:520px;">
+    <h3 style="margin-bottom:0.6rem; color:var(--text-main);"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--danger);"></i> Submit Refund Request</h3>
+    <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">
+      We stand behind our work with our 100% satisfaction guarantee. If you are not satisfied with your deliverables or service, please state your reasons below for administrative review.
+    </p>
+
+    <div class="form-group" style="margin-bottom:1rem;">
+      <label style="font-size:0.85rem; font-weight:700;">Refund Reason Category *</label>
+      <select id="refundCategoryInput" class="form-control">
+        <option value="Quality Issues">Quality did not meet standards / low grade</option>
+        <option value="Missed Deadline">Deadline missed</option>
+        <option value="Requirements Mismatch">Instructions or rubrics not followed</option>
+        <option value="High Plagiarism / AI Score">High Turnitin similarity or AI score</option>
+        <option value="Other">Other dispute</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1rem;">
+      <label style="font-size:0.85rem; font-weight:700;">Detailed Explanation & Grounds *</label>
+      <textarea id="refundReasonInput" class="form-control" rows="4" placeholder="Please describe specifically what went wrong, including any professor comments or evidence..." required></textarea>
+    </div>
+
+    <div id="refundStatusMsg" style="margin-bottom:1rem;"></div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-danger" style="flex:1; font-weight:700;" onclick="executeRefundRequest()"><i class="fa-solid fa-paper-plane"></i> Submit Refund Claim</button>
+      <button class="btn btn-outline" onclick="closeModal('refundModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
+function executeRefundRequest() {
+  const cat = document.getElementById('refundCategoryInput').value;
+  const reason = document.getElementById('refundReasonInput').value.trim();
+  const msgDiv = document.getElementById('refundStatusMsg');
+
+  if (!reason) {
+    msgDiv.innerHTML = '<div class="badge badge-danger">Please enter your detailed explanation for the refund claim.</div>';
+    return;
+  }
+
+  msgDiv.innerHTML = '<div class="badge badge-info"><i class="fa-solid fa-spinner fa-spin"></i> Submitting refund claim...</div>';
+
+  const fd = new FormData();
+  fd.append('assignment_id', '<?php echo $asm['assignment_id']; ?>');
+  fd.append('category', cat);
+  fd.append('reason', reason);
+
+  fetch('/api.php?action=request_refund', {
+    method: 'POST',
+    body: fd
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      msgDiv.innerHTML = `<div class="badge badge-success">${data.message}</div>`;
+      setTimeout(() => { window.location.reload(); }, 1200);
+    } else {
+      msgDiv.innerHTML = `<div class="badge badge-danger">${data.message || 'Refund claim failed.'}</div>`;
+    }
+  })
+  .catch(err => {
+    msgDiv.innerHTML = `<div class="badge badge-danger">Connection error while submitting refund claim.</div>`;
+  });
+}
 function executeRevisionRequest() {
   const inst = document.getElementById('revisionInstructionsInput').value.trim();
   const msgDiv = document.getElementById('revisionStatusMsg');

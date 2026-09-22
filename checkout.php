@@ -13,18 +13,12 @@ $existingPayment = null;
 
 if ($asmId) {
     $asm = DataStore::findOne('assignments', 'assignment_id', $asmId);
-    if ($asm) {
-        $existingPayment = DataStore::findOne('payments', 'assignment_id', $asmId);
-        if ($existingPayment && ($existingPayment['status'] ?? '') === 'Paid') {
-            $isAlreadyPaid = true;
-        }
-    }
 }
 
 // Fallback: If no assignment passed, try finding most recent unpaid assignment for logged in student
 if (!$asm && $user && ($user['role'] ?? '') === 'Student') {
     $studentAsms = DataStore::filter('assignments', function($a) use ($user) {
-        return isset($a['student_id']) && $a['student_id'] === $user['id'] && in_array($a['status'], ['Pending Review', 'Waiting for Payment', 'New']);
+        return isset($a['student_id']) && $a['student_id'] === $user['id'] && in_array($a['status'], ['Pending Review', 'Waiting for Payment', 'New', 'Partially Paid']);
     });
     if (!empty($studentAsms)) {
         usort($studentAsms, function($a, $b) {
@@ -40,6 +34,31 @@ $finalPrice = $asm ? (float)$asm['final_price'] : 0.0;
 $subtotal = $asm ? (float)($asm['price'] ?? $finalPrice) : 0.0;
 $discountCode = $asm['discount_code'] ?? '';
 $discountAmount = ($subtotal > $finalPrice) ? round($subtotal - $finalPrice, 2) : 0.0;
+
+$paidAmount = $asm ? (float)($asm['paid_amount'] ?? 0) : 0.0;
+$remainingBalance = $asm ? (float)($asm['remaining_balance'] ?? 0) : 0.0;
+$paymentStatus = $asm ? ($asm['payment_status'] ?? '') : '';
+$isPayRemaining = (isset($_GET['pay_remaining']) && $_GET['pay_remaining'] == '1') || ($paymentStatus === 'Partially Paid' && $remainingBalance > 0);
+
+if ($paidAmount > 0 && $remainingBalance <= 0 && $paymentStatus === 'Partially Paid') {
+    $remainingBalance = max(0, round($finalPrice - $paidAmount, 2));
+}
+
+if ($asm) {
+    $existingPayment = DataStore::findOne('payments', 'assignment_id', $asmId);
+    if (($paymentStatus === 'Paid' || ($existingPayment && ($existingPayment['status'] ?? '') === 'Paid')) && $remainingBalance <= 0 && !$isPayRemaining) {
+        $isAlreadyPaid = true;
+    }
+}
+
+$initialDueNow = $isPayRemaining ? $remainingBalance : $finalPrice;
+$initialBalance = $isPayRemaining ? 0.0 : 0.0;
+$currencySymbol = '$';
+if ($currency === 'INR') $currencySymbol = '₹';
+elseif ($currency === 'GBP') $currencySymbol = '£';
+elseif ($currency === 'EUR') $currencySymbol = '€';
+elseif ($currency === 'AUD') $currencySymbol = 'A$';
+elseif ($currency === 'CAD') $currencySymbol = 'C$';
 
 $isStudent = ($user && ($user['role'] ?? '') === 'Student');
 
@@ -208,6 +227,108 @@ if ($isStudent) {
     border-radius: 10px;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+  }
+
+  /* Part Payment Milestone Plan Cards */
+  .co-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 900px) {
+    .co-plan-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (max-width: 520px) {
+    .co-plan-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .co-plan-card {
+    border: 2px solid var(--co-border);
+    border-radius: 14px;
+    padding: 1.1rem 1rem;
+    cursor: pointer;
+    background: #ffffff;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    user-select: none;
+  }
+  .co-plan-card:hover {
+    border-color: #a5b4fc;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.08);
+    transform: translateY(-2px);
+  }
+  .co-plan-card.active {
+    border-color: var(--co-primary);
+    background: #f5f3ff;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.14);
+  }
+  .co-plan-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.65rem;
+  }
+  .co-plan-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .co-plan-rec-pill {
+    font-size: 0.62rem;
+    background: #fef08a;
+    color: #854d0e;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .co-plan-radio-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: transparent;
+    transition: all 0.2s ease;
+  }
+  .co-plan-card.active .co-plan-radio-circle {
+    background: var(--co-primary);
+    border-color: var(--co-primary);
+    color: #ffffff;
+  }
+  .co-plan-amount {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .co-plan-sub {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--co-primary);
+    margin-bottom: 6px;
+  }
+  .co-plan-later {
+    font-size: 0.72rem;
+    color: #64748b;
+    padding-top: 6px;
+    border-top: 1px dashed #e2e8f0;
+    margin-top: auto;
+    line-height: 1.4;
   }
 
   /* Virtual Card Preview */
@@ -687,6 +808,112 @@ if ($isStudent) {
         
         <!-- Left Column: Payment Methods -->
         <div>
+          <!-- PART PAYMENT MILESTONE PLAN SELECTION (20%, 30%, 50%, 100%) -->
+          <?php if ($isPayRemaining): ?>
+            <div class="co-card" style="border: 2px solid #059669; background: #f0fdf4; padding: 1.5rem; margin-bottom: 1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <span class="badge" style="background:#dcfce7; color:#15803d; font-weight:800; font-size:0.8rem; padding:4px 10px; margin-bottom:6px; display:inline-block;">
+                    <i class="fa-solid fa-receipt"></i> Outstanding Balance Settlement
+                  </span>
+                  <h3 style="margin:0 0 4px 0; color:#166534; font-size:1.25rem; font-weight:800;">
+                    Pay Remaining Balance for Order <?php echo htmlspecialchars($asmId); ?>
+                  </h3>
+                  <p style="margin:0; font-size:0.88rem; color:#15803d;">
+                    Order Total: <strong><?php echo format_currency_amount($finalPrice, $currency); ?></strong> &bull; Previously Paid: <strong><?php echo format_currency_amount($paidAmount, $currency); ?></strong>
+                  </p>
+                </div>
+                <div style="text-align:right;">
+                  <small style="color:#15803d; font-weight:700; font-size:0.8rem; display:block;">Amount Due Now</small>
+                  <span style="font-size:1.75rem; font-weight:900; color:#047857;">
+                    <?php echo format_currency_amount($remainingBalance, $currency); ?>
+                  </span>
+                </div>
+              </div>
+            </div>
+          <?php else: ?>
+            <div class="co-card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+              <div style="margin-bottom: 1.1rem; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+                <div>
+                  <h3 style="font-size: 1.25rem; color:#0f172a; margin:0 0 0.35rem 0; font-weight:800; display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-calculator" style="color:var(--co-primary);"></i> Choose Payment Milestone Plan
+                  </h3>
+                  <p style="color:#64748b; font-size:0.88rem; margin:0;">
+                    Pay in full or start with flexible partial deposits (20%, 30%, 50%, or 100%).
+                  </p>
+                </div>
+                <span class="co-trust-pill" style="font-size:0.75rem; color:#059669; border-color:#bbf7d0; background:#f0fdf4;">
+                  <i class="fa-solid fa-shield-check"></i> 0% Interest &bull; Flexible
+                </span>
+              </div>
+
+              <div class="co-plan-grid">
+                
+                <!-- 20% Starter Plan -->
+                <div class="co-plan-card" id="planCard-20" onclick="selectPaymentPlan('20%', 0.20)">
+                  <div class="co-plan-head">
+                    <span class="co-plan-badge" style="background:#e0e7ff; color:#3730a3;">20% Deposit</span>
+                    <div class="co-plan-radio-circle"><i class="fa-solid fa-check"></i></div>
+                  </div>
+                  <div class="co-plan-amount">
+                    <?php echo format_currency_amount(round($finalPrice * 0.20, 2), $currency); ?>
+                  </div>
+                  <div class="co-plan-sub">Pay 20% Now</div>
+                  <div class="co-plan-later">
+                    Remaining: <strong><?php echo format_currency_amount(round($finalPrice - round($finalPrice * 0.20, 2), 2), $currency); ?></strong> due before delivery
+                  </div>
+                </div>
+
+                <!-- 30% Advance Plan -->
+                <div class="co-plan-card" id="planCard-30" onclick="selectPaymentPlan('30%', 0.30)">
+                  <div class="co-plan-head">
+                    <span class="co-plan-badge" style="background:#fef3c7; color:#92400e;">30% Advance</span>
+                    <div class="co-plan-radio-circle"><i class="fa-solid fa-check"></i></div>
+                  </div>
+                  <div class="co-plan-amount">
+                    <?php echo format_currency_amount(round($finalPrice * 0.30, 2), $currency); ?>
+                  </div>
+                  <div class="co-plan-sub">Pay 30% Now</div>
+                  <div class="co-plan-later">
+                    Remaining: <strong><?php echo format_currency_amount(round($finalPrice - round($finalPrice * 0.30, 2), 2), $currency); ?></strong> due before delivery
+                  </div>
+                </div>
+
+                <!-- 50% Milestone Plan -->
+                <div class="co-plan-card" id="planCard-50" onclick="selectPaymentPlan('50%', 0.50)">
+                  <div class="co-plan-head">
+                    <span class="co-plan-badge" style="background:#f3e8ff; color:#6b21a8;">50% Milestone</span>
+                    <div class="co-plan-radio-circle"><i class="fa-solid fa-check"></i></div>
+                  </div>
+                  <div class="co-plan-amount">
+                    <?php echo format_currency_amount(round($finalPrice * 0.50, 2), $currency); ?>
+                  </div>
+                  <div class="co-plan-sub">Pay 50% Now</div>
+                  <div class="co-plan-later">
+                    Remaining: <strong><?php echo format_currency_amount(round($finalPrice - round($finalPrice * 0.50, 2), 2), $currency); ?></strong> upon draft review
+                  </div>
+                </div>
+
+                <!-- 100% Full Payment Plan -->
+                <div class="co-plan-card active" id="planCard-100" onclick="selectPaymentPlan('100%', 1.00)">
+                  <div class="co-plan-head">
+                    <span class="co-plan-badge" style="background:#dcfce7; color:#15803d;">100% Full</span>
+                    <span class="co-plan-rec-pill"><i class="fa-solid fa-star"></i> Recommended</span>
+                    <div class="co-plan-radio-circle"><i class="fa-solid fa-check"></i></div>
+                  </div>
+                  <div class="co-plan-amount">
+                    <?php echo format_currency_amount($finalPrice, $currency); ?>
+                  </div>
+                  <div class="co-plan-sub">Pay 100% in Full</div>
+                  <div class="co-plan-later" style="color:#059669; font-weight:700;">
+                    Instant complete release &bull; Priority queue
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          <?php endif; ?>
+
           <div class="co-card">
             
             <div style="margin-bottom: 1.25rem;">
@@ -1066,11 +1293,21 @@ if ($isStudent) {
                 <span style="color:#10b981; font-weight:700; font-size:0.85rem;">INCLUDED</span>
               </div>
 
+              <div class="co-price-row">
+                <span>Payment Plan:</span>
+                <strong id="coPlanVal" style="color:var(--co-primary);"><?php echo $isPayRemaining ? 'Remaining Balance' : '100% Full Payment'; ?></strong>
+              </div>
+
+              <div class="co-price-row" id="coRemainingRow" style="<?php echo ($initialBalance > 0) ? '' : 'display:none;'; ?>">
+                <span style="color:#d97706; font-weight:600;">Balance Due Later:</span>
+                <strong style="color:#d97706;" id="coRemainingVal"><?php echo format_currency_amount($initialBalance, $currency); ?></strong>
+              </div>
+
               <div class="co-price-total-row">
-                <span style="font-weight:800; font-size:1.1rem; color:#0f172a;">Total Payable:</span>
+                <span style="font-weight:800; font-size:1.1rem; color:#0f172a;">Amount Due Now:</span>
                 <div style="text-align:right;">
                   <div class="co-total-amount dyn-pay-amount" id="coTotalVal">
-                    <?php echo format_currency_amount($finalPrice, $currency); ?>
+                    <?php echo format_currency_amount($initialDueNow, $currency); ?>
                   </div>
                   <small style="color:#64748b; font-size:0.75rem; display:block; margin-top:2px;">
                     Settled in <?php echo htmlspecialchars($currency); ?> &bull; No hidden taxes
@@ -1400,6 +1637,64 @@ function removeCheckoutCoupon() {
   });
 }
 
+// Milestone Plan Selection State
+window.currentSelectedPlan = <?php echo json_encode($isPayRemaining ? 'remaining' : '100%'); ?>;
+window.isPayingRemaining = <?php echo json_encode($isPayRemaining ? true : false); ?>;
+window.baseFinalPrice = <?php echo json_encode($finalPrice); ?>;
+window.currencyCode = <?php echo json_encode($currency); ?>;
+window.currencySymbol = <?php echo json_encode($currencySymbol); ?>;
+
+function selectPaymentPlan(plan, pct) {
+  if (window.isPayingRemaining) return;
+  window.currentSelectedPlan = plan;
+
+  // Toggle active card
+  document.querySelectorAll('.co-plan-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('planCard-' + plan.replace('%', ''));
+  if (card) card.classList.add('active');
+
+  const fullPrice = window.baseFinalPrice;
+  const payNow = Math.round(fullPrice * pct * 100) / 100;
+  const balance = Math.round((fullPrice - payNow) * 100) / 100;
+
+  function formatAmount(amt) {
+    if (window.currencyCode === 'INR') {
+      return '₹' + Math.round(amt).toLocaleString('en-IN');
+    }
+    return window.currencySymbol + amt.toFixed(2);
+  }
+
+  const formattedPayNow = formatAmount(payNow);
+  const formattedBalance = formatAmount(balance);
+
+  // Update button amounts
+  document.querySelectorAll('.dyn-pay-amount').forEach(el => {
+    el.textContent = formattedPayNow;
+  });
+
+  // Update summary table
+  const planValEl = document.getElementById('coPlanVal');
+  if (planValEl) {
+    planValEl.textContent = plan === '100%' ? '100% Full Payment' : `${plan} Milestone Deposit`;
+  }
+
+  const remRow = document.getElementById('coRemainingRow');
+  const remVal = document.getElementById('coRemainingVal');
+  if (remRow && remVal) {
+    if (balance > 0) {
+      remRow.style.display = 'flex';
+      remVal.textContent = formattedBalance;
+    } else {
+      remRow.style.display = 'none';
+    }
+  }
+
+  const recAmount = document.getElementById('recAmount');
+  if (recAmount) {
+    recAmount.textContent = `${formattedPayNow} (${window.currencyCode})`;
+  }
+}
+
 // Payment Handlers
 function processCheckoutPayment(method) {
   const asmId = "<?php echo htmlspecialchars($asmId); ?>";
@@ -1425,6 +1720,10 @@ function processCheckoutPayment(method) {
     const bodyData = new URLSearchParams();
     bodyData.append('assignment_id', asmId);
     bodyData.append('payment_method', method);
+    bodyData.append('payment_plan', window.currentSelectedPlan || '100%');
+    if (window.isPayingRemaining) {
+      bodyData.append('pay_remaining', '1');
+    }
 
     const cardNum = document.getElementById('cardNumberInput') ? document.getElementById('cardNumberInput').value.replace(/\s/g, '') : '';
     if (cardNum) {
@@ -1480,10 +1779,17 @@ function launchOfficialRazorpayModal() {
   procTitle.textContent = "Connecting to Razorpay...";
   procSub.textContent = "Creating secure Razorpay order token...";
 
+  const rzpOrderBody = new URLSearchParams();
+  rzpOrderBody.append('assignment_id', asmId);
+  rzpOrderBody.append('payment_plan', window.currentSelectedPlan || '100%');
+  if (window.isPayingRemaining) {
+    rzpOrderBody.append('pay_remaining', '1');
+  }
+
   fetch('/api.php?action=create_razorpay_order', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `assignment_id=${encodeURIComponent(asmId)}`
+    body: rzpOrderBody.toString()
   })
   .then(res => res.json())
   .then(orderData => {
@@ -1507,7 +1813,8 @@ function launchOfficialRazorpayModal() {
         contact: studentPhone
       },
       notes: {
-        assignment_id: asmId
+        assignment_id: asmId,
+        payment_plan: window.currentSelectedPlan || '100%'
       },
       theme: {
         color: "#059669"
@@ -1522,6 +1829,10 @@ function launchOfficialRazorpayModal() {
         verifyData.append('razorpay_order_id', response.razorpay_order_id || orderData.order_id);
         verifyData.append('razorpay_payment_id', response.razorpay_payment_id);
         verifyData.append('razorpay_signature', response.razorpay_signature || '');
+        verifyData.append('payment_plan', window.currentSelectedPlan || '100%');
+        if (window.isPayingRemaining) {
+          verifyData.append('pay_remaining', '1');
+        }
 
         fetch('/api.php?action=verify_razorpay_payment', {
           method: 'POST',

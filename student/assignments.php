@@ -24,6 +24,8 @@ $assignments = DataStore::filter('assignments', function($a) use ($user) {
     <option value="Quality Check">Quality Check</option>
     <option value="Completed">Completed</option>
     <option value="Revision Requested">Revision Requested</option>
+    <option value="Refund Requested">Refund Requested</option>
+    <option value="Refunded">Refunded</option>
   </select>
   <select id="tablePriorityFilter" class="form-control">
     <option value="">All Priorities</option>

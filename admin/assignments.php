@@ -113,8 +113,12 @@ $assignments = DataStore::getCollection('assignments');
     <option value="Allocated">Allocated</option>
     <option value="In Progress">In Progress</option>
     <option value="Quality Check">Quality Check</option>
+    <option value="Pending Admin Approval">Pending Admin Approval</option>
     <option value="Completed">Completed</option>
     <option value="Delivered">Delivered</option>
+    <option value="Revision Requested">Revision Requested</option>
+    <option value="Refund Requested">Refund Requested</option>
+    <option value="Refunded">Refunded</option>
     <option value="Deleted">Deleted / Archived</option>
   </select>
   <select id="tablePriorityFilter" class="form-control">

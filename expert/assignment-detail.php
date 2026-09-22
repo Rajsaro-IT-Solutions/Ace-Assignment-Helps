@@ -135,14 +135,18 @@ $allFiles = DataStore::filter('files', function($f) use ($asmId) {
     return isset($f['assignment_id']) && $f['assignment_id'] === $asmId;
 });
 
-// Separate student brief files from uploaded solution files
-$briefFiles = array_filter($allFiles, function($f) {
-    return strpos($f['uploaded_by'] ?? '', 'Expert') === false;
-});
+$techFiles = array_values(array_filter($allFiles, function($f) {
+    return is_tech_file($f);
+}));
 
-$solutionFiles = array_filter($allFiles, function($f) {
+// Separate student brief files from uploaded solution files (excluding technical files for documents view)
+$briefFiles = array_values(array_filter($allFiles, function($f) {
+    return strpos($f['uploaded_by'] ?? '', 'Expert') === false && !is_tech_file($f);
+}));
+
+$solutionFiles = array_values(array_filter($allFiles, function($f) {
     return strpos($f['uploaded_by'] ?? '', 'Expert') !== false;
-});
+}));
 
 $sla = get_sla_status($asm['deadline']);
 $statusBadge = get_status_badge_class($asm['status']);
@@ -230,14 +234,53 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
         </div>
       </div>
 
+      <!-- Dedicated Technical Archives & Code (.ZIP, .RAR, Code, Scripts) -->
+      <div style="margin-bottom:1.5rem; background:linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%); border:1.5px solid #0284c7; border-radius:10px; padding:1.25rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h4 style="font-size:1rem; color:#0369a1; margin:0; font-weight:800; display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-file-zipper" style="color:#0284c7;"></i> Technical Archives & Code (.ZIP, .RAR, Code) (<?php echo count($techFiles); ?>)
+            </h4>
+            <small style="color:var(--text-muted);">Compressed packages, RAR archives, project code, and database scripts</small>
+          </div>
+          <span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:0.72rem; font-weight:700;">
+            <i class="fa-solid fa-box-archive"></i> Technical Assets
+          </span>
+        </div>
+        <?php if (empty($techFiles)): ?>
+          <div style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding:0.8rem; background:#ffffff; border:1px dashed #93c5fd; border-radius:8px; text-align:center;">
+            No technical archive packages (.zip, .rar, code) attached to this task.
+          </div>
+        <?php else: ?>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <?php foreach ($techFiles as $f): 
+              $ext = strtoupper(pathinfo($f['file_name'], PATHINFO_EXTENSION));
+            ?>
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; border:1px solid #bae6fd; border-radius:8px; padding:8px 14px; flex-wrap:wrap; gap:0.5rem;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span class="badge" style="background:#0284c7; color:#fff; font-weight:800; font-size:0.75rem; letter-spacing:0.5px;">.<?php echo htmlspecialchars($ext ?: 'ZIP'); ?></span>
+                  <div>
+                    <strong style="font-size:0.88rem; color:var(--text-main);"><?php echo htmlspecialchars($f['file_name']); ?></strong>
+                    <small style="color:var(--text-muted); display:block; font-size:0.75rem;">Uploaded by <?php echo htmlspecialchars($f['uploaded_by']); ?> &bull; <?php echo htmlspecialchars($f['upload_date']); ?></small>
+                  </div>
+                </div>
+                <a href="/<?php echo htmlspecialchars($f['path']); ?>" download class="btn btn-primary btn-sm" style="font-weight:700;">
+                  <i class="fa-solid fa-download"></i> Download Package
+                </a>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+
       <!-- Brief Attachments from Student -->
       <div>
         <h4 style="font-size:0.95rem; color:var(--text-main); margin-bottom:0.6rem; font-weight:700;">
-          <i class="fa-solid fa-paperclip" style="color:var(--secondary);"></i> Attached Brief / Reference Documents:
+          <i class="fa-solid fa-paperclip" style="color:var(--secondary);"></i> Attached Brief / Reference Documents (<?php echo count($briefFiles); ?>):
         </h4>
         <?php if (empty($briefFiles)): ?>
           <div style="color:var(--text-muted); font-size:0.85rem; font-style:italic; padding:0.5rem 0;">
-            No student files attached to this assignment brief.
+            No student documents attached to this assignment brief.
           </div>
         <?php else: ?>
           <div style="display:flex; flex-direction:column; gap:8px;">
@@ -284,8 +327,20 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
       <?php endif; ?>
 
       <?php if ($asm['status'] === 'Revision Requested'): ?>
-        <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:1rem; margin-bottom:1.5rem; color:#be123c; font-size:0.9rem;">
-          <i class="fa-solid fa-triangle-exclamation"></i> <strong>Student Revision Requested:</strong> Please review student feedback and submit an updated revised solution below.
+        <div style="background:#fff1f2; border:1.5px solid #f43f5e; border-radius:12px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; color:#be123c;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span class="badge badge-danger" style="font-weight:800; font-size:0.8rem; padding:4px 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Revision Requested</span>
+            <strong style="font-size:1rem; color:#9f1239;">Allocator & Student Revision Action Required</strong>
+          </div>
+          <p style="font-size:0.88rem; margin:0 0 8px 0; color:#881337; line-height:1.5;">
+            The QA team or student has requested revisions on your previous deliverable. Please inspect the revision notes below, adjust your solution accordingly, and upload the updated document package.
+          </p>
+          <?php if (!empty($asm['revision_notes'])): ?>
+            <div style="background:#fff; border-left:4px solid #f43f5e; padding:10px 14px; border-radius:6px; font-size:0.9rem; color:#0f172a; margin-top:8px;">
+              <strong>Specific Revision Directives:</strong><br>
+              <?php echo nl2br(htmlspecialchars($asm['revision_notes'])); ?>
+            </div>
+          <?php endif; ?>
         </div>
       <?php endif; ?>
 
