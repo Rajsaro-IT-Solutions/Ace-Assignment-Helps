@@ -53,6 +53,66 @@ switch ($action) {
         ]);
         exit;
 
+    case 'apply_checkout_coupon':
+        $asmId = trim($_POST['assignment_id'] ?? '');
+        $code = strtoupper(trim($_POST['code'] ?? ''));
+        if (!$asmId) {
+            echo json_encode(['success' => false, 'message' => 'Assignment ID is required.']);
+            exit;
+        }
+        $asm = DataStore::findOne('assignments', 'assignment_id', $asmId);
+        if (!$asm) {
+            echo json_encode(['success' => false, 'message' => 'Assignment not found.']);
+            exit;
+        }
+
+        $currency = $asm['currency'] ?? 'USD';
+        $deadline_hours = 120.0;
+        if (!empty($asm['deadline'])) {
+            $diffHours = (strtotime($asm['deadline']) - time()) / 3600.0;
+            $deadline_hours = max(1.0, $diffHours);
+        }
+
+        $calc = calculate_assignment_price(
+            $asm['word_count'] ?? 1000,
+            $deadline_hours,
+            $asm['academic_level'] ?? 'Undergraduate',
+            $asm['subject'] ?? 'General',
+            $code,
+            $currency
+        );
+
+        if (!empty($code) && !$calc['coupon_valid']) {
+            echo json_encode([
+                'success' => false,
+                'message' => $calc['coupon_message'] ?: "Invalid or expired coupon code '{$code}'."
+            ]);
+            exit;
+        }
+
+        // Update assignment in database
+        DataStore::update('assignments', 'assignment_id', $asmId, [
+            'price' => $calc['subtotal'],
+            'discount_code' => $calc['coupon_code'],
+            'final_price' => $calc['final_price'],
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => !empty($calc['coupon_code']) ? $calc['coupon_message'] : 'Coupon removed.',
+            'coupon_code' => $calc['coupon_code'],
+            'discount_percent' => $calc['discount_percent'],
+            'subtotal' => $calc['subtotal'],
+            'discount_amount' => $calc['discount_amount'],
+            'final_price' => $calc['final_price'],
+            'currency' => $currency,
+            'formatted_subtotal' => format_currency_amount($calc['subtotal'], $currency),
+            'formatted_discount' => format_currency_amount($calc['discount_amount'], $currency),
+            'formatted_final_price' => format_currency_amount($calc['final_price'], $currency)
+        ]);
+        exit;
+
     case 'submit_assignment':
         $user = Auth::currentUser();
         $student_id = $user ? $user['id'] : 'STU-' . rand(1004, 9999);
@@ -234,10 +294,11 @@ switch ($action) {
         $notes = trim($_POST['notes'] ?? '');
 
         if ($assignment_id && $expert_id) {
+            $chosenStatus = !empty($_POST['status']) ? trim($_POST['status']) : 'Allocated';
             DataStore::update('assignments', 'assignment_id', $assignment_id, [
                 'expert_id' => $expert_id,
                 'allocator_id' => $allocator_id,
-                'status' => 'Allocated',
+                'status' => $chosenStatus,
                 'updated_at' => date('Y-m-d H:i:s')
             ]);
 
@@ -269,6 +330,67 @@ switch ($action) {
             exit;
         }
         echo json_encode(['success' => false, 'message' => 'Missing assignment_id or expert_id']);
+        exit;
+
+    case 'allocator_approve_qa':
+        Auth::checkRole(['Allocator', 'Admin']);
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        if (!$assignment_id) {
+            echo json_encode(['success' => false, 'message' => 'Assignment ID required']);
+            exit;
+        }
+        $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+        if (!$asm) {
+            echo json_encode(['success' => false, 'message' => 'Assignment not found']);
+            exit;
+        }
+        DataStore::update('assignments', 'assignment_id', $assignment_id, [
+            'status' => 'Pending Admin Approval',
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+        add_audit_log('Allocator', $user['id'], 'QA Approved', "Allocator {$user['name']} approved solution QA for order $assignment_id and sent for Final Admin Approval");
+        add_notification('Admin', '', "QA Approved - $assignment_id", "Allocator {$user['name']} has QA-approved the solution for order $assignment_id. Final Admin approval is required to release to student.", 'info', "/admin/assignment-detail.php?id=$assignment_id");
+        if (!empty($asm['expert_id'])) {
+            add_notification('Expert', $asm['expert_id'], "QA Passed - $assignment_id", "Your solution for order $assignment_id passed QA review and is awaiting final administrative sign-off.", 'success', "/expert/assignment-detail.php?id=$assignment_id");
+        }
+        echo json_encode(['success' => true, 'message' => 'QA Approved! Order forwarded for final Admin approval and student release.']);
+        exit;
+
+    case 'allocator_request_revision':
+        Auth::checkRole(['Allocator', 'Admin']);
+        $user = Auth::currentUser();
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
+        $instructions = trim($_POST['instructions'] ?? '');
+        if (!$assignment_id) {
+            echo json_encode(['success' => false, 'message' => 'Assignment ID required']);
+            exit;
+        }
+        $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+        if (!$asm) {
+            echo json_encode(['success' => false, 'message' => 'Assignment not found']);
+            exit;
+        }
+        DataStore::update('assignments', 'assignment_id', $assignment_id, [
+            'status' => 'Revision Requested',
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+        if (!empty($instructions)) {
+            DataStore::insert('notes', [
+                'note_id' => 'NOTE-' . rand(100, 999),
+                'assignment_id' => $assignment_id,
+                'user_id' => $user['id'],
+                'user_role' => $user['role'],
+                'user_name' => $user['name'],
+                'message' => 'QA Revision Requested: ' . $instructions,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+        add_audit_log('Allocator', $user['id'], 'Request Revision', "Allocator {$user['name']} requested revisions on order $assignment_id");
+        if (!empty($asm['expert_id'])) {
+            add_notification('Expert', $asm['expert_id'], "Revision Requested - $assignment_id", "Allocator {$user['name']} requested revisions on order $assignment_id: " . substr($instructions, 0, 80), 'warning', "/expert/assignment-detail.php?id=$assignment_id");
+        }
+        echo json_encode(['success' => true, 'message' => 'Revision request submitted to expert.']);
         exit;
 
     case 'update_status':
@@ -372,8 +494,10 @@ switch ($action) {
             'payment_date' => date('Y-m-d H:i:s')
         ]);
 
+        $newStatus = in_array($asm['status'], ['New', 'Pending Review', 'Waiting for Payment']) ? 'Confirmed' : $asm['status'];
         DataStore::update('assignments', 'assignment_id', $assignment_id, [
-            'status' => 'Confirmed',
+            'status' => $newStatus,
+            'payment_status' => 'Paid',
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
@@ -482,8 +606,10 @@ switch ($action) {
             'payment_date' => date('Y-m-d H:i:s')
         ]);
 
+        $newStatus = in_array($asm['status'], ['New', 'Pending Review', 'Waiting for Payment']) ? 'Confirmed' : $asm['status'];
         DataStore::update('assignments', 'assignment_id', $assignment_id, [
-            'status' => 'Confirmed',
+            'status' => $newStatus,
+            'payment_status' => 'Paid',
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 

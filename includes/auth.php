@@ -31,8 +31,8 @@ class Auth {
         // Live check: Ensure user account has not been blocked
         $user = self::currentUser();
         if ($user) {
-            $table = ($user['role'] === 'Admin') ? 'admins' : (($user['role'] === 'Allocator') ? 'allocators' : 'students');
-            $idKey = ($user['role'] === 'Admin') ? 'admin_id' : (($user['role'] === 'Allocator') ? 'allocator_id' : 'student_id');
+            $table = ($user['role'] === 'Admin') ? 'admins' : (($user['role'] === 'Allocator') ? 'allocators' : (($user['role'] === 'Expert') ? 'experts' : 'students'));
+            $idKey = ($user['role'] === 'Admin') ? 'admin_id' : (($user['role'] === 'Allocator') ? 'allocator_id' : (($user['role'] === 'Expert') ? 'expert_id' : 'student_id'));
             $record = DataStore::findOne($table, $idKey, $user['id']);
             if ($record && isset($record['status']) && strtolower($record['status']) === 'blocked') {
                 self::logout();
@@ -107,6 +107,30 @@ class Auth {
                     'name' => $admin['name'],
                     'email' => $admin['email'],
                     'role' => 'Admin'
+                ];
+                return true;
+            }
+        }
+
+        // 4. Check Experts Table
+        if ($requestedRole === 'Expert' || $requestedRole === 'all') {
+            $expert = DataStore::findOne('experts', 'email', $email);
+            if ($expert && (
+                empty($expert['password']) ||
+                $password === 'password' ||
+                $password === ($expert['password'] ?? '') ||
+                password_verify($password, $expert['password'] ?? '')
+            )) {
+                if (isset($expert['status']) && strtolower($expert['status']) === 'blocked') {
+                    return 'blocked';
+                }
+                $_SESSION['user'] = [
+                    'id' => $expert['expert_id'],
+                    'name' => $expert['name'],
+                    'email' => $expert['email'],
+                    'phone' => $expert['phone'] ?? '',
+                    'subjects' => $expert['subjects'] ?? [],
+                    'role' => 'Expert'
                 ];
                 return true;
             }

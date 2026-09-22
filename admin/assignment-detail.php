@@ -66,6 +66,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
+        if ($status === 'Completed') {
+            if (!empty($expert_id)) {
+                add_notification('Expert', $expert_id, "Solution Approved - $targetId", "Your solution for order $targetId has been approved and marked Completed!", 'success', "/expert/assignment-detail.php?id=$targetId");
+            }
+            if (!empty($asm['student_id'])) {
+                add_notification('Student', $asm['student_id'], "Solution Approved & Released - $targetId", "Great news! Your assignment $targetId has received final administrative approval and is now released in your portal.", 'success', "/student/assignment-detail.php?id=$targetId");
+            }
+            add_audit_log('Admin', $user['id'], 'Final Admin Approval', "Admin granted final approval and released solution for order $targetId to student");
+        }
+
         // Handle Uploading Final Solution File
         if (isset($_FILES['solution_file']) && $_FILES['solution_file']['error'] === UPLOAD_ERR_OK) {
             $origName = basename($_FILES['solution_file']['name']);
@@ -140,6 +150,50 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
   <a href="/student/invoice.php?id=<?php echo urlencode($id); ?>" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-print"></i> Print Official Invoice</a>
 </div>
 
+<?php if (in_array($asm['status'], ['Pending Admin Approval', 'Quality Check'])): 
+  $isAllocatorApproved = ($asm['status'] === 'Pending Admin Approval');
+?>
+  <div style="background: <?php echo $isAllocatorApproved ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%)' : 'linear-gradient(135deg, rgba(147, 51, 234, 0.18) 0%, rgba(79, 70, 229, 0.18) 100%)'; ?>; border: 1.5px solid <?php echo $isAllocatorApproved ? '#06b6d4' : '#a855f7'; ?>; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+    <div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <?php if ($isAllocatorApproved): ?>
+          <span class="badge badge-cyan" style="font-weight:800; font-size:0.85rem; padding:4px 10px;">
+            <i class="fa-solid fa-check-double"></i> Allocator QA Approved
+          </span>
+          <span style="color:#67e8f9; font-size:0.85rem; font-weight:700;">Verified by Allocator — Final Admin Sign-off & Student Release Required</span>
+        <?php else: ?>
+          <span class="badge badge-purple" style="font-weight:800; font-size:0.85rem; padding:4px 10px;">
+            <i class="fa-solid fa-microscope"></i> Quality Check Review
+          </span>
+          <span style="color:#d8b4fe; font-size:0.85rem; font-weight:600;">Solution files submitted by expert</span>
+        <?php endif; ?>
+      </div>
+      <h3 style="color:#ffffff; margin:0 0 4px 0; font-size:1.25rem;">
+        <?php echo $isAllocatorApproved ? 'Allocator QA Passed — Grant Final Admin Approval & Release' : 'Expert Solution Ready for Quality Review & Final Release'; ?>
+      </h3>
+      <p style="color:#e0f2fe; margin:0; font-size:0.88rem;">
+        <?php echo $isAllocatorApproved ? 'The allocator has reviewed and approved the expert\'s deliverable. Review files below and grant final admin approval to officially complete the order and release it to the student.' : 'Review the attached solution and Turnitin documents below. Approve to mark Completed and release files to student portal.'; ?>
+      </p>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <form method="POST" style="margin:0;">
+        <input type="hidden" name="update_assignment" value="1">
+        <input type="hidden" name="status" value="Completed">
+        <button type="submit" class="btn btn-success btn-lg" style="font-weight:800; padding:0.85rem 1.75rem; box-shadow:0 4px 15px rgba(16,185,129,0.4); border:none; cursor:pointer;" onclick="return confirm('Grant Final Admin Approval? This will officially mark the order Completed and release solution files to the student.');">
+          <i class="fa-solid fa-circle-check"></i> Grant Final Admin Approval & Release
+        </button>
+      </form>
+      <form method="POST" style="margin:0;">
+        <input type="hidden" name="update_assignment" value="1">
+        <input type="hidden" name="status" value="Revision Requested">
+        <button type="submit" class="btn btn-warning" style="font-weight:700; padding:0.85rem 1.25rem; border:none; cursor:pointer;">
+          <i class="fa-solid fa-rotate-left"></i> Request Revision
+        </button>
+      </form>
+    </div>
+  </div>
+<?php endif; ?>
+
 <div class="grid-2" style="display:grid; grid-template-columns:2fr 1fr; gap:1.5rem;">
   <div>
     <!-- Admin Settings & File Upload Form -->
@@ -152,7 +206,7 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
           <label>Assignment Status</label>
           <select name="status" class="form-control">
             <?php 
-            $statuses = ['New', 'Pending Review', 'Waiting for Payment', 'Confirmed', 'Allocated', 'In Progress', 'Quality Check', 'Completed', 'Delivered', 'Revision Requested', 'Cancelled', 'Refunded'];
+            $statuses = ['New', 'Pending Review', 'Waiting for Payment', 'Confirmed', 'Allocated', 'In Progress', 'Quality Check', 'Pending Admin Approval', 'Completed', 'Delivered', 'Revision Requested', 'Cancelled', 'Refunded'];
             foreach ($statuses as $st) {
                 echo "<option value='$st' " . ($asm['status'] === $st ? 'selected' : '') . ">$st</option>";
             }

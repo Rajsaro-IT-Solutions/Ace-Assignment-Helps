@@ -287,6 +287,53 @@ function add_audit_log($role, $user_id, $action, $details)
     ]);
 }
 
+function is_assignment_paid($assignment_id)
+{
+    if (empty($assignment_id)) return false;
+    $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+    if ($asm) {
+        if ((float)($asm['final_price'] ?? 0) <= 0) {
+            return true;
+        }
+        if (isset($asm['payment_status']) && in_array(strtolower($asm['payment_status']), ['paid', 'completed', 'success', 'captured'])) {
+            return true;
+        }
+    }
+    $payments = DataStore::filter('payments', function ($p) use ($assignment_id) {
+        return isset($p['assignment_id']) && $p['assignment_id'] === $assignment_id;
+    });
+    foreach ($payments as $p) {
+        $st = strtolower($p['status'] ?? '');
+        if (in_array($st, ['paid', 'completed', 'success', 'captured'])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function is_solution_file($file)
+{
+    if (empty($file)) return false;
+    $uploader = strtolower($file['uploaded_by'] ?? '');
+    $fileName = strtolower($file['file_name'] ?? '');
+    $path = strtolower($file['path'] ?? '');
+
+    // Files uploaded by experts are solutions or Turnitin originality reports
+    if (strpos($uploader, 'expert') !== false) {
+        return true;
+    }
+    // Files matching solution or turnitin naming patterns
+    if (strpos($path, '_solution_') !== false || strpos($fileName, 'solution') !== false || strpos($fileName, 'turnitin') !== false) {
+        return true;
+    }
+    // Admin final deliverables
+    if (strpos($uploader, 'admin') !== false && (strpos($fileName, 'solution') !== false || strpos($path, 'solution') !== false)) {
+        return true;
+    }
+    return false;
+}
+
+
 function get_status_badge_class($status)
 {
     switch ($status) {
@@ -302,6 +349,9 @@ function get_status_badge_class($status)
             return 'badge-indigo';
         case 'Quality Check':
             return 'badge-purple';
+        case 'Pending Admin Approval':
+        case 'QA Approved':
+            return 'badge-cyan';
         case 'Completed':
         case 'Delivered':
             return 'badge-success';

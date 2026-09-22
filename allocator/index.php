@@ -17,6 +17,9 @@ $urgentSLA = DataStore::filter('assignments', function($a) {
 $completedToday = DataStore::filter('assignments', function($a) {
     return $a['status'] === 'Completed';
 });
+$qaQueue = DataStore::filter('assignments', function($a) {
+    return in_array($a['status'], ['Quality Check', 'Pending Admin Approval']);
+});
 $expertsAvailable = DataStore::filter('experts', function($e) {
     return $e['status'] === 'Available';
 });
@@ -64,6 +67,56 @@ $expertsAvailable = DataStore::filter('experts', function($e) {
     </div>
   </div>
 </div>
+
+<?php if (!empty($qaQueue)): ?>
+<!-- QA Review Queue (Solutions Submitted) -->
+<div class="table-card" style="border: 1.5px solid #a855f7; margin-bottom: 1.75rem;">
+  <div class="table-header" style="background: rgba(168, 85, 247, 0.08);">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="badge badge-purple" style="font-size:0.8rem; font-weight:800;"><i class="fa-solid fa-microscope"></i> Action Required</span>
+      <h3 style="font-size:1.1rem; color:var(--text-main); margin:0;">Expert Solution QA Review Queue (<?php echo count($qaQueue); ?>)</h3>
+    </div>
+    <span style="color:var(--text-muted); font-size:0.85rem;">Inspect & Grant Allocator QA Approval</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Assignment ID</th>
+          <th>Student (Masked)</th>
+          <th>Subject & Type</th>
+          <th>Allocated Expert</th>
+          <th>Status</th>
+          <th>QA Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($qaQueue as $qAsm): 
+          $qStudent = DataStore::findOne('students', 'student_id', $qAsm['student_id']);
+          $qExpert = DataStore::findOne('experts', 'expert_id', $qAsm['expert_id']);
+        ?>
+          <tr>
+            <td><strong style="color:var(--secondary);"><?php echo htmlspecialchars($qAsm['assignment_id']); ?></strong></td>
+            <td><span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-user-lock"></i> <?php echo htmlspecialchars(mask_student_name($qStudent['name'] ?? 'Student')); ?></span></td>
+            <td>
+              <div style="font-weight:700; color:var(--text-main);"><?php echo htmlspecialchars($qAsm['subject']); ?></div>
+              <small style="color:var(--text-muted);"><?php echo $qAsm['word_count']; ?> words &bull; <?php echo htmlspecialchars($qAsm['assignment_type']); ?></small>
+            </td>
+            <td><strong><?php echo htmlspecialchars($qExpert['name'] ?? 'Expert'); ?></strong></td>
+            <td><span class="badge <?php echo get_status_badge_class($qAsm['status']); ?>"><?php echo htmlspecialchars($qAsm['status']); ?></span></td>
+            <td>
+              <a href="/allocator/assignment-detail.php?id=<?php echo urlencode($qAsm['assignment_id']); ?>" class="btn btn-primary btn-sm" style="font-weight:700;">
+                <i class="fa-solid fa-microscope"></i> Review QA &rarr;
+              </a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php endif; ?>
 
 <!-- Pending Allocation Queue -->
 <div class="table-card">

@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = trim($_POST['name'] ?? '');
         $email = trim(strtolower($_POST['email'] ?? ''));
         $phone = trim($_POST['phone'] ?? '');
+        $rawPass = trim($_POST['password'] ?? '') ?: 'password';
         $subjRaw = trim($_POST['subjects'] ?? 'General Studies');
         $subjects = array_filter(array_map('trim', explode(',', $subjRaw)));
         if (empty($subjects)) $subjects = ['General Studies'];
@@ -31,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'name' => $name,
                 'email' => $email,
                 'phone' => $phone,
+                'password' => password_hash($rawPass, PASSWORD_DEFAULT),
                 'subjects' => array_values($subjects),
                 'rating' => $rating,
                 'completed_count' => 0,
@@ -59,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = $_POST['status'] ?? 'Available';
 
         if ($expert_id && $name) {
-            DataStore::update('experts', 'expert_id', $expert_id, [
+            $updateData = [
                 'name' => $name,
                 'email' => $email,
                 'phone' => $phone,
@@ -67,7 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'rating' => $rating,
                 'completed_count' => $completed_count,
                 'status' => $status
-            ]);
+            ];
+            $rawPass = trim($_POST['password'] ?? '');
+            if (!empty($rawPass)) {
+                $updateData['password'] = password_hash($rawPass, PASSWORD_DEFAULT);
+            }
+            DataStore::update('experts', 'expert_id', $expert_id, $updateData);
             add_audit_log('Admin', $adminUser['id'], 'Update Expert', "Updated expert $expert_id");
             $msg = "Expert $expert_id ($name) updated successfully!";
             $msgType = 'success';
@@ -90,7 +97,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 4. Delete Expert
+    // 4. Reset Expert Password
+    if ($action === 'reset_expert_password') {
+        $expert_id = trim($_POST['expert_id'] ?? '');
+        $new_pass = trim($_POST['password'] ?? '');
+        if ($expert_id && !empty($new_pass)) {
+            $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
+            DataStore::update('experts', 'expert_id', $expert_id, ['password' => $hashed]);
+            add_audit_log('Admin', $adminUser['id'], 'Reset Expert Password', "Reset password for expert $expert_id");
+            $msg = "Password for expert $expert_id has been successfully updated!";
+            $msgType = 'success';
+        } else {
+            $msg = "Password cannot be empty!";
+            $msgType = 'danger';
+        }
+    }
+
+    // 5. Delete Expert
     if ($action === 'delete_expert') {
         $expert_id = trim($_POST['expert_id'] ?? '');
         if ($expert_id) {
@@ -193,6 +216,11 @@ $experts = DataStore::getCollection('experts');
                   <i class="fa-solid fa-pen-to-square"></i> Edit
                 </button>
 
+                <!-- Password Button -->
+                <button type="button" class="btn btn-outline btn-sm" onclick='openResetPasswordModal(<?php echo json_encode($exp); ?>)' title="Manage Login Password">
+                  <i class="fa-solid fa-key" style="color:#d97706;"></i> Password
+                </button>
+
                 <!-- Block / Unblock Access Button -->
                 <?php if ($isBlocked): ?>
                   <form method="POST" style="display:inline;" onsubmit="return confirm('Restore availability for expert <?php echo addslashes($exp['name']); ?>?');">
@@ -256,6 +284,11 @@ $experts = DataStore::getCollection('experts');
         <label>Subject Specialties (Comma Separated) *</label>
         <input type="text" name="subjects" class="form-control" required placeholder="Computer Science, Python, Artificial Intelligence">
       </div>
+      <div class="form-group">
+        <label>Portal Login Password (Default: 'password')</label>
+        <input type="text" name="password" class="form-control" placeholder="password" value="password">
+        <small style="color:var(--text-muted); font-size:0.75rem;">Default password is 'password'. You can change or reset this at any time.</small>
+      </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
         <div class="form-group">
           <label>Expert Rating</label>
@@ -309,6 +342,10 @@ $experts = DataStore::getCollection('experts');
         <label>Subject Specialties (Comma Separated)</label>
         <input type="text" name="subjects" id="edit_expert_subjects" class="form-control">
       </div>
+      <div class="form-group">
+        <label>Change Login Password (leave blank to keep current)</label>
+        <input type="text" name="password" id="edit_expert_password" class="form-control" placeholder="Enter new password to update">
+      </div>
       <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
         <div class="form-group">
           <label>Rating</label>
@@ -335,6 +372,43 @@ $experts = DataStore::getCollection('experts');
   </div>
 </div>
 
+<!-- Reset Password Modal -->
+<div id="resetPasswordModal" class="modal-overlay">
+  <div class="modal-box" style="padding:2rem; max-width:460px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+      <h3 style="margin:0; color:var(--text-main);"><i class="fa-solid fa-key" style="color:var(--warning);"></i> Manage Expert Password</h3>
+      <button type="button" onclick="closeModal('resetPasswordModal')" style="background:none; border:none; font-size:1.3rem; color:var(--text-muted); cursor:pointer;">&times;</button>
+    </div>
+    <form method="POST">
+      <input type="hidden" name="action" value="reset_expert_password">
+      <input type="hidden" name="expert_id" id="reset_expert_id">
+
+      <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.2rem;">
+        Setting login password for <strong id="reset_expert_name" style="color:var(--text-main);"></strong> (<code id="reset_expert_display_id" style="font-weight:700;"></code>).
+      </p>
+
+      <div class="form-group">
+        <label>New Password *</label>
+        <input type="text" name="password" id="reset_expert_password_input" class="form-control" required placeholder="Enter new password">
+      </div>
+
+      <div style="display:flex; gap:8px; margin-bottom:1.5rem; flex-wrap:wrap;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('reset_expert_password_input').value='password';">
+          <i class="fa-solid fa-rotate-left"></i> Set to 'password'
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="generateRandomPass()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Strong
+        </button>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Update Password</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('resetPasswordModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 function editExpert(data) {
   document.getElementById('edit_expert_id').value = data.expert_id || '';
@@ -347,7 +421,25 @@ function editExpert(data) {
   document.getElementById('edit_expert_rating').value = data.rating || '5.0';
   document.getElementById('edit_expert_completed').value = data.completed_count || '0';
   document.getElementById('edit_expert_status').value = data.status || 'Available';
+  document.getElementById('edit_expert_password').value = '';
   openModal('editExpertModal');
+}
+
+function openResetPasswordModal(data) {
+  document.getElementById('reset_expert_id').value = data.expert_id || '';
+  document.getElementById('reset_expert_display_id').textContent = data.expert_id || '';
+  document.getElementById('reset_expert_name').textContent = data.name || 'Expert';
+  document.getElementById('reset_expert_password_input').value = 'password';
+  openModal('resetPasswordModal');
+}
+
+function generateRandomPass() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+  let pass = '';
+  for (let i = 0; i < 10; i++) {
+    pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  document.getElementById('reset_expert_password_input').value = pass;
 }
 </script>
 

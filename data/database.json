@@ -59,11 +59,27 @@
     ],
     "admins": [
         {
-            "admin_id": "ADM-001",
-            "name": "System Director Admin",
-            "email": "admin@aceassign.com",
-            "phone": "+1 (800) 555-ACE1",
-            "password": "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC\/.og\/at2.RAWefReD2",
+            "admin_id": "ADM-002",
+            "name": "Gokul Marwal",
+            "email": "gokulmarwal16@gmail.com",
+            "phone": "8619513493",
+            "password": "$2y$10$5T5Dk1wv8iJ4MASmkqUEnOuAIvq2uA.ff99p3PbmlC6zbwXF8Ifje",
+            "status": "Active"
+        },
+        {
+            "admin_id": "ADM-002",
+            "name": "System admin",
+            "email": "admin@aceassignment.com",
+            "phone": "",
+            "password": "$2y$10$4i2CtION9UEEjXSrWSTz2ev07UEVx9ll4j3tAHKS2XqyY1NbEfVzK",
+            "status": "Active"
+        },
+        {
+            "admin_id": "ADM-002",
+            "name": "System admin",
+            "email": "admin@aceassignment.com",
+            "phone": "",
+            "password": "$2y$10$FparSRm1YyYy2LobK\/LzwOXbjXevachnG7NXl81phu9Or7VN4kX8m",
             "status": "Active"
         }
     ],
@@ -72,7 +88,7 @@
             "expert_id": "EXP-301",
             "name": "Dr. Robert Vance (PhD)",
             "email": "robert.vance@experts.com",
-            "phone": "+1 555 888 1111",
+            "phone": "+1 555 999 8888",
             "subjects": [
                 "Computer Science",
                 "Artificial Intelligence",
@@ -80,7 +96,8 @@
             ],
             "rating": 4.9,
             "completed_count": 142,
-            "status": "Available"
+            "status": "Available",
+            "password": "$2y$10$.OIrpJeJ4m3j.YqLddBrIu777RaeMvHIYdUXK29KkGQrnC9tNWalu"
         },
         {
             "expert_id": "EXP-302",
@@ -94,7 +111,8 @@
             ],
             "rating": 4.85,
             "completed_count": 98,
-            "status": "Available"
+            "status": "Available",
+            "password": "$2y$10$Z2lE5bp3qROiRfuS9UCPlOMKc6Lqlk03KPlrpdek\/gm\/9okU2IKt."
         },
         {
             "expert_id": "EXP-303",
@@ -108,7 +126,8 @@
             ],
             "rating": 4.95,
             "completed_count": 210,
-            "status": "Busy"
+            "status": "Busy",
+            "password": "$2y$10$Z2lE5bp3qROiRfuS9UCPlOMKc6Lqlk03KPlrpdek\/gm\/9okU2IKt."
         },
         {
             "expert_id": "EXP-304",
@@ -121,7 +140,8 @@
             ],
             "rating": 4.78,
             "completed_count": 76,
-            "status": "Available"
+            "status": "Available",
+            "password": "$2y$10$HyzFi\/Rbs82RfvaXgRKjueZJH1o4pZtrGiMWRy03VB\/xi80lUXJD."
         }
     ],
     "assignments": [
@@ -139,16 +159,16 @@
             "priority": "High",
             "language": "English (US)",
             "instructions": "Develop a hyperparameter tuning evaluation matrix for Random Forest and XGBoost algorithms using Python scikit-learn.",
-            "price": 180,
-            "discount_code": "ACE20",
-            "final_price": 45,
-            "status": "In Progress",
+            "price": 132,
+            "discount_code": "SUPER30",
+            "final_price": 92.4,
+            "status": "Completed",
             "allocator_id": "ALL-501",
-            "expert_id": "EXP-301",
+            "expert_id": "EXP-304",
             "country": "United States",
             "university": "Stanford University",
             "created_at": "2026-09-01 12:00:00",
-            "updated_at": "2026-09-18 11:40:22"
+            "updated_at": "2026-09-22 09:45:23"
         },
         {
             "assignment_id": "ACE-2026-000102",
@@ -223,7 +243,7 @@
             "country": "United States",
             "university": "Stanford University",
             "created_at": "2026-08-25 09:10:00",
-            "updated_at": "2026-08-30 11:00:00"
+            "updated_at": "2026-09-22 06:21:17"
         },
         {
             "assignment_id": "ACE-2026-000105",
@@ -554,6 +574,32 @@
             "university": "Stanford University",
             "created_at": "2026-09-21 11:10:12",
             "updated_at": "2026-09-21 11:14:02"
+        },
+        {
+            "assignment_id": "ACE-2026-000101",
+            "student_id": "STU-1001",
+            "title": "Web Test 1",
+            "subject": "Data Science & Applied Statistics",
+            "assignment_type": "Dissertation",
+            "deadline": "2026-09-26 12:10:36",
+            "timezone": "EST (UTC-5)",
+            "word_count": 12000,
+            "pages": 48,
+            "reference_style": "APA 7th",
+            "priority": "Normal",
+            "language": "English (US)",
+            "instructions": "Web Test 1",
+            "currency": "USD",
+            "price": 132,
+            "discount_code": "SUPER30",
+            "final_price": 92.4,
+            "status": "Pending Review",
+            "allocator_id": "",
+            "expert_id": "",
+            "country": "United States",
+            "university": "Stanford University",
+            "created_at": "2026-09-21 12:10:38",
+            "updated_at": "2026-09-21 12:10:38"
         }
     ],
     "files": [
@@ -596,6 +642,36 @@
             "uploaded_by": "Expert",
             "upload_date": "2026-08-30 10:45:00",
             "is_internal": false
+        },
+        {
+            "file_id": "FILE-601",
+            "assignment_id": "ACE-2026-000101",
+            "file_name": "Resume (1).pdf",
+            "path": "assets\/uploads\/1789992639_224_Resume__1_.pdf",
+            "file_type": "pdf",
+            "uploaded_by": "Student",
+            "upload_date": "2026-09-21 12:10:39",
+            "is_internal": false
+        },
+        {
+            "file_id": "FILE-9662",
+            "assignment_id": "ACE-2026-000101",
+            "file_name": "test_solution.pdf",
+            "path": "assets\/uploads\/1790057420_SOLUTION_662_test_solution.pdf",
+            "file_type": "pdf",
+            "uploaded_by": "Expert (Clara Higgins (LLM)) Solution",
+            "upload_date": "2026-09-22 06:10:20",
+            "is_internal": 0
+        },
+        {
+            "file_id": "FILE-9266",
+            "assignment_id": "ACE-2026-000104",
+            "file_name": "vance_db_solution.docx",
+            "path": "assets\/uploads\/1790058000_SOLUTION_289_vance_db_solution.docx",
+            "file_type": "docx",
+            "uploaded_by": "Expert (Dr. Robert Vance (PhD)) Solution",
+            "upload_date": "2026-09-22 06:20:00",
+            "is_internal": 0
         }
     ],
     "payments": [
@@ -664,6 +740,17 @@
             "payment_method": "Razorpay UPI \/ NetBanking",
             "transaction_id": "pay_rzp_2178a2ad8dbe62",
             "payment_date": "2026-09-21 09:09:11"
+        },
+        {
+            "payment_id": "PAY-9541",
+            "assignment_id": "ACE-2026-000101",
+            "student_id": "STU-1001",
+            "amount": 92.4,
+            "currency": "USD",
+            "status": "Paid",
+            "payment_method": "Stripe Credit Card",
+            "transaction_id": "pi_stripe_68d999c3dff0c3",
+            "payment_date": "2026-09-21 13:04:21"
         }
     ],
     "allocation": [
@@ -683,6 +770,60 @@
             "allocator_id": "ALL-501",
             "allocated_date": "2026-09-02 15:00:00",
             "deadline": "2026-09-05 09:00:00",
+            "status": "Active"
+        },
+        {
+            "allocation_id": "ALC-3582",
+            "assignment_id": "ACE-2026-000101",
+            "expert_id": "EXP-304",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-21 13:10:37",
+            "deadline": "2026-09-23 13:10:37",
+            "status": "Active"
+        },
+        {
+            "allocation_id": "ALC-4967",
+            "assignment_id": "ACE-2026-000101",
+            "expert_id": "EXP-304",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-22 08:48:24",
+            "deadline": "2026-09-24 08:48:24",
+            "status": "Active"
+        },
+        {
+            "allocation_id": "ALC-3051",
+            "assignment_id": "ACE-2026-000101",
+            "expert_id": "EXP-304",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-22 08:49:53",
+            "deadline": "2026-09-24 08:49:53",
+            "status": "Active"
+        },
+        {
+            "allocation_id": "ALC-6026",
+            "assignment_id": "ACE-2026-000101",
+            "expert_id": "EXP-304",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-22 08:51:35",
+            "deadline": "2026-09-24 08:51:35",
+            "status": "Active"
+        },
+        {
+            "allocation_id": "ALC-2330",
+            "assignment_id": "ACE-2026-000101",
+            "expert_id": "EXP-304",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-22 08:52:56",
+            "deadline": "2026-09-24 08:52:56",
+            "status": "Active"
+        },
+        {
+            "allocation_id": "ALC-1251",
+            "assignment_id": "ACE-2026-000101",
+            "expert_id": "EXP-304",
+            "allocator_id": "ALL-501",
+            "allocated_date": "2026-09-22 08:58:34",
+            "deadline": "2026-09-24 08:58:34",
             "status": "Active"
         }
     ],
@@ -706,6 +847,16 @@
             "message": "Draft completed. Submitted for Quality Check review.",
             "visibility": "Internal",
             "created_at": "2026-09-04 08:15:00"
+        },
+        {
+            "note_id": "NOTE-273",
+            "assignment_id": "ACE-2026-000101",
+            "user_id": "ALL-501",
+            "user_role": "Allocator",
+            "user_name": "David Vance",
+            "message": "Internal Notes for Expert \/ QA Team",
+            "visibility": "Internal",
+            "created_at": "2026-09-21 13:10:38"
         }
     ],
     "notifications": [
@@ -778,7 +929,7 @@
             "user_role": "Allocator",
             "title": "New Assignment Received",
             "message": "Assignment ACE-2026-000106 (Clinical Ethics in Geriatric Palliative Care) has been submitted and awaits allocation.",
-            "is_read": false,
+            "is_read": true,
             "created_at": "2026-09-18 12:22:00"
         },
         {
@@ -843,13 +994,121 @@
             "message": "Thank you! Your payment of \u20b9488 has been verified. Your assignment is now Confirmed and allocated to a subject specialist.",
             "is_read": false,
             "created_at": "2026-09-21 09:09:15"
+        },
+        {
+            "id": "NTF-1",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "New Assignment Received",
+            "message": "Assignment ACE-2026-000101 (Web Test 1) has been submitted and awaits allocation.",
+            "is_read": false,
+            "created_at": "2026-09-21 12:10:40"
+        },
+        {
+            "id": "NTF-2",
+            "user_id": "",
+            "user_role": "Allocator",
+            "title": "Order Confirmed & Paid: ACE-2026-000101",
+            "message": "Payment of $92.40 (USD) received via Stripe Credit Card. Assignment is ready for expert allocation.",
+            "is_read": false,
+            "created_at": "2026-09-21 13:04:22"
+        },
+        {
+            "id": "NTF-3",
+            "user_id": "STU-1001",
+            "user_role": "Student",
+            "title": "Payment Confirmed - Order ACE-2026-000101",
+            "message": "Thank you! Your payment of $92.40 has been verified. Your assignment is now Confirmed and allocated to a subject specialist.",
+            "is_read": false,
+            "created_at": "2026-09-21 13:04:23"
+        },
+        {
+            "id": "NTF-4",
+            "user_id": "ALL-501",
+            "user_role": "Allocator",
+            "title": "Expert Started Order ACE-2026-000101",
+            "message": "Expert Clara Higgins (LLM) has accepted and started work on order ACE-2026-000101.",
+            "is_read": false,
+            "created_at": "2026-09-21 13:30:11"
+        },
+        {
+            "id": "NTF-5",
+            "user_id": "ALL-501",
+            "user_role": "Allocator",
+            "title": "Solution Submitted - ACE-2026-000101",
+            "message": "Expert Clara Higgins (LLM) submitted the final solution for order ACE-2026-000101. Ready for QA review.",
+            "is_read": false,
+            "created_at": "2026-09-22 06:10:22"
+        },
+        {
+            "id": "NTF-6",
+            "user_id": "ADM-01",
+            "user_role": "Admin",
+            "title": "Solution Submitted - ACE-2026-000101",
+            "message": "Expert Clara Higgins (LLM) uploaded solution for ACE-2026-000101.",
+            "is_read": false,
+            "created_at": "2026-09-22 06:10:22"
+        },
+        {
+            "id": "NTF-7",
+            "user_id": "ALL-502",
+            "user_role": "Allocator",
+            "title": "Solution Submitted - ACE-2026-000104",
+            "message": "Expert Dr. Robert Vance (PhD) submitted the final solution for order ACE-2026-000104. Ready for QA review.",
+            "is_read": false,
+            "created_at": "2026-09-22 06:20:01"
+        },
+        {
+            "id": "NTF-8",
+            "user_id": "",
+            "user_role": "Admin",
+            "title": "Solution Submitted - ACE-2026-000104",
+            "message": "Expert Dr. Robert Vance (PhD) uploaded final solution for order ACE-2026-000104. Ready for Quality Check review.",
+            "is_read": false,
+            "created_at": "2026-09-22 06:20:02"
+        },
+        {
+            "id": "NTF-9",
+            "user_id": "EXP-301",
+            "user_role": "Expert",
+            "title": "Solution Approved - ACE-2026-000104",
+            "message": "Your solution for order ACE-2026-000104 has been approved and marked Completed!",
+            "is_read": false,
+            "created_at": "2026-09-22 06:21:18"
+        },
+        {
+            "id": "NTF-10",
+            "user_id": "",
+            "user_role": "Admin",
+            "title": "Expert Inquiry: Need clarification on dataset format",
+            "message": "Expert Dr. Robert Vance (PhD) sent a message regarding order ACE-2026-000104",
+            "is_read": false,
+            "created_at": "2026-09-22 06:23:46"
+        },
+        {
+            "id": "NTF-11",
+            "user_id": "EXP-304",
+            "user_role": "Expert",
+            "title": "Solution Approved - ACE-2026-000101",
+            "message": "Your solution for order ACE-2026-000101 has been approved and marked Completed!",
+            "is_read": false,
+            "created_at": "2026-09-22 09:45:24"
+        },
+        {
+            "id": "NTF-12",
+            "user_id": "STU-1001",
+            "user_role": "Student",
+            "title": "Solution Approved & Released - ACE-2026-000101",
+            "message": "Great news! Your assignment ACE-2026-000101 has received final administrative approval and is now released in your portal.",
+            "is_read": false,
+            "created_at": "2026-09-22 09:45:24"
         }
     ],
     "coupons": [
         {
             "coupon_id": "CPN-1",
             "code": "ACE20",
-            "discount_percent": 35,
+            "discount_percent": 20,
             "max_uses": 100,
             "current_uses": 29,
             "expires_at": "2026-12-31",
@@ -868,10 +1127,10 @@
             "coupon_id": "CPN-3",
             "code": "SUPER30",
             "discount_percent": 30,
-            "max_uses": 50,
-            "current_uses": 50,
-            "expires_at": "2026-08-31",
-            "status": "Expired"
+            "max_uses": 100,
+            "current_uses": 51,
+            "expires_at": "2026-09-30",
+            "status": "Active"
         }
     ],
     "blogs": [
@@ -924,6 +1183,18 @@
                     "timestamp": "2026-09-02 17:05:00"
                 }
             ]
+        },
+        {
+            "ticket_id": "EXP-MSG-4293",
+            "student_id": "EXP-301",
+            "expert_id": "EXP-301",
+            "assignment_id": "ACE-2026-000104",
+            "subject": "[Expert Inquiry] Need clarification on dataset format",
+            "message": "Please confirm if CSV or Parquet is expected.",
+            "status": "Open",
+            "created_at": "2026-09-22 06:23:45",
+            "files": [],
+            "replies": []
         }
     ],
     "chat_messages": [
@@ -1848,6 +2119,446 @@
             "action": "Restore Assignment",
             "details": "Restored assignment ACE-TEST-PERM-100 from History to Pending Review",
             "timestamp": "2026-09-21 11:14:03"
+        },
+        {
+            "log_id": "LOG-1147",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:16:46"
+        },
+        {
+            "log_id": "LOG-1147",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:36:02"
+        },
+        {
+            "log_id": "LOG-1148",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:39:19"
+        },
+        {
+            "log_id": "LOG-1149",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:43:07"
+        },
+        {
+            "log_id": "LOG-1150",
+            "user_role": "Admin",
+            "user_id": "ADM-001",
+            "action": "Create Admin",
+            "details": "Created administrator Gokul Marwal (ADM-002)",
+            "timestamp": "2026-09-21 11:45:21"
+        },
+        {
+            "log_id": "LOG-1151",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:45:44"
+        },
+        {
+            "log_id": "LOG-1152",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Delete Admin",
+            "details": "Permanently deleted administrator ADM-001",
+            "timestamp": "2026-09-21 11:46:09"
+        },
+        {
+            "log_id": "LOG-1153",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:51:16"
+        },
+        {
+            "log_id": "LOG-1154",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:52:15"
+        },
+        {
+            "log_id": "LOG-1001",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 11:57:26"
+        },
+        {
+            "log_id": "LOG-1002",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Update Coupon",
+            "details": "Updated coupon ACE20 (CPN-1)",
+            "timestamp": "2026-09-21 12:09:17"
+        },
+        {
+            "log_id": "LOG-1003",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Toggle Coupon Status",
+            "details": "Set coupon CPN-3 to Active",
+            "timestamp": "2026-09-21 12:09:27"
+        },
+        {
+            "log_id": "LOG-1004",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Update Coupon",
+            "details": "Updated coupon SUPER30 (CPN-3)",
+            "timestamp": "2026-09-21 12:09:49"
+        },
+        {
+            "log_id": "LOG-1005",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Update Coupon",
+            "details": "Updated coupon SUPER30 (CPN-3)",
+            "timestamp": "2026-09-21 12:10:26"
+        },
+        {
+            "log_id": "LOG-1006",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Submit Assignment",
+            "details": "Created ACE-2026-000101: Web Test 1 (USD 92.4)",
+            "timestamp": "2026-09-21 12:10:40"
+        },
+        {
+            "log_id": "LOG-1007",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 12:15:07"
+        },
+        {
+            "log_id": "LOG-1008",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 12:29:51"
+        },
+        {
+            "log_id": "LOG-1009",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "Payment Received",
+            "details": "Paid $92.40 (USD) via Stripe Credit Card for ACE-2026-000101 (TX: pi_stripe_68d999c3dff0c3)",
+            "timestamp": "2026-09-21 13:04:21"
+        },
+        {
+            "log_id": "LOG-1010",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 13:08:52"
+        },
+        {
+            "log_id": "LOG-1011",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 13:10:01"
+        },
+        {
+            "log_id": "LOG-1012",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "Allocate Expert",
+            "details": "Allocated ACE-2026-000101 to EXP-304",
+            "timestamp": "2026-09-21 13:10:39"
+        },
+        {
+            "log_id": "LOG-1013",
+            "user_role": "Expert",
+            "user_id": "EXP-304",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-21 13:26:50"
+        },
+        {
+            "log_id": "LOG-1014",
+            "user_role": "Expert",
+            "user_id": "EXP-304",
+            "action": "Start Assignment",
+            "details": "Expert Clara Higgins (LLM) accepted and started order ACE-2026-000101",
+            "timestamp": "2026-09-21 13:30:10"
+        },
+        {
+            "log_id": "LOG-1134",
+            "user_role": "Expert",
+            "user_id": "EXP-304",
+            "action": "Change Password",
+            "details": "Expert Clara Higgins (LLM) changed their portal password",
+            "timestamp": "2026-09-21 13:32:10"
+        },
+        {
+            "log_id": "LOG-1018",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 05:53:02"
+        },
+        {
+            "log_id": "LOG-1019",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 05:53:15"
+        },
+        {
+            "log_id": "LOG-1137",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Reset Expert Password",
+            "details": "Reset password for expert EXP-301",
+            "timestamp": "2026-09-22 05:54:11"
+        },
+        {
+            "log_id": "LOG-1020",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 05:54:18"
+        },
+        {
+            "log_id": "LOG-1139",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Reset Expert Password",
+            "details": "Reset password for expert EXP-301",
+            "timestamp": "2026-09-22 05:54:37"
+        },
+        {
+            "log_id": "LOG-1140",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "Change Password",
+            "details": "Expert Dr. Robert Vance (PhD) changed their portal password",
+            "timestamp": "2026-09-22 05:54:54"
+        },
+        {
+            "log_id": "LOG-1021",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 05:55:05"
+        },
+        {
+            "log_id": "LOG-1142",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Reset Expert Password",
+            "details": "Reset password for expert EXP-301",
+            "timestamp": "2026-09-22 05:55:19"
+        },
+        {
+            "log_id": "LOG-1022",
+            "user_role": "Expert",
+            "user_id": "EXP-304",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 05:56:48"
+        },
+        {
+            "log_id": "LOG-1023",
+            "user_role": "Expert",
+            "user_id": "EXP-304",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 06:10:05"
+        },
+        {
+            "log_id": "LOG-1024",
+            "user_role": "Expert",
+            "user_id": "EXP-304",
+            "action": "Solution Upload",
+            "details": "Expert Clara Higgins (LLM) uploaded solution for order ACE-2026-000101 (1 files)",
+            "timestamp": "2026-09-22 06:10:21"
+        },
+        {
+            "log_id": "LOG-1025",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 06:19:59"
+        },
+        {
+            "log_id": "LOG-1026",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "Solution Upload",
+            "details": "Expert Dr. Robert Vance (PhD) uploaded solution for order ACE-2026-000104 (1 files)",
+            "timestamp": "2026-09-22 06:20:01"
+        },
+        {
+            "log_id": "LOG-1027",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 06:20:33"
+        },
+        {
+            "log_id": "LOG-1028",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Approve Solution",
+            "details": "Admin approved solution and marked order ACE-2026-000104 Completed",
+            "timestamp": "2026-09-22 06:21:17"
+        },
+        {
+            "log_id": "LOG-1029",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "Update Profile",
+            "details": "Expert updated profile details",
+            "timestamp": "2026-09-22 06:23:29"
+        },
+        {
+            "log_id": "LOG-1030",
+            "user_role": "Expert",
+            "user_id": "EXP-301",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 06:27:09"
+        },
+        {
+            "log_id": "LOG-1031",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 06:31:46"
+        },
+        {
+            "log_id": "LOG-1032",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 08:43:27"
+        },
+        {
+            "log_id": "LOG-1033",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "Allocate Expert",
+            "details": "Allocated ACE-2026-000101 to EXP-304",
+            "timestamp": "2026-09-22 08:48:26"
+        },
+        {
+            "log_id": "LOG-1034",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "Allocate Expert",
+            "details": "Allocated ACE-2026-000101 to EXP-304",
+            "timestamp": "2026-09-22 08:49:55"
+        },
+        {
+            "log_id": "LOG-1035",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "Allocate Expert",
+            "details": "Allocated ACE-2026-000101 to EXP-304",
+            "timestamp": "2026-09-22 08:51:37"
+        },
+        {
+            "log_id": "LOG-1036",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "Allocate Expert",
+            "details": "Allocated ACE-2026-000101 to EXP-304",
+            "timestamp": "2026-09-22 08:52:58"
+        },
+        {
+            "log_id": "LOG-1037",
+            "user_role": "Allocator",
+            "user_id": "ALL-501",
+            "action": "Allocate Expert",
+            "details": "Allocated ACE-2026-000101 to EXP-304",
+            "timestamp": "2026-09-22 08:58:36"
+        },
+        {
+            "log_id": "LOG-1038",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 09:16:54"
+        },
+        {
+            "log_id": "LOG-1160",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Create Admin",
+            "details": "Created administrator System admin (ADM-002)",
+            "timestamp": "2026-09-22 09:18:52"
+        },
+        {
+            "log_id": "LOG-1161",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Create Admin",
+            "details": "Created administrator System admin (ADM-002)",
+            "timestamp": "2026-09-22 09:19:05"
+        },
+        {
+            "log_id": "LOG-1039",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 09:28:06"
+        },
+        {
+            "log_id": "LOG-1040",
+            "user_role": "Admin",
+            "user_id": "ADM-002",
+            "action": "Final Admin Approval",
+            "details": "Admin granted final approval and released solution for order ACE-2026-000101 to student",
+            "timestamp": "2026-09-22 09:45:25"
+        },
+        {
+            "log_id": "LOG-1041",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 10:02:06"
+        },
+        {
+            "log_id": "LOG-1042",
+            "user_role": "Student",
+            "user_id": "STU-1001",
+            "action": "User Login",
+            "details": "Logged into portal",
+            "timestamp": "2026-09-22 10:02:52"
         }
     ],
     "courses": [

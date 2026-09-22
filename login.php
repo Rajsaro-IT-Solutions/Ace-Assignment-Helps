@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: /admin/index.php');
             } elseif ($user['role'] === 'Allocator') {
                 header('Location: /allocator/index.php');
+            } elseif ($user['role'] === 'Expert') {
+                header('Location: /expert/index.php');
             } else {
                 header('Location: /student/index.php');
             }
@@ -81,7 +83,7 @@ include __DIR__ . '/includes/header.php';
         New Student? <a href="/register.php" style="font-weight:700;">Create a Free Account</a>
       </p>
       <small style="color: var(--text-dim); display: block; margin-top: 8px;">
-        <i class="fa-solid fa-lock"></i> Allocator & Staff accounts are managed by Platform Admins.
+        <i class="fa-solid fa-lock"></i> Allocator, Expert & Staff accounts are managed by Platform Admins.
       </small>
     </div>
   </div>

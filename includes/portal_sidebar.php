@@ -19,7 +19,7 @@ $currUri = $_SERVER['REQUEST_URI'] ?? '';
       <a href="/student/new-assignment.php" class="sidebar-link <?php echo strpos($currUri, 'new-assignment') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-file-circle-plus"></i> Submit Assignment
       </a>
-      <a href="/student/assignments.php" class="sidebar-link <?php echo strpos($currUri, '/student/assignments.php') !== false ? 'active' : ''; ?>">
+      <a href="/student/assignments.php" class="sidebar-link <?php echo (strpos($currUri, '/student/assignments.php') !== false || strpos($currUri, 'checkout.php') !== false) ? 'active' : ''; ?>">
         <i class="fa-solid fa-book-open"></i> My Assignments
       </a>
       <a href="/student/history.php" class="sidebar-link <?php echo strpos($currUri, 'history') !== false ? 'active' : ''; ?>">
@@ -59,6 +59,26 @@ $currUri = $_SERVER['REQUEST_URI'] ?? '';
       </a>
       <a href="/allocator/email-center.php" class="sidebar-link <?php echo strpos($currUri, 'email-center') !== false ? 'active' : ''; ?>">
         <i class="fa-solid fa-paper-plane"></i> Email Center
+      </a>
+
+    <?php elseif ($role === 'Expert'): ?>
+      <div class="nav-section-lbl">Expert Workspace</div>
+      <a href="/expert/index.php" class="sidebar-link <?php echo strpos($currUri, '/expert/index.php') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-gauge"></i> Dashboard Overview
+      </a>
+      <a href="/expert/assignments.php" class="sidebar-link <?php echo (strpos($currUri, '/expert/assignments.php') !== false || strpos($currUri, '/expert/assignment-detail.php') !== false) ? 'active' : ''; ?>">
+        <i class="fa-solid fa-list-check"></i> My Assigned Tasks
+      </a>
+      <a href="/expert/completed.php" class="sidebar-link <?php echo strpos($currUri, 'completed') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-circle-check"></i> Completed Solutions
+      </a>
+      <a href="/expert/messages.php" class="sidebar-link <?php echo strpos($currUri, 'messages') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-comments"></i> Order Communications
+      </a>
+
+      <div class="nav-section-lbl">Account & Security</div>
+      <a href="/expert/profile.php" class="sidebar-link <?php echo strpos($currUri, 'profile') !== false ? 'active' : ''; ?>">
+        <i class="fa-solid fa-user-gear"></i> Profile & Change Password
       </a>
 
     <?php elseif ($role === 'Admin'): ?>
