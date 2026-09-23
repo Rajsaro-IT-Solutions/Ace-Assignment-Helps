@@ -48,6 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetDir = __DIR__ . '/../assets/uploads/';
         if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
 
+        $solStage = trim($_POST['file_stage'] ?? 'complete');
+        if (!in_array($solStage, ['draft', 'complete'])) $solStage = 'complete';
+
         // A. Process Primary Solution File
         if (isset($_FILES['solution_file']) && $_FILES['solution_file']['error'] === UPLOAD_ERR_OK) {
             $origName = basename($_FILES['solution_file']['name']);
@@ -63,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'file_name' => $origName,
                     'path' => 'assets/uploads/' . $uniqueName,
                     'file_type' => $ext ?: 'file',
-                    'uploaded_by' => 'Expert (' . $user['name'] . ') Solution',
+                    'file_stage' => $solStage,
+                    'uploaded_by' => 'Expert (' . $user['name'] . ') ' . ($solStage === 'draft' ? 'Draft' : 'Solution'),
                     'upload_date' => date('Y-m-d H:i:s'),
                     'is_internal' => 0
                 ]);
@@ -86,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'file_name' => 'Turnitin_Report_' . $origName,
                     'path' => 'assets/uploads/' . $uniqueName,
                     'file_type' => $ext ?: 'pdf',
+                    'file_stage' => $solStage,
                     'uploaded_by' => 'Expert (' . $user['name'] . ') Turnitin',
                     'upload_date' => date('Y-m-d H:i:s'),
                     'is_internal' => 0
@@ -95,21 +100,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($filesUploaded > 0) {
-            // Update Assignment status to Quality Check
+            $newStatus = ($solStage === 'draft') ? 'In Progress' : 'Quality Check';
             DataStore::update('assignments', 'assignment_id', $asmId, [
-                'status' => 'Quality Check',
+                'status' => $newStatus,
                 'updated_at' => date('Y-m-d H:i:s')
             ]);
 
-            add_audit_log('Expert', $user['id'], 'Solution Upload', "Expert {$user['name']} uploaded solution for order $asmId ($filesUploaded files)");
+            $stageLabel = ($solStage === 'draft') ? 'Milestone Draft' : 'Final Solution';
+            add_audit_log('Expert', $user['id'], 'File Upload', "Expert {$user['name']} uploaded $stageLabel for order $asmId ($filesUploaded files)");
 
             // Notify Allocator & Admin (Broadcast to all admins)
             if (!empty($asm['allocator_id'])) {
-                add_notification('Allocator', $asm['allocator_id'], "Solution Submitted - $asmId", "Expert {$user['name']} submitted the final solution for order $asmId. Ready for QA review.", 'success', "/allocator/assignment-detail.php?id=$asmId");
+                add_notification('Allocator', $asm['allocator_id'], "$stageLabel Submitted - $asmId", "Expert {$user['name']} submitted a $stageLabel for order $asmId.", 'info', "/allocator/assignment-detail.php?id=$asmId");
             }
-            add_notification('Admin', '', "Solution Submitted - $asmId", "Expert {$user['name']} uploaded final solution for order $asmId. Ready for Quality Check review.", 'success', "/admin/assignment-detail.php?id=$asmId");
+            add_notification('Admin', '', "$stageLabel Submitted - $asmId", "Expert {$user['name']} uploaded $stageLabel for order $asmId.", 'info', "/admin/assignment-detail.php?id=$asmId");
 
-            $_SESSION['flash_msg'] = "Solution successfully submitted! The project status is now 'Quality Check'.";
+            $_SESSION['flash_msg'] = ($solStage === 'draft') ? "Milestone draft uploaded! It is available to the student according to their milestone payment tier." : "Solution successfully submitted! The project status is now 'Quality Check'.";
             $_SESSION['flash_type'] = 'success';
         } else {
             $errCode = $_FILES['solution_file']['error'] ?? -1;
@@ -180,9 +186,9 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
     </div>
   </div>
 
-  <div style="display:flex; gap:10px;">
+  <div style="display:flex; gap:10px; align-items:center;">
     <a href="/expert/messages.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-outline btn-sm">
-      <i class="fa-solid fa-comments"></i> Chat with Allocator
+      <i class="fa-solid fa-user-shield"></i> Coordinator Messages
     </a>
   </div>
 </div>
@@ -366,12 +372,34 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
         <form method="POST" enctype="multipart/form-data">
           <input type="hidden" name="action" value="upload_solution">
 
+          <div style="margin-bottom:1.25rem; background:#f8fafc; padding:0.9rem 1.1rem; border-radius:8px; border:1px solid #e2e8f0;">
+            <label style="font-weight:700; color:var(--text-main); display:block; margin-bottom:6px; font-size:0.88rem;">
+              <i class="fa-solid fa-tag" style="color:var(--primary);"></i> Deliverable Stage (Access Control):
+            </label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <label style="display:flex; align-items:flex-start; gap:8px; font-size:0.85rem; cursor:pointer; margin:0;">
+                <input type="radio" name="file_stage" value="complete" checked style="margin-top:3px;">
+                <div>
+                  <strong style="color:#059669;"><i class="fa-solid fa-file-circle-check"></i> Complete Final Solution</strong>
+                  <div style="color:var(--text-muted); font-size:0.78rem;">Moves order to Quality Check. Student sees blurred preview until 100% full payment is completed.</div>
+                </div>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:8px; font-size:0.85rem; cursor:pointer; margin:0;">
+                <input type="radio" name="file_stage" value="draft" style="margin-top:3px;">
+                <div>
+                  <strong style="color:#4338ca;"><i class="fa-solid fa-file-pen"></i> Milestone Work-in-Progress Draft</strong>
+                  <div style="color:var(--text-muted); font-size:0.78rem;">Student can download 1 draft under 50% payment, or up to 3 drafts after 50% milestone payment.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div class="form-group" style="margin-bottom:1.5rem;">
             <label style="font-weight:700; color:var(--text-main); display:block; margin-bottom:6px;">
               1. Final Solution File (.docx, .pdf, .zip, .py) *
             </label>
             <input type="file" name="solution_file" class="form-control" required style="padding:0.6rem;">
-            <small style="color:var(--text-muted); font-size:0.78rem;">Upload your completed work. Word doc, PDF, or zip archive recommended.</small>
+            <small style="color:var(--text-muted); font-size:0.78rem;">Upload your completed work or draft. Word doc, PDF, or zip archive recommended.</small>
           </div>
 
           <div class="form-group" style="margin-bottom:1.5rem;">
@@ -389,13 +417,14 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
             <textarea name="solution_notes" class="form-control" rows="3" placeholder="Add any comments, methodology notes, or guidance for the student and QA allocator..."></textarea>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-lg" style="width:100%; font-weight:800; padding:1rem; background:linear-gradient(135deg, #059669 0%, #047857 100%); border:none; cursor:pointer;" onclick="return confirm('Submit this completed solution for Quality Check review?');">
-            <i class="fa-solid fa-cloud-arrow-up"></i> Submit Solution for Quality Review
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%; font-weight:800; padding:1rem; background:linear-gradient(135deg, #059669 0%, #047857 100%); border:none; cursor:pointer;" onclick="return confirm('Submit this deliverable for processing?');">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Submit Deliverable
           </button>
         </form>
       </div>
 
     </div>
+
 
   </div>
 
@@ -457,7 +486,7 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
 
 </div>
 
-<script src="/assets/js/portal.js"></script>
+
 </div>
 </div>
 </div>

@@ -24,25 +24,33 @@ elseif ($currency === 'EUR') $currencySymbol = '€';
 elseif ($currency === 'AUD') $currencySymbol = 'A$';
 elseif ($currency === 'CAD') $currencySymbol = 'C$';
 
-// Fetch all public files for this assignment
+// Fetch all public files for this assignment (excluding internal or refund proof files)
 $files = DataStore::filter('files', function($f) use ($id) {
-    return isset($f['assignment_id']) && $f['assignment_id'] === $id && empty($f['is_internal']);
+    return isset($f['assignment_id']) && $f['assignment_id'] === $id && empty($f['is_internal']) && (($f['file_stage'] ?? '') !== 'refund_proof');
 });
 
 $techFiles = array_values(array_filter($files, function($f) {
     return is_tech_file($f);
 }));
 
-// Segregate deliverables from initial student brief files
-$solutionFiles = array_values(array_filter($files, function($f) {
-    return is_solution_file($f);
+// Drafts vs Complete files vs Brief files
+$draftFiles = array_values(array_filter($files, function($f) {
+    return is_draft_file($f);
+}));
+
+$completeSolutionFiles = array_values(array_filter($files, function($f) {
+    return is_complete_solution_file($f);
 }));
 
 $studentBriefFiles = array_values(array_filter($files, function($f) {
-    return !is_solution_file($f);
+    return !is_solution_file($f) && !is_draft_file($f);
 }));
 
-$docSolutionFiles = array_values(array_filter($solutionFiles, function($f) {
+$docDraftFiles = array_values(array_filter($draftFiles, function($f) {
+    return !is_tech_file($f);
+}));
+
+$docSolutionFiles = array_values(array_filter($completeSolutionFiles, function($f) {
     return !is_tech_file($f);
 }));
 
@@ -52,10 +60,12 @@ $docBriefFiles = array_values(array_filter($studentBriefFiles, function($f) {
 
 // Verification & Payment flags
 $isAdminApproved = in_array($asm['status'], ['Completed', 'Delivered']);
-$isPaid = is_assignment_paid($asm['assignment_id']);
-$isPartiallyPaid = ($asm['payment_status'] === 'Partially Paid') || (!empty($asm['remaining_balance']) && floatval($asm['remaining_balance']) > 0);
+$isPaid = is_assignment_paid($asm['assignment_id']); // true only if 100% paid
+$paidPercentage = get_assignment_paid_percentage($asm);
+$draftLimit = get_assignment_draft_limit($asm);
 $paidAmount = floatval($asm['paid_amount'] ?? 0);
 $remainingBalance = floatval($asm['remaining_balance'] ?? ($isPaid ? 0 : $asm['final_price']));
+$isPartiallyPaid = !$isPaid && ($paidAmount > 0 || ($asm['payment_status'] === 'Partially Paid') || ($remainingBalance > 0));
 
 // Workflow steps array
 $workflow = [
@@ -68,7 +78,7 @@ $workflow = [
 ];
 ?>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+<div data-assignment-id="<?php echo htmlspecialchars($asm['assignment_id']); ?>" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
   <div>
     <a href="/student/assignments.php" style="color:var(--text-muted); font-size:0.9rem; text-decoration:none;"><i class="fa-solid fa-arrow-left"></i> Back to My Assignments</a>
     <h2 style="font-size:1.8rem; margin-top:0.3rem; color:var(--text-main);"><?php echo htmlspecialchars($asm['title']); ?></h2>
@@ -190,7 +200,107 @@ $workflow = [
 <div class="grid-2" style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem;">
   <div>
 
-    <!-- DELIVERABLES SECTION -->
+    <!-- WORK-IN-PROGRESS MILESTONE DRAFTS SECTION -->
+    <div class="table-card" style="padding:1.5rem; border:1.5px solid #6366f1; background:linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); margin-bottom:1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <h3 style="font-size:1.15rem; color:#4338ca; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-file-pen" style="color:#6366f1;"></i> Work-in-Progress Milestone Drafts (<?php echo count($draftFiles); ?>)
+          </h3>
+          <small style="color:var(--text-muted);">
+            Progressive working drafts submitted by your allocated expert specialist for review and feedback
+          </small>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700; font-size:0.75rem;">
+            <i class="fa-solid fa-layer-group"></i> Milestone Access: <?php echo ($isPaid ? '100% Full Access' : ($paidPercentage >= 50 ? 'Tier 2 (Up to 3 Drafts)' : ($paidPercentage > 0 ? 'Tier 1 (1 Draft Max)' : 'Payment Required'))); ?>
+          </span>
+        </div>
+      </div>
+
+      <!-- Milestone Payment Progress Tracker Bar -->
+      <div style="background:#f1f5f9; border-radius:8px; padding:0.75rem 1rem; margin-bottom:1rem; border:1px solid #e2e8f0;">
+        <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:6px;">
+          <span><strong>Payment Progress:</strong> <?php echo format_currency_amount($paidAmount, $currency); ?> of <?php echo format_currency_amount($asm['final_price'], $currency); ?> (<?php echo round($paidPercentage); ?>%)</span>
+          <span style="color:var(--primary); font-weight:700;">
+            <?php if ($isPaid): ?>
+              <i class="fa-solid fa-circle-check" style="color:var(--success);"></i> 100% Settled &bull; All Deliverables Unlocked
+            <?php elseif ($paidPercentage >= 50): ?>
+              <i class="fa-solid fa-circle-check" style="color:var(--primary);"></i> 50% Milestone Cleared &bull; 2 More Drafts Unlocked
+            <?php elseif ($paidPercentage > 0): ?>
+              <i class="fa-solid fa-circle-info" style="color:#d97706;"></i> 50% Minimum Needed for Draft 2 & 3
+            <?php else: ?>
+              <i class="fa-solid fa-lock" style="color:#ef4444;"></i> Unpaid
+            <?php endif; ?>
+          </span>
+        </div>
+        <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+          <div style="height:100%; width:<?php echo min(100, max(5, round($paidPercentage))); ?>%; background:<?php echo $isPaid ? '#10b981' : ($paidPercentage >= 50 ? '#6366f1' : '#f59e0b'); ?>; transition:width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <?php if (empty($draftFiles)): ?>
+        <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:1.25rem; text-align:center; color:var(--text-muted); font-size:0.88rem;">
+          <i class="fa-solid fa-file-pen" style="font-size:1.4rem; color:#818cf8; margin-bottom:6px; display:block;"></i>
+          No drafts published yet. Your allocated expert writer is currently drafting your initial work. Draft #1 will be posted here upon completion.
+        </div>
+      <?php else: ?>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <?php 
+          $draftCounter = 1;
+          foreach ($draftFiles as $file): 
+            $ext = strtolower($file['file_type'] ?? pathinfo($file['file_name'], PATHINFO_EXTENSION));
+            $icon = 'fa-file';
+            if (in_array($ext, ['pdf'])) $icon = 'fa-file-pdf';
+            elseif (in_array($ext, ['doc', 'docx'])) $icon = 'fa-file-word';
+            elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $icon = 'fa-file-excel';
+            elseif (in_array($ext, ['zip', 'rar', '7z'])) $icon = 'fa-file-zipper';
+            elseif (in_array($ext, ['py', 'java', 'cpp', 'html', 'ipynb'])) $icon = 'fa-file-code';
+
+            $canDownloadDraft = ($draftCounter <= $draftLimit);
+          ?>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; border:1px solid <?php echo $canDownloadDraft ? '#c7d2fe' : '#fed7aa'; ?>; padding:0.9rem 1.1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:38px; height:38px; border-radius:8px; background:<?php echo $canDownloadDraft ? '#e0e7ff' : '#fef3c7'; ?>; color:<?php echo $canDownloadDraft ? '#4338ca' : '#d97706'; ?>; display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">
+                  <i class="fa-solid <?php echo $canDownloadDraft ? $icon : 'fa-lock'; ?>"></i>
+                </div>
+                <div>
+                  <strong style="color:var(--text-main); font-size:0.95rem;"><?php echo htmlspecialchars($file['file_name']); ?></strong>
+                  <span class="badge" style="background:#e0e7ff; color:#3730a3; font-size:0.72rem; margin-left:6px; font-weight:700;">
+                    Draft #<?php echo $draftCounter; ?> Deliverable
+                  </span>
+                  <?php if (!$canDownloadDraft): ?>
+                    <span class="badge badge-warning" style="font-size:0.7rem; margin-left:4px;">
+                      <i class="fa-solid fa-lock"></i> Locked &bull; Requires <?php echo ($draftCounter <= 3) ? 'Min 50% Payment' : '100% Payment'; ?>
+                    </span>
+                  <?php endif; ?>
+                  <small style="color:var(--text-muted); display:block; margin-top:2px;">
+                    Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?>
+                  </small>
+                </div>
+              </div>
+
+              <div>
+                <?php if ($canDownloadDraft): ?>
+                  <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-primary btn-sm" style="font-weight:700;">
+                    <i class="fa-solid fa-download"></i> Download Draft #<?php echo $draftCounter; ?>
+                  </a>
+                <?php else: ?>
+                  <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>&pay_remaining=1" class="btn btn-warning btn-sm" style="font-weight:700;">
+                    <i class="fa-solid fa-credit-card"></i> Pay to Unlock (<?php echo ($draftCounter <= 3) ? '50% Min Needed' : '100% Full'; ?>)
+                  </a>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php 
+            $draftCounter++;
+          endforeach; 
+          ?>
+        </div>
+      <?php endif; ?>
+    </div>
+
+    <!-- DELIVERABLES SECTION (FINAL COMPLETE FILES) -->
     <?php if (!$isAdminApproved): ?>
       <!-- Pre-Approval State: Solution Hidden, Quality Check & Admin Review In Progress Banner -->
       <div class="table-card" style="padding:1.75rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%); border: 1.5px solid rgba(168, 85, 247, 0.35); border-radius:12px; margin-bottom:1.5rem;">
@@ -207,7 +317,7 @@ $workflow = [
             </div>
             <h3 style="font-size:1.25rem; color:var(--text-main); margin:0 0 0.5rem 0;">Solution in Quality Check & Administrative Verification</h3>
             <p style="color:var(--text-muted); font-size:0.92rem; line-height:1.6; margin:0 0 1rem 0;">
-              Our Quality Assurance committee and Academic Directors are currently conducting Turnitin plagiarism detection, citation auditing, and rubric compliance checks. As per platform policy, solution files are released to your portal immediately once final administrative sign-off is completed.
+              Our Quality Assurance committee and Academic Directors are currently conducting Turnitin plagiarism detection, citation auditing, and rubric compliance checks. As per platform policy, complete solution files are released to your portal immediately once final administrative sign-off is completed.
             </p>
             <div style="background:#fff; border:1px solid var(--portal-border); border-radius:8px; padding:0.8rem 1.2rem; display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.85rem; color:var(--text-muted);">
               <div><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Expert Drafting: <strong>Completed</strong></div>
@@ -223,12 +333,12 @@ $workflow = [
     <?php else: ?>
       <!-- Admin Final Approval Granted -->
       <?php if (!$isPaid): ?>
-        <!-- SUB-CASE: Admin Approved BUT Payment Still Pending -> BLURRED PREVIEW WITH PAY NOW OPTION ONLY -->
+        <!-- SUB-CASE: Admin Approved BUT 100% Payment Not Completed -> BLURRED PREVIEW WITH PAY NOW OPTION ONLY -->
         <div class="table-card" style="padding:0; overflow:hidden; border: 1.5px solid #f59e0b; position:relative; border-radius:12px; margin-bottom:1.5rem;">
           <div style="padding:1rem 1.5rem; background:rgba(245, 158, 11, 0.08); border-bottom:1px solid #fed7aa; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span class="badge badge-warning" style="font-weight:800; font-size:0.8rem;"><i class="fa-solid fa-lock"></i> Payment Required to Unlock</span>
-              <h3 style="font-size:1.05rem; margin:0; color:var(--text-main);">Verified Solution Deliverables (<?php echo count($solutionFiles) ?: 2; ?> Files)</h3>
+              <span class="badge badge-warning" style="font-weight:800; font-size:0.8rem;"><i class="fa-solid fa-lock"></i> 100% Payment Required to Unlock</span>
+              <h3 style="font-size:1.05rem; margin:0; color:var(--text-main);">Verified Complete Deliverables (<?php echo count($completeSolutionFiles) ?: 2; ?> Files)</h3>
             </div>
             <span style="font-size:0.85rem; color:#b45309; font-weight:700;"><i class="fa-solid fa-circle-check"></i> Approved by Administration</span>
           </div>
@@ -236,8 +346,8 @@ $workflow = [
           <!-- Blurred Preview Container (Non-interactive & Blurred) -->
           <div style="position:relative; min-height:230px;">
             <div class="solution-blur-preview" style="filter: blur(8px); -webkit-filter: blur(8px); user-select: none; pointer-events: none; opacity: 0.55; padding: 1.5rem; display: flex; flex-direction: column; gap: 10px;">
-              <?php if (!empty($solutionFiles)): ?>
-                <?php foreach ($solutionFiles as $sf): 
+              <?php if (!empty($completeSolutionFiles)): ?>
+                <?php foreach ($completeSolutionFiles as $sf): 
                   $isTurnitin = stripos($sf['file_name'], 'turnitin') !== false;
                 ?>
                   <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid var(--portal-border); padding:0.8rem 1rem; border-radius:var(--radius-sm);">
@@ -278,30 +388,30 @@ $workflow = [
                 <i class="fa-solid fa-lock"></i>
               </div>
               <h3 style="color:#ffffff; font-size:1.3rem; font-weight:800; margin:0 0 0.35rem 0;">
-                Solution Approved & Ready — Payment Required to Download
+                Solution Approved & Ready — 100% Payment Required to Download
               </h3>
               <p style="color:#cbd5e1; font-size:0.88rem; max-width:560px; line-height:1.5; margin:0 0 1.1rem 0;">
-                Your solution and Turnitin originality report have received final administrative approval. Clear your outstanding balance of <strong><?php echo format_currency_amount($asm['final_price'], $currency); ?></strong> to immediately unblur and download your completed assignment files.
+                Your complete solution and Turnitin originality report have received final administrative approval. You have paid <?php echo format_currency_amount($paidAmount, $currency); ?> (<?php echo round($paidPercentage); ?>%). Clear your outstanding balance of <strong><?php echo format_currency_amount($remainingBalance, $currency); ?></strong> to immediately unblur and download your completed solution files.
               </p>
               <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center;">
-                <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>" class="btn btn-primary btn-lg" style="font-size:1.05rem; padding:0.85rem 2.2rem; font-weight:800; background:linear-gradient(135deg, #6366f1, #4f46e5); box-shadow:0 6px 20px rgba(99,102,241,0.55); border:none; text-decoration:none;">
-                  <i class="fa-solid fa-credit-card"></i> Pay Now (<?php echo format_currency_amount($asm['final_price'], $currency); ?>)
+                <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>&pay_remaining=1" class="btn btn-primary btn-lg" style="font-size:1.05rem; padding:0.85rem 2.2rem; font-weight:800; background:linear-gradient(135deg, #6366f1, #4f46e5); box-shadow:0 6px 20px rgba(99,102,241,0.55); border:none; text-decoration:none;">
+                  <i class="fa-solid fa-credit-card"></i> Pay Remaining Balance (<?php echo format_currency_amount($remainingBalance, $currency); ?>)
                 </a>
               </div>
               <small style="color:#94a3b8; font-size:0.78rem; margin-top:0.6rem;">
-                <i class="fa-solid fa-shield-halved"></i> 256-Bit SSL Encrypted &bull; Instant File Unlocking Upon Payment
+                <i class="fa-solid fa-shield-halved"></i> 256-Bit SSL Encrypted &bull; Instant File Unlocking Upon 100% Payment
               </small>
             </div>
           </div>
         </div>
       <?php else: ?>
-        <!-- SUB-CASE: Admin Approved AND Paid -> CRYSTAL CLEAR WITH ACTIVE DOWNLOADS -->
+        <!-- SUB-CASE: Admin Approved AND 100% Paid -> CRYSTAL CLEAR WITH ACTIVE DOWNLOADS -->
         <div class="table-card" style="padding:1.5rem; border: 1.5px solid #10b981; margin-bottom:1.5rem;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; flex-wrap:wrap; gap:1rem;">
             <div>
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                 <span class="badge badge-success" style="font-weight:800; font-size:0.8rem;"><i class="fa-solid fa-circle-check"></i> Approved & Ready for Download</span>
-                <span class="badge badge-info" style="font-weight:700; font-size:0.8rem;"><i class="fa-solid fa-receipt"></i> Payment Settled</span>
+                <span class="badge badge-info" style="font-weight:700; font-size:0.8rem;"><i class="fa-solid fa-receipt"></i> 100% Paid In Full</span>
               </div>
               <h3 style="font-size:1.2rem; color:var(--text-main); margin:0;">Final Completed Solution Deliverables</h3>
             </div>
@@ -365,8 +475,9 @@ $workflow = [
         <div style="display:flex; flex-direction:column; gap:10px;">
           <?php foreach ($techFiles as $file): 
             $ext = strtoupper(pathinfo($file['file_name'], PATHINFO_EXTENSION));
-            $isSolution = is_solution_file($file);
-            $canDownload = !$isSolution || ($isAdminApproved && $isPaid);
+            $isTechSolution = is_solution_file($file) || is_complete_solution_file($file);
+            // Technical solution files CANNOT be downloaded until 100% full payment is complete
+            $canDownloadTech = !$isTechSolution || ($isAdminApproved && $isPaid);
           ?>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; border:1px solid #bae6fd; padding:0.85rem 1.1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
               <div style="display:flex; align-items:center; gap:10px;">
@@ -375,7 +486,7 @@ $workflow = [
                 </span>
                 <div>
                   <strong style="color:var(--text-main); font-size:0.92rem;"><?php echo htmlspecialchars($file['file_name']); ?></strong>
-                  <?php if ($isSolution): ?>
+                  <?php if ($isTechSolution): ?>
                     <span class="badge badge-purple" style="font-size:0.7rem; margin-left:6px;"><i class="fa-solid fa-check"></i> Technical Solution Package</span>
                   <?php else: ?>
                     <span class="badge badge-success" style="font-size:0.7rem; margin-left:6px;">Student Brief Asset</span>
@@ -384,13 +495,13 @@ $workflow = [
                 </div>
               </div>
               <div>
-                <?php if ($canDownload): ?>
+                <?php if ($canDownloadTech): ?>
                   <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-primary btn-sm" style="font-weight:700;">
                     <i class="fa-solid fa-download"></i> Download Package
                   </a>
                 <?php else: ?>
-                  <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?><?php echo $isPartiallyPaid ? '&pay_remaining=1' : ''; ?>" class="btn btn-warning btn-sm" style="font-weight:700;">
-                    <i class="fa-solid fa-lock"></i> Unlock Download
+                  <a href="/checkout.php?assignment_id=<?php echo urlencode($asm['assignment_id']); ?>&pay_remaining=1" class="btn btn-warning btn-sm" style="font-weight:700;">
+                    <i class="fa-solid fa-lock"></i> Unlock Download (100% Payment Required)
                   </a>
                 <?php endif; ?>
               </div>
@@ -399,6 +510,8 @@ $workflow = [
         </div>
       <?php endif; ?>
     </div>
+
+
 
     <!-- Workflow Tracker -->
     <div class="table-card" style="padding:1.5rem;">
@@ -491,9 +604,9 @@ $workflow = [
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Referencing:</td><td style="text-align:right; color:var(--text-main);"><?php echo htmlspecialchars($asm['reference_style']); ?></td></tr>
         <tr style="border-bottom:1px solid var(--portal-border);"><td style="padding:8px 0; color:var(--text-muted);">Payment Status:</td><td style="text-align:right; color:var(--text-main); font-weight:700;">
           <?php if ($isPaid): ?>
-            <span class="badge badge-success"><i class="fa-solid fa-check"></i> Paid In Full</span>
+            <span class="badge badge-success"><i class="fa-solid fa-check"></i> Paid In Full (100%)</span>
           <?php elseif ($isPartiallyPaid): ?>
-            <span class="badge badge-info"><i class="fa-solid fa-pie-chart"></i> Partially Paid (<?php echo htmlspecialchars($asm['payment_plan'] ?? 'Milestone'); ?>)</span>
+            <span class="badge badge-info"><i class="fa-solid fa-pie-chart"></i> Partially Paid (<?php echo round($paidPercentage); ?>% Paid)</span>
           <?php else: ?>
             <span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Payment Pending</span>
           <?php endif; ?>
@@ -559,10 +672,10 @@ $workflow = [
 
 <!-- Refund Request Modal -->
 <div id="refundModal" class="modal-overlay">
-  <div class="modal-box" style="padding:2rem; max-width:520px;">
+  <div class="modal-box" style="padding:2rem; max-width:540px;">
     <h3 style="margin-bottom:0.6rem; color:var(--text-main);"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--danger);"></i> Submit Refund Request</h3>
     <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">
-      We stand behind our work with our 100% satisfaction guarantee. If you are not satisfied with your deliverables or service, please state your reasons below for administrative review.
+      We stand behind our work with our 100% satisfaction guarantee. If you are not satisfied with your deliverables or service, please state your reasons and attach supporting proof below for administrative review.
     </p>
 
     <div class="form-group" style="margin-bottom:1rem;">
@@ -578,7 +691,15 @@ $workflow = [
 
     <div class="form-group" style="margin-bottom:1rem;">
       <label style="font-size:0.85rem; font-weight:700;">Detailed Explanation & Grounds *</label>
-      <textarea id="refundReasonInput" class="form-control" rows="4" placeholder="Please describe specifically what went wrong, including any professor comments or evidence..." required></textarea>
+      <textarea id="refundReasonInput" class="form-control" rows="3" placeholder="Please describe specifically what went wrong, including any professor comments or evidence..." required></textarea>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1rem;">
+      <label style="font-size:0.85rem; font-weight:700;"><i class="fa-solid fa-paperclip" style="color:var(--primary);"></i> Attach Proof / Evidence (Screenshots, Rubrics, Feedback) *</label>
+      <input type="file" id="refundFileInput" name="refund_files[]" multiple class="form-control">
+      <small style="color:var(--text-muted); font-size:0.8rem; display:block; margin-top:4px;">
+        Upload professor remarks, grade report, marked paper, or similarity proof in ANY format (PDF, DOCX, PNG, JPG, ZIP, etc.)
+      </small>
     </div>
 
     <div id="refundStatusMsg" style="margin-bottom:1rem;"></div>
@@ -601,12 +722,21 @@ function executeRefundRequest() {
     return;
   }
 
-  msgDiv.innerHTML = '<div class="badge badge-info"><i class="fa-solid fa-spinner fa-spin"></i> Submitting refund claim...</div>';
+  msgDiv.innerHTML = '<div class="badge badge-info"><i class="fa-solid fa-spinner fa-spin"></i> Submitting refund claim with evidence...</div>';
 
   const fd = new FormData();
   fd.append('assignment_id', '<?php echo $asm['assignment_id']; ?>');
   fd.append('category', cat);
+  fd.append('reason_category', cat);
   fd.append('reason', reason);
+  fd.append('reason_details', reason);
+
+  const refundFileInput = document.getElementById('refundFileInput');
+  if (refundFileInput && refundFileInput.files.length > 0) {
+    for (let i = 0; i < refundFileInput.files.length; i++) {
+      fd.append('refund_files[]', refundFileInput.files[i]);
+    }
+  }
 
   fetch('/api.php?action=request_refund', {
     method: 'POST',
@@ -689,9 +819,8 @@ if (studentAddFileForm) {
     });
   });
 }
-</script>
 
-<script src="/assets/js/portal.js"></script>
+</script>
 </div>
 </div>
 </body>

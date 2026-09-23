@@ -9,6 +9,10 @@ include __DIR__ . '/../includes/portal_header.php';
 $chatMessages = DataStore::filter('chat_messages', function($m) use ($user) {
     return isset($m['student_id']) && $m['student_id'] === $user['id'];
 });
+usort($chatMessages, function($a, $b) {
+    $t = strcmp($a['timestamp'] ?? '', $b['timestamp'] ?? '');
+    return $t !== 0 ? $t : (((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0)));
+});
 ?>
 
 <div style="max-width: 900px; margin:0 auto;">
@@ -92,6 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btn) btn.addEventListener('click', sendMsg);
   if (input) input.addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
+
+  if (stream) stream.scrollTop = stream.scrollHeight;
 });
 </script>
 

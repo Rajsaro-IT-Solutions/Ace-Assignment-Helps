@@ -174,7 +174,7 @@ function calculate_assignment_price($word_count, $deadline_hours, $academic_leve
     ];
 }
 
-function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Student', $isInternal = false)
+function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Student', $isInternal = false, $fileStage = 'draft')
 {
     $uploadedRecords = [];
 
@@ -229,7 +229,8 @@ function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Stu
         $origName = basename($f['name']);
         $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
         $safePrefix = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($origName, PATHINFO_FILENAME));
-        $uniqueName = time() . '_' . rand(100, 999) . '_' . $safePrefix . ($ext ? '.' . $ext : '');
+        $stageTag = ($fileStage === 'complete') ? '_SOLUTION_' : (($fileStage === 'draft') ? '_DRAFT_' : '_');
+        $uniqueName = time() . $stageTag . rand(100, 999) . '_' . $safePrefix . ($ext ? '.' . $ext : '');
         $targetPath = $targetDir . $uniqueName;
 
         $moved = is_uploaded_file($f['tmp_name']) ? @move_uploaded_file($f['tmp_name'], $targetPath) : (@copy($f['tmp_name'], $targetPath) || @move_uploaded_file($f['tmp_name'], $targetPath));
@@ -242,6 +243,7 @@ function handle_uploaded_files($fileInputName, $assignmentId, $uploadedBy = 'Stu
                 'file_name' => $origName,
                 'path' => 'assets/uploads/' . $uniqueName,
                 'file_type' => $ext ?: 'file',
+                'file_stage' => $fileStage,
                 'uploaded_by' => $uploadedBy,
                 'upload_date' => date('Y-m-d H:i:s'),
                 'is_internal' => (bool) $isInternal
@@ -319,23 +321,82 @@ function is_assignment_paid($assignment_id)
     if (empty($assignment_id)) return false;
     $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
     if ($asm) {
-        if ((float)($asm['final_price'] ?? 0) <= 0) {
+        $final = (float)($asm['final_price'] ?? 0);
+        if ($final <= 0) {
             return true;
         }
-        if (isset($asm['payment_status']) && in_array(strtolower($asm['payment_status']), ['paid', 'completed', 'success', 'captured'])) {
+        $rem = (float)($asm['remaining_balance'] ?? 0);
+        $paid = (float)($asm['paid_amount'] ?? 0);
+        $status = strtolower($asm['payment_status'] ?? '');
+
+        // An assignment is ONLY fully paid if the remaining balance is zero
+        // AND (paid >= final price OR status is explicitly Paid/Completed)
+        if ($rem <= 0.01 && ($paid >= ($final - 0.01) || in_array($status, ['paid', 'completed', 'success', 'captured']))) {
             return true;
         }
-    }
-    $payments = DataStore::filter('payments', function ($p) use ($assignment_id) {
-        return isset($p['assignment_id']) && $p['assignment_id'] === $assignment_id;
-    });
-    foreach ($payments as $p) {
-        $st = strtolower($p['status'] ?? '');
-        if (in_array($st, ['paid', 'completed', 'success', 'captured'])) {
-            return true;
-        }
+        return false;
     }
     return false;
+}
+
+function get_assignment_paid_percentage($asm)
+{
+    if (!$asm) return 0.0;
+    $final = (float)($asm['final_price'] ?? 0);
+    if ($final <= 0) return 100.0;
+    $paid = (float)($asm['paid_amount'] ?? 0);
+    $rem = (float)($asm['remaining_balance'] ?? ($final - $paid));
+    if ($rem <= 0.01 && $paid >= ($final - 0.01)) {
+        return 100.0;
+    }
+    $pct = ($paid / $final) * 100;
+    return max(0.0, min(100.0, round($pct, 1)));
+}
+
+function get_assignment_draft_limit($asm)
+{
+    if (!$asm) return 0;
+    if (is_assignment_paid($asm['assignment_id'] ?? '')) {
+        return 999; // Unlimited / All
+    }
+    $pct = get_assignment_paid_percentage($asm);
+    if ($pct >= 99.9) {
+        return 999;
+    }
+    if ($pct >= 50.0) {
+        return 3; // 1 initial draft + 2 more drafts = 3 drafts
+    }
+    if ($pct > 0.0) {
+        return 1; // Partial payment (<50%, e.g. 20%) -> 1 draft
+    }
+    return 0; // Unpaid
+}
+
+function is_draft_file($file)
+{
+    if (empty($file)) return false;
+    $stage = strtolower($file['file_stage'] ?? '');
+    if ($stage === 'draft') return true;
+    if ($stage === 'complete' || $stage === 'refund_proof' || $stage === 'brief') return false;
+
+    $fileName = strtolower($file['file_name'] ?? '');
+    $path = strtolower($file['path'] ?? '');
+    $uploadedBy = strtolower($file['uploaded_by'] ?? '');
+
+    if (strpos($fileName, 'draft') !== false || strpos($path, '_draft_') !== false || strpos($uploadedBy, 'draft') !== false) {
+        return true;
+    }
+    return false;
+}
+
+function is_complete_solution_file($file)
+{
+    if (empty($file)) return false;
+    $stage = strtolower($file['file_stage'] ?? '');
+    if ($stage === 'complete') return true;
+    if ($stage === 'draft' || $stage === 'refund_proof' || $stage === 'brief') return false;
+
+    return is_solution_file($file) && !is_draft_file($file);
 }
 
 function is_solution_file($file)
@@ -344,17 +405,22 @@ function is_solution_file($file)
     $uploader = strtolower($file['uploaded_by'] ?? '');
     $fileName = strtolower($file['file_name'] ?? '');
     $path = strtolower($file['path'] ?? '');
+    $stage = strtolower($file['file_stage'] ?? '');
 
-    // Files uploaded by experts are solutions or Turnitin originality reports
+    if ($stage === 'complete' || $stage === 'draft') {
+        return true;
+    }
+
+    // Files uploaded by experts are solutions, drafts, or Turnitin originality reports
     if (strpos($uploader, 'expert') !== false) {
         return true;
     }
     // Files matching solution or turnitin naming patterns
-    if (strpos($path, '_solution_') !== false || strpos($fileName, 'solution') !== false || strpos($fileName, 'turnitin') !== false) {
+    if (strpos($path, '_solution_') !== false || strpos($path, '_draft_') !== false || strpos($fileName, 'solution') !== false || strpos($fileName, 'turnitin') !== false || strpos($fileName, 'draft') !== false) {
         return true;
     }
-    // Admin final deliverables
-    if (strpos($uploader, 'admin') !== false && (strpos($fileName, 'solution') !== false || strpos($path, 'solution') !== false)) {
+    // Admin deliverables
+    if (strpos($uploader, 'admin') !== false && (strpos($fileName, 'solution') !== false || strpos($path, 'solution') !== false || strpos($fileName, 'draft') !== false)) {
         return true;
     }
     return false;

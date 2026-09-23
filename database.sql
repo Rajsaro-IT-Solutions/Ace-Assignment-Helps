@@ -310,12 +310,37 @@ CREATE TABLE `files` (
   `file_name` varchar(255) NOT NULL,
   `path` varchar(255) NOT NULL,
   `file_type` varchar(50) DEFAULT NULL,
+  `file_stage` varchar(50) DEFAULT 'draft',
   `uploaded_by` varchar(100) DEFAULT NULL,
   `upload_date` datetime DEFAULT CURRENT_TIMESTAMP,
   `is_internal` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `file_id` (`file_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+-- Table structure for `chat_messages`
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `chat_messages`;
+CREATE TABLE `chat_messages` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `msg_id` varchar(50) NOT NULL,
+  `assignment_id` varchar(50) DEFAULT NULL,
+  `student_id` varchar(50) NOT NULL,
+  `expert_id` varchar(50) DEFAULT NULL,
+  `allocator_id` varchar(50) DEFAULT NULL,
+  `sender_id` varchar(50) NOT NULL,
+  `sender_role` varchar(50) NOT NULL,
+  `sender_name` varchar(100) NOT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `timestamp` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `msg_id` (`msg_id`),
+  KEY `assignment_id` (`assignment_id`),
+  KEY `student_id` (`student_id`),
+  KEY `expert_id` (`expert_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- Dumping data for table `files`
 INSERT INTO `files` (`id`, `file_id`, `assignment_id`, `file_name`, `path`, `file_type`, `uploaded_by`, `upload_date`, `is_internal`) VALUES ('19', 'FILE-977', 'ACE-2026-000101', 'Gokul.pdf', 'assets/uploads/1790101548_670_Gokul.pdf', 'pdf', 'Student', '2026-09-22 20:25:48', '0');

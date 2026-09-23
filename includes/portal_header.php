@@ -71,44 +71,4 @@ $userRole = $currentUser['role'];
 
     <div class="portal-content">
 
-<!-- Embedded Floating Live Chat Drawer (In-Portal Communication) -->
-<button class="floating-chat-btn" id="portalLiveChatTrigger" title="Open Live Portal Chat">
-  <i class="fa-brands fa-whatsapp"></i>
-</button>
 
-<div class="portal-chat-drawer" id="portalLiveChatDrawer">
-  <div class="chat-drawer-header">
-    <div style="display:flex; align-items:center; gap:10px;">
-      <div style="width:36px; height:36px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">
-        <i class="fa-brands fa-whatsapp"></i>
-      </div>
-      <div>
-        <div style="font-weight:700; font-size:0.95rem;">Ace Live Portal Support</div>
-        <small style="opacity:0.9; font-size:0.75rem;"><i class="fa-solid fa-circle" style="color:#a7f3d0; font-size:0.5rem; vertical-align:middle;"></i> Online &bull; Direct Portal Chat</small>
-      </div>
-    </div>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <?php
-      $portalWa = class_exists('DataStore') ? DataStore::getSetting('whatsapp_phone', '+91 8233432123') : '+91 8233432123';
-      $portalWaClean = preg_replace('/[^0-9]/', '', $portalWa);
-      if (empty($portalWaClean)) $portalWaClean = '918233432123';
-      ?>
-      <!-- Optional external link button ONLY if requested -->
-      <a href="https://wa.me/<?php echo $portalWaClean; ?>?text=Hi%20AceAssignment!%20I%20am%20chatting%20from%20the%20portal." target="_blank" class="btn btn-sm" style="background:rgba(255,255,255,0.2); color:#fff; border:none; padding:4px 8px; font-size:0.75rem;" title="Open in external WhatsApp (<?php echo htmlspecialchars($portalWa); ?>)">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> App
-      </a>
-      <button id="closePortalChatDrawer" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">&times;</button>
-    </div>
-  </div>
-
-  <div class="chat-drawer-body" id="portalChatBody">
-    <div class="chat-bubble support">
-      👋 Hello <strong><?php echo htmlspecialchars($currentUser['name']); ?></strong>! Welcome to Ace Assignment Helps live support. How can we assist your assignment today?
-    </div>
-  </div>
-
-  <div class="chat-drawer-footer">
-    <input type="text" id="portalChatInput" class="form-control" placeholder="Type your message here..." style="font-size:0.88rem;">
-    <button id="btnSendPortalChat" class="btn btn-success btn-sm"><i class="fa-solid fa-paper-plane"></i></button>
-  </div>
-</div>

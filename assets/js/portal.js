@@ -2,12 +2,19 @@
  * Ace Assignment Helps Portal Dynamic Utilities & Mobile Navigation
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+function initPortalAll() {
+  if (window._portalInitialized) return;
+  window._portalInitialized = true;
   initPortalMobileSidebarToggle();
   initTableSearchFilter();
   initModalListeners();
-  initLivePortalChat();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPortalAll);
+} else {
+  initPortalAll();
+}
 
 function initPortalMobileSidebarToggle() {
   const sidebarBtn = document.getElementById('portalSidebarBtn');
@@ -119,90 +126,18 @@ function closeModal(modalId) {
   }
 }
 
-function initLivePortalChat() {
-  const trigger = document.getElementById('portalLiveChatTrigger');
-  const drawer = document.getElementById('portalLiveChatDrawer');
-  const closeBtn = document.getElementById('closePortalChatDrawer');
-  const chatInput = document.getElementById('portalChatInput');
-  const sendBtn = document.getElementById('btnSendPortalChat');
-  const chatBody = document.getElementById('portalChatBody');
-
-  if (!trigger || !drawer) return;
-
-  function loadMessages() {
-    fetch('/api.php?action=get_chat_messages')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.messages.length > 0 && chatBody) {
-          chatBody.innerHTML = `
-            <div class="chat-bubble support">
-              👋 Hello! Welcome to Ace Assignment Helps live support. How can we assist your assignment today?
-            </div>
-          `;
-          data.messages.forEach(msg => {
-            const bubble = document.createElement('div');
-            const isUser = msg.sender_role === 'Student';
-            bubble.className = `chat-bubble ${isUser ? 'user' : 'support'}`;
-            bubble.innerHTML = `<strong>${escapeHtml(msg.sender_name)}:</strong> ${escapeHtml(msg.message)}`;
-            chatBody.appendChild(bubble);
-          });
-          chatBody.scrollTop = chatBody.scrollHeight;
-        }
-      });
-  }
-
-  trigger.addEventListener('click', () => {
-    drawer.classList.toggle('active');
-    if (drawer.classList.contains('active')) {
-      loadMessages();
-    }
-  });
-
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      drawer.classList.remove('active');
-    });
-  }
-
-  function sendMessage() {
-    const text = chatInput.value.trim();
-    if (!text) return;
-    
-    const bubble = document.createElement('div');
-    bubble.className = 'chat-bubble user';
-    bubble.innerHTML = `${escapeHtml(text)}`;
-    chatBody.appendChild(bubble);
-    chatBody.scrollTop = chatBody.scrollHeight;
-    chatInput.value = '';
-
-    const formData = new FormData();
-    formData.append('message', text);
-
-    fetch('/api.php?action=send_chat_message', {
-      method: 'POST',
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        loadMessages();
-      }
-    });
-  }
-
-  if (sendBtn) sendBtn.addEventListener('click', sendMessage);
-  if (chatInput) {
-    chatInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
-  }
-}
 
 function escapeHtml(str) {
   if (!str) return '';
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.escapeHtml = escapeHtml;
+

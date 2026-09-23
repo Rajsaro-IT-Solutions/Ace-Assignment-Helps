@@ -200,12 +200,16 @@ switch ($action) {
         $user = Auth::currentUser();
         $assignment_id = trim($_POST['assignment_id'] ?? '');
         $is_internal = !empty($_POST['is_internal']);
+        $file_stage = trim($_POST['file_stage'] ?? '');
+        if (empty($file_stage)) {
+            $file_stage = ($user['role'] === 'Student') ? 'brief' : 'draft';
+        }
 
         if ($assignment_id) {
             $inputKey = isset($_FILES['files']) ? 'files' : (isset($_FILES['file']) ? 'file' : (isset($_FILES['assignment_files']) ? 'assignment_files' : 'assignment_file'));
-            $uploaded = handle_uploaded_files($inputKey, $assignment_id, $user['name'] . ' (' . $user['role'] . ')', $is_internal);
+            $uploaded = handle_uploaded_files($inputKey, $assignment_id, $user['name'] . ' (' . $user['role'] . ')', $is_internal, $file_stage);
             if (!empty($uploaded)) {
-                add_audit_log($user['role'], $user['id'], 'Upload File', "Uploaded " . count($uploaded) . " file(s) to $assignment_id");
+                add_audit_log($user['role'], $user['id'], 'Upload File', "Uploaded " . count($uploaded) . " file(s) [Stage: $file_stage] to $assignment_id");
                 echo json_encode(['success' => true, 'message' => count($uploaded) . ' file(s) uploaded successfully!', 'files' => $uploaded]);
                 exit;
             } else {
@@ -214,6 +218,29 @@ switch ($action) {
             }
         }
         echo json_encode(['success' => false, 'message' => 'Assignment ID required.']);
+        exit;
+
+    case 'set_file_stage':
+        Auth::checkLoggedIn();
+        $user = Auth::currentUser();
+        if (!in_array($user['role'], ['Admin', 'Allocator', 'Expert'])) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            exit;
+        }
+        $file_id = trim($_POST['file_id'] ?? '');
+        $file_stage = trim($_POST['file_stage'] ?? 'draft');
+        if (!in_array($file_stage, ['draft', 'complete'])) {
+            $file_stage = 'draft';
+        }
+        if ($file_id) {
+            DataStore::update('files', 'file_id', $file_id, [
+                'file_stage' => $file_stage
+            ]);
+            add_audit_log($user['role'], $user['id'], 'Update File Stage', "Changed file $file_id stage to $file_stage");
+            echo json_encode(['success' => true, 'message' => "File updated to " . ucfirst($file_stage) . " successfully."]);
+            exit;
+        }
+        echo json_encode(['success' => false, 'message' => 'File ID required.']);
         exit;
 
     case 'delete_assignment_file':
@@ -733,33 +760,103 @@ switch ($action) {
             exit;
         }
         $msg_text = trim($_POST['message'] ?? '');
+        $assignment_id = trim($_POST['assignment_id'] ?? '');
         $student_id = trim($_POST['student_id'] ?? '');
+        $expert_id = trim($_POST['expert_id'] ?? '');
+        $allocator_id = trim($_POST['allocator_id'] ?? '');
+
+        // If assignment_id is missing, auto-resolve from active user context
+        if (empty($assignment_id)) {
+            if ($user['role'] === 'Student') {
+                $userAsms = DataStore::filter('assignments', function($a) use ($user) {
+                    return isset($a['student_id']) && $a['student_id'] === $user['id'];
+                });
+                if (!empty($userAsms)) {
+                    $assignment_id = $userAsms[0]['assignment_id'];
+                }
+            } elseif ($user['role'] === 'Expert') {
+                $userAsms = DataStore::filter('assignments', function($a) use ($user) {
+                    return isset($a['expert_id']) && $a['expert_id'] === $user['id'];
+                });
+                if (!empty($userAsms)) {
+                    $assignment_id = $userAsms[0]['assignment_id'];
+                }
+            } elseif ($user['role'] === 'Allocator') {
+                $userAsms = DataStore::filter('assignments', function($a) use ($user) {
+                    return isset($a['allocator_id']) && $a['allocator_id'] === $user['id'];
+                });
+                if (!empty($userAsms)) {
+                    $assignment_id = $userAsms[0]['assignment_id'];
+                }
+            }
+        }
+
+        if ($assignment_id) {
+            $asm = DataStore::findOne('assignments', 'assignment_id', $assignment_id);
+            if ($asm) {
+                if (empty($student_id)) $student_id = $asm['student_id'];
+                if (empty($expert_id)) $expert_id = $asm['expert_id'] ?? null;
+                if (empty($allocator_id)) $allocator_id = $asm['allocator_id'] ?? null;
+            }
+        }
         if (!$student_id && $user['role'] === 'Student') {
             $student_id = $user['id'];
         }
-        $assignment_id = trim($_POST['assignment_id'] ?? '');
 
         if (!empty($msg_text)) {
             $msg_id = 'MSG-' . rand(1000, 9999);
             $new_msg = [
                 'msg_id' => $msg_id,
+                'assignment_id' => $assignment_id,
                 'student_id' => $student_id ?: $user['id'],
+                'expert_id' => $expert_id,
+                'allocator_id' => $allocator_id,
                 'sender_id' => $user['id'],
                 'sender_role' => $user['role'],
                 'sender_name' => $user['name'],
                 'message' => $msg_text,
-                'assignment_id' => $assignment_id,
                 'timestamp' => date('Y-m-d H:i:s')
             ];
             DataStore::insert('chat_messages', $new_msg);
 
-            // Fetch full thread for return
-            $thread = DataStore::filter('chat_messages', function($m) use ($student_id, $user) {
+            // Notify relevant parties
+            if ($user['role'] === 'Student') {
+                if (!empty($expert_id)) {
+                    add_notification('Expert', $expert_id, "Direct Chat from Student", "Student {$user['name']} messaged you regarding $assignment_id: " . substr($msg_text, 0, 70), 'info', "/expert/assignment-detail.php?id=$assignment_id");
+                }
+                // CC to Allocator and Admin
+                add_notification('Allocator', $allocator_id, "[CC Monitor] Student to Expert Chat", "Student {$user['name']} messaged Expert on $assignment_id: " . substr($msg_text, 0, 70), 'info', "/allocator/assignment-detail.php?id=$assignment_id");
+                add_notification('Admin', '', "[CC Monitor] Student to Expert Chat", "Student {$user['name']} messaged Expert on $assignment_id: " . substr($msg_text, 0, 70), 'info', "/admin/assignment-detail.php?id=$assignment_id");
+            } elseif ($user['role'] === 'Expert') {
+                if (!empty($student_id)) {
+                    add_notification('Student', $student_id, "Message from Assigned Expert", "Expert Specialist messaged you on $assignment_id: " . substr($msg_text, 0, 70), 'info', "/student/assignment-detail.php?id=$assignment_id");
+                }
+                // CC to Allocator and Admin
+                add_notification('Allocator', $allocator_id, "[CC Monitor] Expert to Student Chat", "Expert {$user['name']} messaged Student on $assignment_id: " . substr($msg_text, 0, 70), 'info', "/allocator/assignment-detail.php?id=$assignment_id");
+                add_notification('Admin', '', "[CC Monitor] Expert to Student Chat", "Expert {$user['name']} messaged Student on $assignment_id: " . substr($msg_text, 0, 70), 'info', "/admin/assignment-detail.php?id=$assignment_id");
+            } elseif (in_array($user['role'], ['Allocator', 'Admin'])) {
+                if (!empty($student_id)) {
+                    add_notification('Student', $student_id, "Message from Academic Coordinator", "{$user['role']} {$user['name']} posted on order $assignment_id: " . substr($msg_text, 0, 70), 'info', "/student/assignment-detail.php?id=$assignment_id");
+                }
+                if (!empty($expert_id)) {
+                    add_notification('Expert', $expert_id, "Coordinator Note on Order", "{$user['role']} {$user['name']} posted on order $assignment_id: " . substr($msg_text, 0, 70), 'info', "/expert/assignment-detail.php?id=$assignment_id");
+                }
+            }
+
+            // Fetch full thread for return sorted chronologically (oldest first)
+            $thread = DataStore::filter('chat_messages', function($m) use ($assignment_id, $student_id, $user) {
+                if ($assignment_id && !empty($m['assignment_id'])) {
+                    return $m['assignment_id'] === $assignment_id;
+                }
                 $targetStudent = $student_id ?: $user['id'];
                 return isset($m['student_id']) && $m['student_id'] === $targetStudent;
             });
+            usort($thread, function($a, $b) {
+                $t = strcmp($a['timestamp'] ?? '', $b['timestamp'] ?? '');
+                return $t !== 0 ? $t : (((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0)));
+            });
             
-            echo json_encode(['success' => true, 'data' => $new_msg, 'messages' => array_values($thread)]);
+            echo json_encode(['success' => true, 'data' => $new_msg, 'messages' => array_values($thread), 'assignment_id' => $assignment_id]);
             exit;
         }
         echo json_encode(['success' => false, 'message' => 'Empty message']);
@@ -771,17 +868,54 @@ switch ($action) {
             echo json_encode(['success' => false, 'messages' => []]);
             exit;
         }
+        $assignment_id = trim($_REQUEST['assignment_id'] ?? '');
         $student_id = trim($_REQUEST['student_id'] ?? '');
+
+        // If assignment_id is missing, auto-resolve from active user context
+        if (empty($assignment_id)) {
+            if ($user['role'] === 'Student') {
+                $userAsms = DataStore::filter('assignments', function($a) use ($user) {
+                    return isset($a['student_id']) && $a['student_id'] === $user['id'];
+                });
+                if (!empty($userAsms)) {
+                    $assignment_id = $userAsms[0]['assignment_id'];
+                }
+            } elseif ($user['role'] === 'Expert') {
+                $userAsms = DataStore::filter('assignments', function($a) use ($user) {
+                    return isset($a['expert_id']) && $a['expert_id'] === $user['id'];
+                });
+                if (!empty($userAsms)) {
+                    $assignment_id = $userAsms[0]['assignment_id'];
+                }
+            } elseif ($user['role'] === 'Allocator') {
+                $userAsms = DataStore::filter('assignments', function($a) use ($user) {
+                    return isset($a['allocator_id']) && $a['allocator_id'] === $user['id'];
+                });
+                if (!empty($userAsms)) {
+                    $assignment_id = $userAsms[0]['assignment_id'];
+                }
+            }
+        }
+
         if (!$student_id && $user['role'] === 'Student') {
             $student_id = $user['id'];
         }
         
-        $messages = DataStore::filter('chat_messages', function($m) use ($student_id, $user) {
+        $messages = DataStore::filter('chat_messages', function($m) use ($assignment_id, $student_id, $user) {
+            if ($assignment_id && !empty($m['assignment_id'])) {
+                return $m['assignment_id'] === $assignment_id;
+            }
             $targetStudent = $student_id ?: $user['id'];
             return isset($m['student_id']) && $m['student_id'] === $targetStudent;
         });
 
-        echo json_encode(['success' => true, 'messages' => array_values($messages)]);
+        // Sort chronologically (oldest first, newest last)
+        usort($messages, function($a, $b) {
+            $t = strcmp($a['timestamp'] ?? '', $b['timestamp'] ?? '');
+            return $t !== 0 ? $t : (((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0)));
+        });
+
+        echo json_encode(['success' => true, 'messages' => array_values($messages), 'assignment_id' => $assignment_id]);
         exit;
 
     case 'request_revision':
@@ -793,7 +927,7 @@ switch ($action) {
         if ($assignment_id && !empty($revision_instructions)) {
             $uploaded = [];
             if (isset($_FILES['revision_files'])) {
-                $uploaded = handle_uploaded_files('revision_files', $assignment_id, $user['name'] . ' (Revision Request)', false);
+                $uploaded = handle_uploaded_files('revision_files', $assignment_id, $user['name'] . ' (Revision Request)', false, 'draft');
             }
             $fileNote = !empty($uploaded) ? " [" . count($uploaded) . " file(s) attached]" : "";
 
@@ -825,8 +959,8 @@ switch ($action) {
         Auth::checkRole('Student');
         $user = Auth::currentUser();
         $assignment_id = trim($_POST['assignment_id'] ?? '');
-        $reasonCategory = trim($_POST['reason_category'] ?? 'Quality Issues');
-        $reasonDetails = trim($_POST['reason_details'] ?? '');
+        $reasonCategory = trim($_POST['reason_category'] ?? ($_POST['category'] ?? 'Quality Issues'));
+        $reasonDetails = trim($_POST['reason_details'] ?? ($_POST['reason'] ?? ''));
 
         if (!$assignment_id || empty($reasonDetails)) {
             echo json_encode(['success' => false, 'message' => 'Please provide detailed grounds for your refund request.']);
@@ -846,7 +980,7 @@ switch ($action) {
 
         $uploaded = [];
         if (isset($_FILES['refund_files'])) {
-            $uploaded = handle_uploaded_files('refund_files', $assignment_id, $user['name'] . ' (Refund Evidence)', false);
+            $uploaded = handle_uploaded_files('refund_files', $assignment_id, $user['name'] . ' (Refund Evidence)', false, 'refund_proof');
         }
         $fileNote = !empty($uploaded) ? " [" . count($uploaded) . " proof file(s) attached]" : "";
         $fullReason = "[$reasonCategory] " . $reasonDetails . $fileNote;
@@ -868,10 +1002,11 @@ switch ($action) {
             'created_at' => date('Y-m-d H:i:s')
         ]);
 
-        add_audit_log('Student', $user['id'], 'Request Refund', "Student requested refund for $assignment_id ($reasonCategory)");
+        add_audit_log('Student', $user['id'], 'Request Refund', "Student requested refund for $assignment_id ($reasonCategory)$fileNote");
         add_notification('Admin', '', "Refund Requested: $assignment_id", "Student {$user['name']} has requested a refund on order $assignment_id: $fullReason", 'danger', "/admin/assignment-detail.php?id=$assignment_id");
+        add_notification('Allocator', $asm['allocator_id'] ?? null, "Refund Claim Filed: $assignment_id", "Student {$user['name']} filed a refund claim on $assignment_id$fileNote", 'danger', "/allocator/assignment-detail.php?id=$assignment_id");
 
-        echo json_encode(['success' => true, 'message' => 'Refund request submitted! An administrator will review your case.']);
+        echo json_encode(['success' => true, 'message' => 'Refund claim submitted successfully with attached evidence! Platform admin will review your case.', 'proof_files' => $uploaded]);
         exit;
 
     default:

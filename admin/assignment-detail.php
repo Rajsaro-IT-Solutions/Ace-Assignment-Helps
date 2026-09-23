@@ -173,14 +173,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             add_audit_log('Admin', $user['id'], 'Final Admin Approval', "Admin granted final approval and released solution for order $targetId to student");
         }
 
-        // Handle Uploading Final Solution File
+        // Handle Uploading Solution/Draft File
         if (isset($_FILES['solution_file']) && $_FILES['solution_file']['error'] === UPLOAD_ERR_OK) {
+            $solStage = trim($_POST['solution_file_stage'] ?? 'complete');
+            if (!in_array($solStage, ['draft', 'complete'])) $solStage = 'complete';
+
             $origName = basename($_FILES['solution_file']['name']);
             $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
             $targetDir = __DIR__ . '/../assets/uploads/';
             if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
             $safePrefix = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($origName, PATHINFO_FILENAME));
-            $uniqueName = time() . '_SOLUTION_' . rand(100, 999) . '_' . $safePrefix . ($ext ? '.' . $ext : '');
+            $stageTag = ($solStage === 'complete') ? '_SOLUTION_' : '_DRAFT_';
+            $uniqueName = time() . $stageTag . rand(100, 999) . '_' . $safePrefix . ($ext ? '.' . $ext : '');
             $targetPath = $targetDir . $uniqueName;
 
             if (move_uploaded_file($_FILES['solution_file']['tmp_name'], $targetPath)) {
@@ -190,11 +194,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'file_name' => $origName,
                     'path' => 'assets/uploads/' . $uniqueName,
                     'file_type' => $ext ?: 'file',
+                    'file_stage' => $solStage,
                     'uploaded_by' => 'Admin (' . $user['name'] . ')',
                     'upload_date' => date('Y-m-d H:i:s'),
                     'is_internal' => 0
                 ]);
             }
+        }
+
+        // Handle Uploading Additional Materials / Drafts
+        if (isset($_FILES['assignment_files'])) {
+            $addStage = trim($_POST['additional_files_stage'] ?? 'draft');
+            if (!in_array($addStage, ['draft', 'complete'])) $addStage = 'draft';
+            handle_uploaded_files('assignment_files', $targetId, 'Admin (' . $user['name'] . ')', !empty($_POST['is_internal']), $addStage);
         }
 
         $_SESSION['flash_msg'] = "Assignment updated successfully.";
@@ -292,6 +304,32 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
         </h3>
         <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:0.9rem 1.1rem; margin-bottom:0.75rem; color:#fee2e2; font-size:0.9rem; line-height:1.5;">
           <strong>Grounds for Refund:</strong> <?php echo htmlspecialchars($asm['refund_reason'] ?: 'No details provided.'); ?>
+        </div>
+        <?php 
+          $refundProofFiles = array_values(array_filter($files, function($f) { 
+            return isset($f['file_stage']) && $f['file_stage'] === 'refund_proof'; 
+          }));
+        ?>
+        <div style="margin-bottom:0.75rem; background:rgba(0,0,0,0.25); border:1px dashed rgba(239,68,68,0.4); border-radius:8px; padding:0.8rem 1rem;">
+          <div style="font-size:0.82rem; font-weight:700; color:#fca5a5; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-paperclip"></i> Attached Student Proof & Evidence (<?php echo count($refundProofFiles); ?> files):
+          </div>
+          <?php if (empty($refundProofFiles)): ?>
+            <div style="font-size:0.82rem; color:#f87171; font-style:italic;">No files attached by the student with this refund request.</div>
+          <?php else: ?>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <?php foreach ($refundProofFiles as $rpf): ?>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.4); padding:6px 10px; border-radius:6px; border:1px solid rgba(239,68,68,0.25);">
+                  <span style="color:#ffffff; font-size:0.84rem; font-weight:600;">
+                    <i class="fa-solid fa-file" style="color:#f87171; margin-right:6px;"></i> <?php echo htmlspecialchars($rpf['file_name']); ?>
+                  </span>
+                  <a href="/<?php echo htmlspecialchars($rpf['path']); ?>" download class="btn btn-sm btn-outline" style="border-color:#ef4444; color:#fca5a5; padding:3px 8px; font-size:0.75rem;">
+                    <i class="fa-solid fa-download"></i> View / Download Proof
+                  </a>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
         </div>
         <div style="font-size:0.85rem; color:#fca5a5;">
           Total Price: <strong><?php echo format_currency_amount($asm['final_price'], $currency); ?></strong> &bull; Amount Paid: <strong><?php echo format_currency_amount($asm['paid_amount'] ?? $asm['final_price'], $currency); ?></strong>
@@ -415,6 +453,17 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
         <p style="color:var(--text-muted); font-size:0.83rem; margin-bottom:0.6rem;">
           Accepts <strong>ANY</strong> file format: PDF, DOCX, ZIP, RAR, TXT, PY, IPYNB, XLS, PPTX, etc. Uploading automatically marks order as 'Completed'.
         </p>
+        <div style="margin-bottom:0.6rem; display:flex; gap:16px; align-items:center; flex-wrap:wrap; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:6px; border:1px solid rgba(16,185,129,0.3);">
+          <span style="font-size:0.82rem; color:#f8fafc; font-weight:700;"><i class="fa-solid fa-tag"></i> Classification:</span>
+          <label style="display:flex; align-items:center; gap:5px; font-size:0.82rem; color:#93c5fd; cursor:pointer; margin:0;">
+            <input type="radio" name="solution_file_stage" value="complete" checked>
+            <span><strong>Complete Final Solution</strong> (Requires 100% full payment)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:5px; font-size:0.82rem; color:#fde047; cursor:pointer; margin:0;">
+            <input type="radio" name="solution_file_stage" value="draft">
+            <span><strong>Milestone Draft File</strong> (Progressive download limit)</span>
+          </label>
+        </div>
         <input type="file" name="solution_file" class="form-control" style="background:#090d16;">
       </div>
 
@@ -424,6 +473,17 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
         <p style="color:var(--text-muted); font-size:0.83rem; margin-bottom:0.6rem;">
           Upload reference materials, rubrics, drafts, or code. Accepts <strong>ANY</strong> format (multiple files supported).
         </p>
+        <div style="margin-bottom:0.6rem; display:flex; gap:16px; align-items:center; flex-wrap:wrap; background:rgba(0,0,0,0.3); padding:8px 12px; border-radius:6px; border:1px solid rgba(99,102,241,0.3);">
+          <span style="font-size:0.82rem; color:#f8fafc; font-weight:700;"><i class="fa-solid fa-tag"></i> Classification:</span>
+          <label style="display:flex; align-items:center; gap:5px; font-size:0.82rem; color:#fde047; cursor:pointer; margin:0;">
+            <input type="radio" name="additional_files_stage" value="draft" checked>
+            <span><strong>Draft / Work-in-Progress</strong> (Milestone restricted)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:5px; font-size:0.82rem; color:#93c5fd; cursor:pointer; margin:0;">
+            <input type="radio" name="additional_files_stage" value="complete">
+            <span><strong>Complete Deliverable</strong> (Blurred until 100% paid)</span>
+          </label>
+        </div>
         <input type="file" name="assignment_files[]" multiple class="form-control" style="background:#090d16; margin-bottom:0.6rem;">
         <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:var(--text-muted); margin:0; cursor:pointer;">
           <input type="checkbox" name="is_internal" value="1">
@@ -463,6 +523,7 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
           <?php foreach ($techFiles as $file): 
             $ext = strtoupper(pathinfo($file['file_name'], PATHINFO_EXTENSION));
             $isInternal = !empty($file['is_internal']);
+            $stage = $file['file_stage'] ?? 'complete';
           ?>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#0b1120; border:1px solid #1e3a8a; padding:0.85rem 1.1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.6rem;">
               <div style="display:flex; align-items:center; gap:10px;">
@@ -471,17 +532,25 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
                 </span>
                 <div>
                   <strong style="color:#f8fafc; font-size:0.92rem;"><?php echo htmlspecialchars($file['file_name']); ?></strong>
-                  <?php if ($isInternal): ?>
-                    <span class="badge badge-warning" style="font-size:0.68rem; margin-left:6px;">Staff Only</span>
+                  <?php if ($stage === 'draft'): ?>
+                    <span class="badge" style="background:rgba(234, 179, 8, 0.2); color:#fde047; border:1px solid #ca8a04; font-size:0.68rem; margin-left:6px;"><i class="fa-solid fa-clock-rotate-left"></i> Draft</span>
                   <?php else: ?>
-                    <span class="badge badge-success" style="font-size:0.68rem; margin-left:6px;">Public / Student</span>
+                    <span class="badge" style="background:rgba(37, 99, 235, 0.25); color:#60a5fa; border:1px solid #2563eb; font-size:0.68rem; margin-left:6px;"><i class="fa-solid fa-circle-check"></i> Complete Solution</span>
+                  <?php endif; ?>
+                  <?php if ($isInternal): ?>
+                    <span class="badge badge-warning" style="font-size:0.68rem; margin-left:4px;">Staff Only</span>
+                  <?php else: ?>
+                    <span class="badge badge-success" style="font-size:0.68rem; margin-left:4px;">Public / Student</span>
                   <?php endif; ?>
                   <small style="color:#94a3b8; display:block; margin-top:2px;">Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?></small>
                 </div>
               </div>
-              <div style="display:flex; gap:8px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="toggleFileStage('<?php echo htmlspecialchars($file['file_id']); ?>', '<?php echo $stage === 'draft' ? 'complete' : 'draft'; ?>')" title="Switch between Draft and Complete">
+                  <i class="fa-solid fa-repeat"></i> Set <?php echo $stage === 'draft' ? 'Complete' : 'Draft'; ?>
+                </button>
                 <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-primary btn-sm" style="font-weight:700;">
-                  <i class="fa-solid fa-download"></i> Download Tech Package
+                  <i class="fa-solid fa-download"></i> Download
                 </a>
                 <button type="button" class="btn btn-danger btn-sm" onclick="deleteFile('<?php echo htmlspecialchars($file['file_id']); ?>')">
                   <i class="fa-solid fa-trash"></i>
@@ -511,19 +580,28 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
             elseif (in_array($ext, ['ppt', 'pptx'])) $icon = 'fa-file-powerpoint';
             elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) $icon = 'fa-file-image';
             $isInternal = !empty($file['is_internal']);
+            $stage = $file['file_stage'] ?? 'complete';
           ?>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#090d16; border:1px solid var(--portal-border); padding:0.8rem 1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
               <div>
                 <i class="fa-solid <?php echo $icon; ?>" style="color:var(--primary); margin-right:8px; font-size:1.1rem;"></i>
                 <strong style="color:#fff;"><?php echo htmlspecialchars($file['file_name']); ?></strong>
-                <?php if ($isInternal): ?>
-                  <span class="badge badge-warning" style="font-size:0.7rem; margin-left:6px;">Staff Only</span>
+                <?php if ($stage === 'draft'): ?>
+                  <span class="badge" style="background:rgba(234, 179, 8, 0.2); color:#fde047; border:1px solid #ca8a04; font-size:0.68rem; margin-left:6px;"><i class="fa-solid fa-clock-rotate-left"></i> Draft</span>
                 <?php else: ?>
-                  <span class="badge badge-success" style="font-size:0.7rem; margin-left:6px;">Public / Student</span>
+                  <span class="badge" style="background:rgba(37, 99, 235, 0.25); color:#60a5fa; border:1px solid #2563eb; font-size:0.68rem; margin-left:6px;"><i class="fa-solid fa-circle-check"></i> Complete Solution</span>
+                <?php endif; ?>
+                <?php if ($isInternal): ?>
+                  <span class="badge badge-warning" style="font-size:0.7rem; margin-left:4px;">Staff Only</span>
+                <?php else: ?>
+                  <span class="badge badge-success" style="font-size:0.7rem; margin-left:4px;">Public / Student</span>
                 <?php endif; ?>
                 <small style="color:var(--text-muted); display:block; margin-top:2px;">Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?></small>
               </div>
-              <div style="display:flex; gap:8px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="toggleFileStage('<?php echo htmlspecialchars($file['file_id']); ?>', '<?php echo $stage === 'draft' ? 'complete' : 'draft'; ?>')" title="Switch between Draft and Complete">
+                  <i class="fa-solid fa-repeat"></i> Set <?php echo $stage === 'draft' ? 'Complete' : 'Draft'; ?>
+                </button>
                 <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-outline btn-sm">
                   <i class="fa-solid fa-download"></i> Download
                 </a>
@@ -536,6 +614,8 @@ $files = DataStore::filter('files', function($f) use ($id) { return isset($f['as
         </div>
       <?php endif; ?>
     </div>
+
+
   </div>
 
   <div>
@@ -725,12 +805,29 @@ function deleteFile(fileId) {
     if (data.success) {
       window.location.reload();
     }
-  })
-  .catch(err => alert('Error deleting file.'));
 }
-</script>
 
-<script src="/assets/js/portal.js"></script>
+function toggleFileStage(fileId, targetStage) {
+  const fd = new FormData();
+  fd.append('file_id', fileId);
+  fd.append('file_stage', targetStage);
+
+  fetch('/api.php?action=set_file_stage', {
+    method: 'POST',
+    body: fd
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to update file stage.');
+    }
+  })
+  .catch(err => alert('Error changing file stage.'));
+}
+
+</script>
 </div>
 </div>
 </body>

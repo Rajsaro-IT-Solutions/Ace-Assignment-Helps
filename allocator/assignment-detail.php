@@ -449,10 +449,13 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
     <!-- Submitted Solution Deliverables (Segregated) -->
     <?php if (!empty($docSolutionFiles)): ?>
       <div class="table-card" style="padding:1.5rem; border:1.5px solid #a855f7;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-          <h3 style="font-size:1.1rem; color:var(--text-main); margin:0;">
-            <i class="fa-solid fa-microscope" style="color:var(--primary);"></i> Expert Deliverables & Documents (<?php echo count($docSolutionFiles); ?>)
-          </h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.1rem; color:var(--text-main); margin:0;">
+              <i class="fa-solid fa-microscope" style="color:var(--primary);"></i> Deliverables & Review Files (<?php echo count($docSolutionFiles); ?>)
+            </h3>
+            <small style="color:var(--text-muted);">Inspect files, verify drafts, or designate complete solutions for final admin delivery</small>
+          </div>
           <span class="badge badge-purple" style="font-size:0.75rem;">Quality Control</span>
         </div>
         <div style="display:flex; flex-direction:column; gap:10px;">
@@ -465,6 +468,7 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
             elseif (in_array($ext, ['ppt', 'pptx'])) $icon = 'fa-file-powerpoint';
             elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'])) $icon = 'fa-file-image';
             $isTurnitin = stripos($file['file_name'], 'turnitin') !== false;
+            $isDraft = is_draft_file($file);
           ?>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#faf5ff; border:1px solid #e9d5ff; padding:0.8rem 1rem; border-radius:var(--radius-sm); flex-wrap:wrap; gap:0.5rem;">
               <div>
@@ -472,14 +476,21 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
                 <strong style="color:var(--text-main);"><?php echo htmlspecialchars($file['file_name']); ?></strong>
                 <?php if ($isTurnitin): ?>
                   <span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; margin-left:6px;"><i class="fa-solid fa-chart-pie"></i> Turnitin Report</span>
+                <?php elseif ($isDraft): ?>
+                  <span class="badge" style="background:#e0e7ff; color:#3730a3; font-size:0.7rem; margin-left:6px; font-weight:700;"><i class="fa-solid fa-file-pen"></i> Draft Deliverable</span>
                 <?php else: ?>
-                  <span class="badge badge-purple" style="font-size:0.7rem; margin-left:6px;"><i class="fa-solid fa-file-circle-check"></i> Solution File</span>
+                  <span class="badge badge-success" style="font-size:0.7rem; margin-left:6px;"><i class="fa-solid fa-file-circle-check"></i> Complete Solution</span>
                 <?php endif; ?>
                 <small style="color:var(--text-muted); display:block; margin-top:2px;">Uploaded by <?php echo htmlspecialchars($file['uploaded_by']); ?> &bull; <?php echo $file['upload_date']; ?></small>
               </div>
-              <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-outline btn-sm">
-                <i class="fa-solid fa-download"></i> Inspect & Download
-              </a>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:3px 8px;" onclick="toggleFileStage('<?php echo $file['file_id']; ?>', '<?php echo $isDraft ? 'complete' : 'draft'; ?>')" title="Switch file classification">
+                  <i class="fa-solid fa-repeat"></i> Set as <?php echo $isDraft ? 'Complete File' : 'Draft'; ?>
+                </button>
+                <a href="/<?php echo htmlspecialchars($file['path']); ?>" download class="btn btn-outline btn-sm">
+                  <i class="fa-solid fa-download"></i> Inspect
+                </a>
+              </div>
             </div>
           <?php endforeach; ?>
         </div>
@@ -523,7 +534,7 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
       <?php endif; ?>
     </div>
 
-    <!-- Upload Files Section (Accepts Any Format) -->
+    <!-- Upload Files Section (Draft vs Complete Selection) -->
     <div class="table-card" style="padding:1.5rem;">
       <h3 style="font-size:1.1rem; margin-bottom:0.4rem; color:var(--text-main);"><i class="fa-solid fa-cloud-arrow-up" style="color:var(--primary);"></i> Upload Assignment Files / Drafts / Solutions</h3>
       <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
@@ -531,6 +542,25 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
       </p>
       <form id="allocatorUploadForm" enctype="multipart/form-data">
         <input type="hidden" name="assignment_id" value="<?php echo htmlspecialchars($asm['assignment_id']); ?>">
+        
+        <div style="margin-bottom:0.8rem; background:#f8fafc; padding:0.85rem 1rem; border-radius:8px; border:1px solid #e2e8f0;">
+          <label style="font-weight:700; font-size:0.85rem; display:block; margin-bottom:6px; color:var(--text-main);">
+            <i class="fa-solid fa-tag" style="color:var(--primary);"></i> Select Deliverable Stage (Controls Student Access):
+          </label>
+          <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+            <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; margin:0;">
+              <input type="radio" name="file_stage" value="draft" checked>
+              <span style="font-weight:700; color:#4338ca;"><i class="fa-solid fa-file-pen"></i> Draft Deliverable</span>
+              <small style="color:var(--text-muted);">(Available to student based on milestone payments: 1 draft for <50%, up to 3 drafts for ≥50%)</small>
+            </label>
+            <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; margin:0;">
+              <input type="radio" name="file_stage" value="complete">
+              <span style="font-weight:700; color:#059669;"><i class="fa-solid fa-file-circle-check"></i> Complete File / Final Solution</span>
+              <small style="color:var(--text-muted);">(Locked & blurred until 100% full payment is completed)</small>
+            </label>
+          </div>
+        </div>
+
         <div style="margin-bottom:0.8rem;">
           <input type="file" name="assignment_files[]" multiple class="form-control" required>
         </div>
@@ -544,6 +574,8 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
         <div id="allocUploadMsg" style="margin-top:0.8rem;"></div>
       </form>
     </div>
+
+
 
     <!-- Internal Notes Thread -->
     <div class="table-card" style="padding:1.5rem;">
@@ -626,9 +658,27 @@ if (allocUploadForm) {
     });
   });
 }
-</script>
 
-<script src="/assets/js/portal.js"></script>
+function toggleFileStage(fileId, newStage) {
+  if (!confirm(`Switch this file to ${newStage === 'complete' ? 'Complete Solution' : 'Draft Deliverable'}?`)) return;
+  const fd = new FormData();
+  fd.append('file_id', fileId);
+  fd.append('file_stage', newStage);
+  fetch('/api.php?action=set_file_stage', {
+    method: 'POST',
+    body: fd
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.message || 'Failed to update file stage.');
+    }
+  });
+}
+
+</script>
 </div>
 </div>
 </body>
