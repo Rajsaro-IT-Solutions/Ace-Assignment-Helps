@@ -16,8 +16,9 @@ if (php_sapi_name() === 'cli-server') {
 if (!empty($route) && $route !== 'index.php' && $route !== 'api/index.php') {
     $target = $baseDir . '/' . $route;
 
-    // Check directory index (e.g. /admin -> /admin/index.php)
-    if (is_dir($target)) {
+    if (!file_exists($target) && file_exists(__DIR__ . '/' . basename($route))) {
+        $target = __DIR__ . '/' . basename($route);
+    } elseif (is_dir($target)) {
         $target = rtrim($target, '/') . '/index.php';
     } elseif (!file_exists($target) && file_exists($target . '.php')) {
         $target .= '.php';
