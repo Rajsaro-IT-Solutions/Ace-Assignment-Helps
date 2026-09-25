@@ -8,10 +8,13 @@ require_once __DIR__ . '/../includes/helpers.php';
 $id = $_GET['id'] ?? '';
 $asm = DataStore::findOne('assignments', 'assignment_id', $id);
 
-if (!$asm) {
+if (!$asm || ($user['role'] === 'Allocator' && ($asm['allocator_id'] ?? '') !== $user['id'])) {
     include __DIR__ . '/../includes/portal_header.php';
-    echo "<div class='badge badge-danger'>Assignment not found.</div>";
-    echo "</div></div></body></html>";
+    echo "<div class='table-card' style='padding:3rem; text-align:center;'>";
+    echo "<div class='badge badge-danger' style='font-size:1rem; padding:10px 16px; margin-bottom:1rem;'><i class='fa-solid fa-circle-exclamation'></i> Access Denied or Assignment Not Assigned to You</div>";
+    echo "<p style='color:var(--text-muted);'>This assignment is not assigned to your allocator account, or does not exist.</p>";
+    echo "<a href='/allocator/index.php' class='btn btn-primary'>&larr; Back to Command Center</a>";
+    echo "</div></div></div></body></html>";
     exit;
 }
 
@@ -335,7 +338,7 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
         <strong style="color:var(--text-main); font-size:0.95rem;">Order Completed & Released to Student Portal</strong>
       </div>
       <p style="color:var(--text-muted); font-size:0.85rem; margin:2px 0 0 0;">
-        Admin has signed off on the deliverable. If student's payment is settled, files are immediately downloadable in their portal.
+        Admin has signed off on the deliverable. Solution files are available in the student portal.
       </p>
     </div>
   </div>
@@ -551,12 +554,12 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
             <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; margin:0;">
               <input type="radio" name="file_stage" value="draft" checked>
               <span style="font-weight:700; color:#4338ca;"><i class="fa-solid fa-file-pen"></i> Draft Deliverable</span>
-              <small style="color:var(--text-muted);">(Available to student based on milestone payments: 1 draft for <50%, up to 3 drafts for ≥50%)</small>
+              <small style="color:var(--text-muted);">(Preliminary / working draft deliverable)</small>
             </label>
             <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; cursor:pointer; margin:0;">
               <input type="radio" name="file_stage" value="complete">
               <span style="font-weight:700; color:#059669;"><i class="fa-solid fa-file-circle-check"></i> Complete File / Final Solution</span>
-              <small style="color:var(--text-muted);">(Locked & blurred until 100% full payment is completed)</small>
+              <small style="color:var(--text-muted);">(Final deliverable for QA approval)</small>
             </label>
           </div>
         </div>

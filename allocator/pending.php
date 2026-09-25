@@ -4,9 +4,9 @@ require_once __DIR__ . '/../includes/auth.php';
 Auth::checkRole('Allocator');
 require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
-
-$pending = DataStore::filter('assignments', function($a) {
-    return in_array($a['status'], ['New', 'Pending Review', 'Confirmed']) || empty($a['expert_id']);
+$user = Auth::currentUser();
+$pending = DataStore::filter('assignments', function($a) use ($user) {
+    return ($a['allocator_id'] ?? '') === $user['id'] && (empty($a['expert_id']) || in_array($a['status'], ['New', 'Pending Review', 'Confirmed', 'Allocated']));
 });
 ?>
 

@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             add_notification('Admin', '', "$stageLabel Submitted - $asmId", "Expert {$user['name']} uploaded $stageLabel for order $asmId.", 'info', "/admin/assignment-detail.php?id=$asmId");
 
-            $_SESSION['flash_msg'] = ($solStage === 'draft') ? "Milestone draft uploaded! It is available to the student according to their milestone payment tier." : "Solution successfully submitted! The project status is now 'Quality Check'.";
+            $_SESSION['flash_msg'] = ($solStage === 'draft') ? "Milestone draft uploaded successfully! Solution draft is now on record." : "Solution successfully submitted! The project status is now 'Quality Check'.";
             $_SESSION['flash_type'] = 'success';
         } else {
             $errCode = $_FILES['solution_file']['error'] ?? -1;
@@ -381,14 +381,14 @@ unset($_SESSION['flash_msg'], $_SESSION['flash_type']);
                 <input type="radio" name="file_stage" value="complete" checked style="margin-top:3px;">
                 <div>
                   <strong style="color:#059669;"><i class="fa-solid fa-file-circle-check"></i> Complete Final Solution</strong>
-                  <div style="color:var(--text-muted); font-size:0.78rem;">Moves order to Quality Check. Student sees blurred preview until 100% full payment is completed.</div>
+                  <div style="color:var(--text-muted); font-size:0.78rem;">Moves order to Quality Check for Allocator review and sign-off.</div>
                 </div>
               </label>
               <label style="display:flex; align-items:flex-start; gap:8px; font-size:0.85rem; cursor:pointer; margin:0;">
                 <input type="radio" name="file_stage" value="draft" style="margin-top:3px;">
                 <div>
                   <strong style="color:#4338ca;"><i class="fa-solid fa-file-pen"></i> Milestone Work-in-Progress Draft</strong>
-                  <div style="color:var(--text-muted); font-size:0.78rem;">Student can download 1 draft under 50% payment, or up to 3 drafts after 50% milestone payment.</div>
+                  <div style="color:var(--text-muted); font-size:0.78rem;">Upload interim working drafts or partial solution materials.</div>
                 </div>
               </label>
             </div>

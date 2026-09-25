@@ -1,0 +1,4 @@
+[Wed Sep 23 15:58:33 2026] PHP 8.3.6 Development Server (http://0.0.0.0:8000) started
+[Wed Sep 23 15:58:34 2026] 127.0.0.1:59344 Accepted
+[Wed Sep 23 15:58:34 2026] 127.0.0.1:59344 [200]: GET /portal_api.php?action=health
+[Wed Sep 23 15:58:34 2026] 127.0.0.1:59344 Closing

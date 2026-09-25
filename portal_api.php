@@ -155,12 +155,12 @@ try {
 
             } elseif ($role === 'Allocator') {
                 $stmt = $pdo->prepare("SELECT 
-                    SUM(CASE WHEN expert_id IS NULL OR expert_id = '' OR status = 'Pending' THEN 1 ELSE 0 END) as unallocated,
+                    SUM(CASE WHEN (expert_id IS NULL OR expert_id = '') AND status IN ('New', 'Confirmed', 'Allocated', 'Pending Review') THEN 1 ELSE 0 END) as unallocated,
                     SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END) as in_progress,
-                    SUM(CASE WHEN status IN ('Under QA', 'Under Review') THEN 1 ELSE 0 END) as under_qa,
+                    SUM(CASE WHEN status IN ('Under QA', 'Under Review', 'Quality Check') THEN 1 ELSE 0 END) as under_qa,
                     SUM(CASE WHEN status IN ('Completed', 'Delivered') THEN 1 ELSE 0 END) as completed
-                    FROM assignments");
-                $stmt->execute();
+                    FROM assignments WHERE allocator_id = ?");
+                $stmt->execute([$userId]);
                 $counts = $stmt->fetch() ?: ['unallocated' => 0, 'in_progress' => 0, 'under_qa' => 0, 'completed' => 0];
 
                 $expertCountStmt = $pdo->query("SELECT COUNT(*) FROM experts WHERE status != 'Inactive'");
@@ -173,8 +173,8 @@ try {
                     'active_experts' => $expertCount,
                 ];
 
-                $stmtRecent = $pdo->prepare("SELECT * FROM assignments WHERE (expert_id IS NULL OR expert_id = '' OR status = 'Pending') ORDER BY created_at DESC LIMIT 5");
-                $stmtRecent->execute();
+                $stmtRecent = $pdo->prepare("SELECT * FROM assignments WHERE allocator_id = ? ORDER BY created_at DESC LIMIT 5");
+                $stmtRecent->execute([$userId]);
                 $recentAssignments = $stmtRecent->fetchAll();
 
             } elseif ($role === 'Admin') {
@@ -232,6 +232,9 @@ try {
             } elseif ($role === 'Expert') {
                 $sql .= " AND expert_id = ?";
                 $sqlParams[] = $userId;
+            } elseif ($role === 'Allocator') {
+                $sql .= " AND allocator_id = ?";
+                $sqlParams[] = $userId;
             }
 
             if (!empty($status) && $status !== 'All') {
@@ -257,6 +260,10 @@ try {
                 if (function_exists('get_sla_status') && !empty($item['deadline'])) {
                     $item['sla'] = get_sla_status($item['deadline']);
                 }
+                if ($role !== 'Admin') {
+                    // Only Admin can see prices and payment information
+                    unset($item['price'], $item['final_price'], $item['paid_amount'], $item['remaining_balance'], $item['payment_status'], $item['payment_plan'], $item['refund_reason']);
+                }
             }
 
             sendResponse(true, $assignments);
@@ -278,6 +285,20 @@ try {
 
             if (!$assignment) {
                 sendResponse(false, null, 'Assignment not found.', 404);
+            }
+
+            $role = ucfirst(strtolower($params['role'] ?? ''));
+            $userId = trim($params['user_id'] ?? '');
+
+            if ($role === 'Allocator' && ($assignment['allocator_id'] ?? '') !== $userId) {
+                sendResponse(false, null, 'Access Denied: Assignment is not assigned to your allocator account.', 403);
+            }
+            if ($role === 'Expert' && ($assignment['expert_id'] ?? '') !== $userId) {
+                sendResponse(false, null, 'Access Denied: Assignment is not assigned to your expert account.', 403);
+            }
+            if ($role !== 'Admin') {
+                // Only Admin can see prices and payment information
+                unset($assignment['price'], $assignment['final_price'], $assignment['paid_amount'], $assignment['remaining_balance'], $assignment['payment_status'], $assignment['payment_plan'], $assignment['refund_reason']);
             }
 
             $fileStmt = $pdo->prepare("SELECT * FROM files WHERE assignment_id = ?");
@@ -333,14 +354,8 @@ try {
             $userId = trim($params['user_id'] ?? '');
             $userRole = trim($params['role'] ?? '');
 
-            $pdo = DataStore::getPdo();
-            $stmt = $pdo->prepare("SELECT * FROM notifications 
-                WHERE (user_id = ? OR user_role = ? OR user_role = 'All') 
-                ORDER BY created_at DESC LIMIT 30");
-            $stmt->execute([$userId, $userRole]);
-            $notifications = $stmt->fetchAll();
-
-            sendResponse(true, $notifications);
+            $notifications = function_exists('get_user_notifications') ? get_user_notifications($userId, $userRole) : [];
+            sendResponse(true, array_slice($notifications, 0, 50));
             break;
 
         // ---------------------------------------------------------
@@ -513,6 +528,10 @@ try {
         // ---------------------------------------------------------
         case 'payments_list':
             $studentId = trim($params['student_id'] ?? '');
+            $reqRole = trim($params['role'] ?? '');
+            if ($reqRole === 'Allocator' || $reqRole === 'Expert') {
+                sendResponse(false, null, 'Access Denied: Payment logs are restricted to Administrator.', 403);
+            }
             $pdo = DataStore::getPdo();
             
             if (!empty($studentId)) {

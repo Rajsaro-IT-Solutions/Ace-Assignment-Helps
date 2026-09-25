@@ -10,6 +10,14 @@
             "dest": "/assets/$1"
         },
         {
+            "src": "/portal_api.php",
+            "dest": "/api/portal_api.php"
+        },
+        {
+            "src": "/api.php",
+            "dest": "/api/api.php"
+        },
+        {
             "src": "/(.*)",
             "dest": "/api/index.php"
         }

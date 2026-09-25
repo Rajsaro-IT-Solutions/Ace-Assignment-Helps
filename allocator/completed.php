@@ -4,9 +4,9 @@ require_once __DIR__ . '/../includes/auth.php';
 Auth::checkRole('Allocator');
 require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
-
-$completed = DataStore::filter('assignments', function($a) {
-    return in_array($a['status'], ['Completed', 'Delivered']);
+$user = Auth::currentUser();
+$completed = DataStore::filter('assignments', function($a) use ($user) {
+    return ($a['allocator_id'] ?? '') === $user['id'] && in_array($a['status'], ['Completed', 'Delivered']);
 });
 ?>
 

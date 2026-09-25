@@ -28,7 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label>Email Template</label>
         <select name="template" class="form-control">
           <option value="Assignment Submitted Confirmation">Assignment Submitted Confirmation</option>
-          <option value="Payment Received Invoice">Payment Received Invoice</option>
           <option value="Assignment Allocated to Expert">Assignment Allocated to Expert</option>
           <option value="Assignment Solution Ready for Download">Assignment Solution Ready for Download</option>
           <option value="Deadline Reminder Alert">Deadline Reminder Alert</option>

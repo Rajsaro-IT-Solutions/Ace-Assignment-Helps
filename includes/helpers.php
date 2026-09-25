@@ -476,25 +476,109 @@ function add_notification($user_role, $user_id, $title, $message, $type = 'info'
     ]);
 }
 
+function is_payment_notification($n)
+{
+    $combined = strtolower(($n['title'] ?? '') . ' ' . ($n['message'] ?? ''));
+    $keywords = [
+        'payment', 'paid', 'deposit', 'stripe', 'razorpay', 'invoice', 'refund',
+        'settled', 'balance', 'part payment', 'confirmed & paid', 'billing', 'remittance',
+        'transaction', 'txn', 'pay now', 'wallet', 'checkout'
+    ];
+    foreach ($keywords as $kw) {
+        if (strpos($combined, $kw) !== false) {
+            return true;
+        }
+    }
+    if (preg_match('/[\$₹€£]\s*[0-9]+/', $combined)) {
+        return true;
+    }
+    return false;
+}
+
+function extract_assignment_id_from_text($text)
+{
+    if (preg_match('/(ACE-[A-Za-z0-9\-]+|AAH-[A-Za-z0-9\-]+|TEST-[A-Za-z0-9\-]+)/i', $text, $matches)) {
+        return strtoupper($matches[1]);
+    }
+    if (preg_match('/[?&]id=([A-Za-z0-9\-]+)/i', $text, $matches)) {
+        return strtoupper($matches[1]);
+    }
+    return null;
+}
+
 function get_user_notifications($user_id, $user_role)
 {
     $all = DataStore::getCollection('notifications');
-    $filtered = array_filter($all, function ($n) use ($user_id, $user_role) {
+    
+    // Cache assignments for fast relational lookup
+    static $assignmentsMap = null;
+    if ($assignmentsMap === null) {
+        $allAsms = DataStore::getCollection('assignments');
+        $assignmentsMap = [];
+        foreach ($allAsms as $a) {
+            if (!empty($a['assignment_id'])) {
+                $assignmentsMap[strtoupper($a['assignment_id'])] = $a;
+            }
+        }
+    }
+
+    $filtered = array_filter($all, function ($n) use ($user_id, $user_role, &$assignmentsMap) {
         $targetRole = $n['user_role'] ?? '';
         $targetUser = $n['user_id'] ?? '';
+        $title = $n['title'] ?? '';
+        $message = $n['message'] ?? '';
+        $link = $n['link'] ?? '';
 
-        // If specifically targeted to user_id
+        // RULE 1: Payment notifications are strictly for Admin only
+        // Non-admins (Allocator, Expert, Student, etc.) must NEVER see payment notifications
+        if ($user_role !== 'Admin') {
+            if (is_payment_notification($n)) {
+                return false;
+            }
+        }
+
+        // Admin monitors all system notifications
+        if ($user_role === 'Admin') {
+            return true;
+        }
+
+        // RULE 2: If explicitly targeted to another specific user_id, exclude
+        if (!empty($targetUser) && $targetUser !== $user_id) {
+            return false;
+        }
+
+        // RULE 3: Role and assignment relevance check
+        $combinedText = $title . ' ' . $message . ' ' . $link;
+        $asmId = extract_assignment_id_from_text($combinedText);
+
+        if ($asmId && isset($assignmentsMap[$asmId])) {
+            $asm = $assignmentsMap[$asmId];
+            if ($user_role === 'Allocator') {
+                // Allocator only sees notifications for assignments explicitly assigned to them
+                return !empty($asm['allocator_id']) && $asm['allocator_id'] === $user_id;
+            }
+            if ($user_role === 'Expert') {
+                // Expert only sees notifications for assignments explicitly assigned to them
+                return !empty($asm['expert_id']) && $asm['expert_id'] === $user_id;
+            }
+            if ($user_role === 'Student') {
+                // Student only sees notifications for their own assignments
+                return !empty($asm['student_id']) && $asm['student_id'] === $user_id;
+            }
+        } elseif ($asmId && !isset($assignmentsMap[$asmId])) {
+            // Assignment referenced but not found: hide from staff to prevent leakage
+            return false;
+        }
+
+        // If no assignment ID is present:
         if (!empty($targetUser)) {
             return ($targetUser === $user_id);
         }
 
-        // Target to role or broadcast 'All'
-        if ($targetRole === 'All')
+        // Broadcast notifications must match role
+        if ($targetRole === $user_role) {
             return true;
-        if ($targetRole === $user_role)
-            return true;
-        if ($user_role === 'Admin')
-            return true; // Admins can monitor alerts
+        }
 
         return false;
     });

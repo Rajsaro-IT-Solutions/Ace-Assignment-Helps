@@ -116,7 +116,7 @@ switch ($action) {
     case 'submit_assignment':
         $user = Auth::currentUser();
         $student_id = $user ? $user['id'] : 'STU-' . rand(1004, 9999);
-        
+
         $title = trim($_POST['title'] ?? 'Untitled Assignment');
         $subject = trim($_POST['subject'] ?? 'Computer Science');
         $assignment_type = trim($_POST['assignment_type'] ?? 'Essay');
@@ -860,7 +860,7 @@ switch ($action) {
                 $t = strcmp($a['timestamp'] ?? '', $b['timestamp'] ?? '');
                 return $t !== 0 ? $t : (((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0)));
             });
-            
+
             echo json_encode(['success' => true, 'data' => $new_msg, 'messages' => array_values($thread), 'assignment_id' => $assignment_id]);
             exit;
         }
@@ -905,7 +905,7 @@ switch ($action) {
         if (!$student_id && $user['role'] === 'Student') {
             $student_id = $user['id'];
         }
-        
+
         $messages = DataStore::filter('chat_messages', function($m) use ($assignment_id, $student_id, $user) {
             if ($assignment_id && !empty($m['assignment_id'])) {
                 return $m['assignment_id'] === $assignment_id;

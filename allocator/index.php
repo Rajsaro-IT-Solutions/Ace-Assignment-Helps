@@ -6,22 +6,25 @@ $user = Auth::currentUser();
 require_once __DIR__ . '/../includes/helpers.php';
 include __DIR__ . '/../includes/portal_header.php';
 
-$allAssignments = DataStore::getCollection('assignments');
-$pendingAllocation = DataStore::filter('assignments', function($a) {
-    return in_array($a['status'], ['New', 'Pending Review', 'Confirmed']) || empty($a['expert_id']);
+$allAssignments = DataStore::filter('assignments', function($a) use ($user) {
+    return ($a['allocator_id'] ?? '') === $user['id'] && ($a['status'] ?? '') !== 'Deleted';
 });
-$urgentSLA = DataStore::filter('assignments', function($a) {
+$pendingAllocation = DataStore::filter('assignments', function($a) use ($user) {
+    return ($a['allocator_id'] ?? '') === $user['id'] && (empty($a['expert_id']) || in_array($a['status'], ['New', 'Pending Review', 'Confirmed', 'Allocated']));
+});
+$urgentSLA = DataStore::filter('assignments', function($a) use ($user) {
+    if (($a['allocator_id'] ?? '') !== $user['id']) return false;
     $sla = get_sla_status($a['deadline']);
     return in_array($sla['level'], ['red', 'overdue', 'amber']);
 });
-$completedToday = DataStore::filter('assignments', function($a) {
-    return $a['status'] === 'Completed';
+$completedToday = DataStore::filter('assignments', function($a) use ($user) {
+    return ($a['allocator_id'] ?? '') === $user['id'] && in_array($a['status'], ['Completed', 'Delivered']);
 });
-$qaQueue = DataStore::filter('assignments', function($a) {
-    return in_array($a['status'], ['Quality Check', 'Pending Admin Approval']);
+$qaQueue = DataStore::filter('assignments', function($a) use ($user) {
+    return ($a['allocator_id'] ?? '') === $user['id'] && in_array($a['status'], ['Quality Check', 'Pending Admin Approval']);
 });
-$revisionQueue = DataStore::filter('assignments', function($a) {
-    return $a['status'] === 'Revision Requested';
+$revisionQueue = DataStore::filter('assignments', function($a) use ($user) {
+    return ($a['allocator_id'] ?? '') === $user['id'] && $a['status'] === 'Revision Requested';
 });
 $expertsAvailable = DataStore::filter('experts', function($e) {
     return $e['status'] === 'Available';

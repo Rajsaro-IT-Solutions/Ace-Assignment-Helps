@@ -102,7 +102,8 @@ usort($chatMessages, function ($a, $b) {
                 (<?php echo htmlspecialchars($msg['sender_role']); ?>):</strong>
               <?php echo htmlspecialchars($msg['message']); ?>
               <div style="font-size:0.65rem; opacity:0.7; margin-top:2px; text-align:right;">
-                <?php echo htmlspecialchars($msg['timestamp']); ?></div>
+                <?php echo htmlspecialchars($msg['timestamp']); ?>
+              </div>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
